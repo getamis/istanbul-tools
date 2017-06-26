@@ -27,15 +27,15 @@ USAGE:
    istanbul [global options] command [command options] [arguments...]
 
 COMMANDS:
-     decode   To decode a Istanbul extraData
-     encode   To encode a Istanbul extraData
+     decode   To decode an Istanbul extraData
+     encode   To encode an Istanbul extraData
      help, h  Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
    --help, -h  show help
 
 COPYRIGHT:
-   Copyright 2017 The Getamis Authors
+   Copyright 2017 The Amis Authors
 
 ```
 

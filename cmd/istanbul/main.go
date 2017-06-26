@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Istanbul-tools/cmd/utils"
+	"github.com/getamis/Istanbul-tools/cmd/utils"
 	"github.com/urfave/cli"
 )
 
@@ -29,7 +29,7 @@ func main() {
 	app.Usage = "the Istanbul-tools command line interface"
 
 	app.HideVersion = true // we have a command to print the version
-	app.Copyright = "Copyright 2017 The Getamis Authors"
+	app.Copyright = "Copyright 2017 The Amis Authors"
 
 	app.Commands = []cli.Command{
 		decodeCommand,

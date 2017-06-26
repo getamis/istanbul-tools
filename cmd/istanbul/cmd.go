@@ -1,3 +1,19 @@
+// Copyright 2017 AMIS Technologies
+// This file is part of the go-ethereum library.
+//
+// The go-ethereum library is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// The go-ethereum library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+
 package main
 
 import (
@@ -17,28 +33,26 @@ var (
 	decodeCommand = cli.Command{
 		Action:    decode,
 		Name:      "decode",
-		Usage:     "To decode a Istanbul extraData",
+		Usage:     "To decode an Istanbul extraData",
 		ArgsUsage: "<extra data>",
 		Flags: []cli.Flag{
 			ExtraDataFlag,
 		},
 		Description: `
-The extraData command will decode extraData for the given input which should be a hex string.
+This command decodes extraData to vanity and validators.
 `,
 	}
 
 	encodeCommand = cli.Command{
 		Action:    encode,
 		Name:      "encode",
-		Usage:     "To encode a Istanbul extraData",
+		Usage:     "To encode an Istanbul extraData",
 		ArgsUsage: "<config file>",
 		Flags: []cli.Flag{
 			ConfigFlag,
 		},
 		Description: `
-The extraData command will encode Istanbul extraData for the given input file.
-
-Example of input file can refer to example/config.toml.
+This command encodes vanity and validators to extraData. Please refer to example/config.toml.
 `,
 	}
 )
