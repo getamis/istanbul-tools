@@ -1,4 +1,4 @@
-// Copyright 2017 AMIS Technologies
+// Copyright 2015 The go-ethereum Authors
 // This file is part of the go-ethereum library.
 //
 // The go-ethereum library is free software: you can redistribute it and/or modify
@@ -14,30 +14,33 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-package main
+// +build darwin dragonfly freebsd linux nacl netbsd openbsd solaris
+
+package rpc
 
 import (
-	"fmt"
+	"context"
+	"net"
 	"os"
-
-	"github.com/getamis/istanbul-tools/cmd/utils"
-	"github.com/urfave/cli"
+	"path/filepath"
 )
 
-func main() {
-	app := utils.NewApp()
-	app.Usage = "the istanbul-tools command line interface"
-
-	app.HideVersion = true // we have a command to print the version
-	app.Copyright = "Copyright 2017 The Amis Authors"
-
-	app.Commands = []cli.Command{
-		decodeCommand,
-		encodeCommand,
+// ipcListen will create a Unix socket on the given endpoint.
+func ipcListen(endpoint string) (net.Listener, error) {
+	// Ensure the IPC path exists and remove any previous leftover
+	if err := os.MkdirAll(filepath.Dir(endpoint), 0751); err != nil {
+		return nil, err
 	}
-
-	if err := app.Run(os.Args); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+	os.Remove(endpoint)
+	l, err := net.Listen("unix", endpoint)
+	if err != nil {
+		return nil, err
 	}
+	os.Chmod(endpoint, 0600)
+	return l, nil
+}
+
+// newIPCConnection will connect to a Unix socket on the given endpoint.
+func newIPCConnection(ctx context.Context, endpoint string) (net.Conn, error) {
+	return dialContext(ctx, "unix", endpoint)
 }

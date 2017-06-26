@@ -1,4 +1,4 @@
-// Copyright 2017 AMIS Technologies
+// Copyright 2017 The go-ethereum Authors
 // This file is part of the go-ethereum library.
 //
 // The go-ethereum library is free software: you can redistribute it and/or modify
@@ -14,30 +14,21 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package params
 
-import (
-	"fmt"
-	"os"
-
-	"github.com/getamis/istanbul-tools/cmd/utils"
-	"github.com/urfave/cli"
+const (
+	// These are the multipliers for ether denominations.
+	// Example: To get the wei value of an amount in 'douglas', use
+	//
+	//    new(big.Int).Mul(value, big.NewInt(params.Douglas))
+	//
+	Wei      = 1
+	Ada      = 1e3
+	Babbage  = 1e6
+	Shannon  = 1e9
+	Szabo    = 1e12
+	Finney   = 1e15
+	Ether    = 1e18
+	Einstein = 1e21
+	Douglas  = 1e42
 )
-
-func main() {
-	app := utils.NewApp()
-	app.Usage = "the istanbul-tools command line interface"
-
-	app.HideVersion = true // we have a command to print the version
-	app.Copyright = "Copyright 2017 The Amis Authors"
-
-	app.Commands = []cli.Command{
-		decodeCommand,
-		encodeCommand,
-	}
-
-	if err := app.Run(os.Args); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
-}

@@ -1,8 +1,8 @@
-# Istanbul-tools
+# istanbul-tools
 
 Genesis extra-data encoder and decoder library for Istanbul consensus. 
    
-Istanbul tools is used to generate extra-data field of genesis due to extra-data is combined signer vanity with RLP encoded `Istanbul extra data`. The `Istanbul extra data` struct is defined as follows:
+istanbul-tools is used to generate extra-data field of genesis due to extra-data is combined signer vanity with RLP encoded `Istanbul extra data`. The `Istanbul extra data` struct is defined as follows:
 
 ```go
 type IstanbulExtra struct {
@@ -21,7 +21,7 @@ $ make istanbul
 $ build/bin/istanbul
 
 NAME:
-   istanbul - the Istanbul-tools command line interface
+   istanbul - the istanbul-tools command line interface
 
 USAGE:
    istanbul [global options] command [command options] [arguments...]

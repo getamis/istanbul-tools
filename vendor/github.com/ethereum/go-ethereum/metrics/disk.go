@@ -1,4 +1,4 @@
-// Copyright 2017 AMIS Technologies
+// Copyright 2015 The go-ethereum Authors
 // This file is part of the go-ethereum library.
 //
 // The go-ethereum library is free software: you can redistribute it and/or modify
@@ -14,30 +14,12 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package metrics
 
-import (
-	"fmt"
-	"os"
-
-	"github.com/getamis/istanbul-tools/cmd/utils"
-	"github.com/urfave/cli"
-)
-
-func main() {
-	app := utils.NewApp()
-	app.Usage = "the istanbul-tools command line interface"
-
-	app.HideVersion = true // we have a command to print the version
-	app.Copyright = "Copyright 2017 The Amis Authors"
-
-	app.Commands = []cli.Command{
-		decodeCommand,
-		encodeCommand,
-	}
-
-	if err := app.Run(os.Args); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
+// DiskStats is the per process disk io stats.
+type DiskStats struct {
+	ReadCount  int64 // Number of read operations executed
+	ReadBytes  int64 // Total number of bytes read
+	WriteCount int64 // Number of write operations executed
+	WriteBytes int64 // Total number of byte written
 }

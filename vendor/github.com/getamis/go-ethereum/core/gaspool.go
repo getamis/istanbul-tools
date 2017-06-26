@@ -1,4 +1,4 @@
-// Copyright 2017 AMIS Technologies
+// Copyright 2015 The go-ethereum Authors
 // This file is part of the go-ethereum library.
 //
 // The go-ethereum library is free software: you can redistribute it and/or modify
@@ -14,30 +14,33 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package core
 
-import (
-	"fmt"
-	"os"
+import "math/big"
 
-	"github.com/getamis/istanbul-tools/cmd/utils"
-	"github.com/urfave/cli"
-)
+// GasPool tracks the amount of gas available during
+// execution of the transactions in a block.
+// The zero value is a pool with zero gas available.
+type GasPool big.Int
 
-func main() {
-	app := utils.NewApp()
-	app.Usage = "the istanbul-tools command line interface"
+// AddGas makes gas available for execution.
+func (gp *GasPool) AddGas(amount *big.Int) *GasPool {
+	i := (*big.Int)(gp)
+	i.Add(i, amount)
+	return gp
+}
 
-	app.HideVersion = true // we have a command to print the version
-	app.Copyright = "Copyright 2017 The Amis Authors"
-
-	app.Commands = []cli.Command{
-		decodeCommand,
-		encodeCommand,
+// SubGas deducts the given amount from the pool if enough gas is
+// available and returns an error otherwise.
+func (gp *GasPool) SubGas(amount *big.Int) error {
+	i := (*big.Int)(gp)
+	if i.Cmp(amount) < 0 {
+		return ErrGasLimitReached
 	}
+	i.Sub(i, amount)
+	return nil
+}
 
-	if err := app.Run(os.Args); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
+func (gp *GasPool) String() string {
+	return (*big.Int)(gp).String()
 }

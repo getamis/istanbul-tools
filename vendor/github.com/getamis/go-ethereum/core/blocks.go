@@ -1,4 +1,4 @@
-// Copyright 2017 AMIS Technologies
+// Copyright 2015 The go-ethereum Authors
 // This file is part of the go-ethereum library.
 //
 // The go-ethereum library is free software: you can redistribute it and/or modify
@@ -14,30 +14,12 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package core
 
-import (
-	"fmt"
-	"os"
+import "github.com/ethereum/go-ethereum/common"
 
-	"github.com/getamis/istanbul-tools/cmd/utils"
-	"github.com/urfave/cli"
-)
-
-func main() {
-	app := utils.NewApp()
-	app.Usage = "the istanbul-tools command line interface"
-
-	app.HideVersion = true // we have a command to print the version
-	app.Copyright = "Copyright 2017 The Amis Authors"
-
-	app.Commands = []cli.Command{
-		decodeCommand,
-		encodeCommand,
-	}
-
-	if err := app.Run(os.Args); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
+// BadHashes represent a set of manually tracked bad hashes (usually hard forks)
+var BadHashes = map[common.Hash]bool{
+	common.HexToHash("05bef30ef572270f654746da22639a7a0c97dd97a7050b9e252391996aaeb689"): true,
+	common.HexToHash("7d05d08cbc596a2e5e4f13b80a743e53e09221b5323c3a61946b20873e58583f"): true,
 }

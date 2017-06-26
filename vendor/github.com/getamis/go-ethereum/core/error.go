@@ -1,4 +1,4 @@
-// Copyright 2017 AMIS Technologies
+// Copyright 2014 The go-ethereum Authors
 // This file is part of the go-ethereum library.
 //
 // The go-ethereum library is free software: you can redistribute it and/or modify
@@ -14,30 +14,18 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package core
 
-import (
-	"fmt"
-	"os"
+import "errors"
 
-	"github.com/getamis/istanbul-tools/cmd/utils"
-	"github.com/urfave/cli"
+var (
+	// ErrKnownBlock is returned when a block to import is already known locally.
+	ErrKnownBlock = errors.New("block already known")
+
+	// ErrGasLimitReached is returned by the gas pool if the amount of gas required
+	// by a transaction is higher than what's left in the block.
+	ErrGasLimitReached = errors.New("gas limit reached")
+
+	// ErrBlacklistedHash is returned if a block to import is on the blacklist.
+	ErrBlacklistedHash = errors.New("blacklisted hash")
 )
-
-func main() {
-	app := utils.NewApp()
-	app.Usage = "the istanbul-tools command line interface"
-
-	app.HideVersion = true // we have a command to print the version
-	app.Copyright = "Copyright 2017 The Amis Authors"
-
-	app.Commands = []cli.Command{
-		decodeCommand,
-		encodeCommand,
-	}
-
-	if err := app.Run(os.Args); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
-}

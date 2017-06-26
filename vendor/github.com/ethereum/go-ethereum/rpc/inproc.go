@@ -1,4 +1,4 @@
-// Copyright 2017 AMIS Technologies
+// Copyright 2016 The go-ethereum Authors
 // This file is part of the go-ethereum library.
 //
 // The go-ethereum library is free software: you can redistribute it and/or modify
@@ -14,30 +14,20 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package rpc
 
 import (
-	"fmt"
-	"os"
-
-	"github.com/getamis/istanbul-tools/cmd/utils"
-	"github.com/urfave/cli"
+	"context"
+	"net"
 )
 
-func main() {
-	app := utils.NewApp()
-	app.Usage = "the istanbul-tools command line interface"
-
-	app.HideVersion = true // we have a command to print the version
-	app.Copyright = "Copyright 2017 The Amis Authors"
-
-	app.Commands = []cli.Command{
-		decodeCommand,
-		encodeCommand,
-	}
-
-	if err := app.Run(os.Args); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
+// NewInProcClient attaches an in-process connection to the given RPC server.
+func DialInProc(handler *Server) *Client {
+	initctx := context.Background()
+	c, _ := newClient(initctx, func(context.Context) (net.Conn, error) {
+		p1, p2 := net.Pipe()
+		go handler.ServeCodec(NewJSONCodec(p1), OptionMethodInvocation|OptionSubscriptions)
+		return p2, nil
+	})
+	return c
 }
