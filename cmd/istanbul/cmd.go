@@ -125,6 +125,9 @@ func decodeExtraData(extraData string) error {
 	if err != nil {
 		return err
 	}
+
+	fmt.Println("vanity: ", "0x"+common.Bytes2Hex(extra[:atypes.IstanbulExtraVanity]))
+
 	for _, v := range istanbulExtra.Validators {
 		fmt.Println("validator: ", v.Hex())
 	}
