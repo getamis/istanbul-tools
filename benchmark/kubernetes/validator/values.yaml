@@ -1,0 +1,84 @@
+# Default values for validator.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# service.yaml
+service:
+  type: ClusterIP
+  externalPeerPort: 30303
+  externalRPCPort: 8545
+  externalWSPort: 8546
+
+# statefulset.yaml
+replicaCount: 1
+image:
+  repository: quay.io/maicoin/ottoman_geth
+  tag: les
+  pullPolicy: Always
+
+ethereum:
+  identity: ""
+  port: 30303
+  useTestNet: false
+  useDeveloperMode: false
+  networkID: 12345 # 0=Olympic (disused), 1=Frontier, 2=Morden (disused), 3=Ropsten) (default: 1)
+  cache: 512
+  ipc:
+    enabled: true
+    path: ""
+  rpc:
+    enabled: true
+    addr: 0.0.0.0
+    port: 8545
+    api: "eth,net,web3,personal"
+    corsdomain: "*"
+  ws:
+    enabled: false
+    addr: 0.0.0.0
+    port: 8546
+    api: "eth,net,web3,personal"
+    origins: "*"
+  mining:
+    enabled: true
+    threads: 1
+    etherbase: "1a9afb711302c5f83b5902843d1c007a1a137632"
+  staticNodes:
+    config: static-nodes
+    mountPath: "/staticNodes"
+  ethstats:
+    enabled: true
+    addr: ws://eth-netstats
+    port: 3000
+    secret: bb98a0b6442386d0cdf8a31b267892c1
+  nodekey:
+    hex: aaaaaaaaaaaaaa5302ccdd5b6ffa092e148ba497e352c2824f366ec399072068
+    mountPath: "/nodekey"
+    fileName: nodekey
+  account:
+    address: "1a9afb711302c5f83b5902843d1c007a1a137632"
+    data: '{"address":"1a9afb711302c5f83b5902843d1c007a1a137632","Crypto":{"cipher":"aes-128-ctr","ciphertext":"132b50d7c8944a115824de7c00911c40a90f84f27c614b7a3ef05ee8fd414312","cipherparams":{"iv":"0f745599d1b3303988ce210fb82b8c7f"},"kdf":"scrypt","kdfparams":{"dklen":32,"n":262144,"p":1,"r":8,"salt":"bce940bac232b4a9c5a2d50e5be51fde5cecfa7da9d49d8f650f91167bebf0de"},"mac":"36d515070b797aec58a574a3e04ea109498ee7674b15d7f952322cda7dcb68e3"},"id":"5d212b4c-3dd0-4c52-a32f-e42bf1b41133","version":3}'
+    mountPath: "/keystore"
+
+volumes:
+  chaindir:
+    name: chaindir
+    size: 1000Gi
+    mountPath: "/data"
+    storageClass: ""
+  
+genesis:
+  config: genesis-block
+  mountPath: "/genesis"
+  fileName: "genesis.json"
+
+# Geth parameters for benchmark
+benchmark:
+  gasprice: "0"
+  targetgaslimit: "31500000"
+  txpool:
+    globalslots: "10240"
+    accountslots: "10240"
+    globalqueue: "2048"
+    accountqueue: "2048"
+  prometheus:
+    url: http://52.163.252.208:9091

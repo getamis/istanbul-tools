@@ -1,0 +1,15 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: "{{ .Release.Name }}"
+  labels:
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"
+    environment: {{ template "environment" . }}
+data:
+{{- if .Values.fileName }}
+  static-nodes.json: |-
+  {{ range .Files.Lines .Values.fileName }}
+    {{ . }}{{ end }}
+  {{- end }}
