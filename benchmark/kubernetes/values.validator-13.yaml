@@ -1,0 +1,7 @@
+nameOverride: "13"
+service:
+  name: validator-13
+  staticIP: "10.0.1.15"
+ethereum:
+  nodekey:
+    hex: 46b95787b86a41d61ec8d4491f762a7949cbdf3eaf75052660eb4684d1572e8a

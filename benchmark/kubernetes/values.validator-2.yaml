@@ -1,0 +1,7 @@
+nameOverride: "2"
+service:
+  name: validator-2
+  staticIP: "10.0.1.4"
+ethereum:
+  nodekey:
+    hex: 31f07e972131b6449296d519a99b0b6a4b58426f3a56093174601475efd5c944

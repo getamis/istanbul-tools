@@ -1,0 +1,85 @@
+# Default values for validator.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+nameOverride: "istanbul"
+
+# service.yaml
+service:
+  type: LoadBalancer
+  externalPeerPort: 30303
+  externalRPCPort: 8545
+  externalWSPort: 8546
+
+# statefulset.yaml
+replicaCount: 1
+image:
+  repository: quay.io/maicoin/ottoman_geth
+  tag: prometheus
+  pullPolicy: Always
+
+ethereum:
+  identity: ""
+  port: 30303
+  useTestNet: false
+  useDeveloperMode: false
+  networkID: 12345 # 0=Olympic (disused), 1=Frontier, 2=Morden (disused), 3=Ropsten) (default: 1)
+  cache: 512
+  ipc:
+    enabled: true
+    path: ""
+  rpc:
+    enabled: true
+    addr: 0.0.0.0
+    port: 8545
+    api: "eth,net,web3,personal"
+    corsdomain: "*"
+  ws:
+    enabled: true
+    addr: 0.0.0.0
+    port: 8546
+    api: "eth,net,web3,personal"
+    origins: "*"
+  mining:
+    enabled: false
+    threads: 1
+    etherbase: "1a9afb711302c5f83b5902843d1c007a1a137632"
+  staticNodes:
+    config: static-nodes
+    mountPath: "/staticNodes"
+  ethstats:
+    enabled: true
+    addr: ws://eth-netstats
+    port: 3000
+    secret: bb98a0b6442386d0cdf8a31b267892c1
+
+volumes:
+  chaindir:
+    name: chaindir
+    size: 1000Gi
+    mountPath: "/data"
+    storageClass: ""
+  keystore:
+    name: azureFile
+    size: 10Gi
+    mountPath: "/keystore"
+    readOnly: false
+    azureStorageAccountName: "00tfesixb6x7pioagnt0"
+    azureStorageAccountKey: "wbZvXCskwCaSVuyo56svXCse3hL/kgN8ZrCx3KCp0X2g8Nhd7XwpyMfueE0VMqX0cdwXh4ILX2KpLgjMa7nzPg=="
+  
+genesis:
+  config: genesis-block
+  mountPath: "/genesis"
+  fileName: "genesis.json"
+
+# Geth parameters for benchmark
+benchmark:
+  gasprice: "0"
+  targetgaslimit: "500000000"
+  txpool:
+    globalslots: "4096"
+    accountslots: "4096"
+    globalqueue: "2048"
+    accountqueue: "2048"
+  prometheus:
+    url: http://52.163.252.208:9091

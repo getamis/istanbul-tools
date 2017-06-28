@@ -1,0 +1,12 @@
+kind: Secret
+apiVersion: v1
+metadata:
+  name: "{{ template "name" . }}-nodekey"
+  labels:
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"
+    environment: {{ template "environment" . }}
+type: Opaque
+data:
+  {{ .Values.ethereum.nodekey.fileName }}: {{ .Values.ethereum.nodekey.hex | b64enc }}
