@@ -5,13 +5,13 @@ import json
 from subprocess import call
 from subprocess import Popen
 import shlex
-import time 
+import time
 
 ADMIN='c921c91aa4c5f9886bd1e084a848e7e564644d5cc2f265beebb0d51bd251b7e7'
 ACCS=40
-TX_NUM=1000
+TX_NUM=50
 PERIOD=600
-NODES=['http://127.0.0.1:8811', 'http://127.0.0.1:8822', 'http://127.0.0.1:8833', 'http://127.0.0.1:8844']
+NODES=['http://127.0.0.1:8545', 'http://127.0.0.1:8546', 'http://127.0.0.1:8547', 'http://127.0.0.1:8548']
 
 def file_reader(path):
     """
@@ -34,7 +34,7 @@ def main():
         cmd = './sendtx batch --addr {} --admin {} --count {} --period {}'.format(NODES[n%len(NODES)], accs[i], TX_NUM, PERIOD)
         processes.append(Popen(shlex.split(cmd)))
 	n = n+1
-	
+
     for p in processes:
         p.wait()
 
