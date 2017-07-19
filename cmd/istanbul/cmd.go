@@ -47,9 +47,11 @@ This command decodes extraData to vanity and validators.
 		Action:    encode,
 		Name:      "encode",
 		Usage:     "To encode an Istanbul extraData",
-		ArgsUsage: "<config file>",
+		ArgsUsage: "<config file> or \"0xValidator1,0xValidator2...\"",
 		Flags: []cli.Flag{
 			ConfigFlag,
+			ValidatorsFlag,
+			VanityFlag,
 		},
 		Description: `
 This command encodes vanity and validators to extraData. Please refer to example/config.toml.
@@ -59,10 +61,36 @@ This command encodes vanity and validators to extraData. Please refer to example
 
 func encode(ctx *cli.Context) error {
 	path := ctx.String(ConfigFlag.Name)
-	if len(path) == 0 {
-		return cli.NewExitError("Must supply config file", 0)
+	validators := ctx.String(ValidatorsFlag.Name)
+	if len(path) == 0 && len(validators) == 0 {
+		return cli.NewExitError("Must supply config file or enter validators", 0)
 	}
 
+	if len(path) != 0 {
+		if err := fromConfig(path); err != nil {
+			return cli.NewExitError("Failed to encode from config data", 0)
+		}
+	}
+
+	if len(validators) != 0 {
+		if err := fromRawData(ctx.String(VanityFlag.Name), validators); err != nil {
+			return cli.NewExitError("Failed to encode from flags", 0)
+		}
+	}
+	return nil
+}
+
+func fromRawData(vanity string, validators string) error {
+	vs := splitAndTrim(validators)
+
+	addrs := make([]common.Address, len(vs))
+	for i, v := range vs {
+		addrs[i] = common.HexToAddress(v)
+	}
+	return encodeExtraData(vanity, addrs)
+}
+
+func fromConfig(path string) error {
 	file, err := os.Open(path)
 	if err != nil {
 		return cli.NewExitError(fmt.Sprintf("Failed to read config file: %v", err), 1)
