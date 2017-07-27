@@ -13,6 +13,7 @@ spec:
   template:
     metadata:
       labels:
+        role: validator
         app: {{ template "fullname" . }}
         chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
         release: "{{ .Release.Name }}"
@@ -176,13 +177,8 @@ spec:
           - --debug
           - --maxpeers
           - "100"
-          - --maxpendpeers
-          - "30"
-          - --lightserv
-          - "10"
-          - --v5disc
-          # - --lightpeers
-          # - "50"
+          - --verbosity
+          - "4"
         ports:
         - containerPort: {{ .Values.ethereum.port }}
           name: peer
@@ -204,31 +200,31 @@ spec:
             command:
             - "geth"
             - "--exec"
-            - "eth.blockNumber"
+            - "web3.version.api"
             - "attach"
             {{- if .Values.ethereum.ipc.path }}
             - {{ .Values.ethereum.ipc.path | quote }}
             {{- else }}
             - "{{ .Values.volumes.chaindir.mountPath }}/geth.ipc"
             {{- end }}
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          timeoutSeconds: 5
+          initialDelaySeconds: 60
+          periodSeconds: 20
+          timeoutSeconds: 10
         readinessProbe:
           exec:
             command:
             - "geth"
             - "--exec"
-            - "eth.blockNumber"
+            - "web3.version.api"
             - "attach"
             {{- if .Values.ethereum.ipc.path }}
             - {{ .Values.ethereum.ipc.path | quote }}
             {{- else }}
             - "{{ .Values.volumes.chaindir.mountPath }}/geth.ipc"
             {{- end }}
-          initialDelaySeconds: 30
-          periodSeconds: 30
-          timeoutSeconds: 5
+          initialDelaySeconds: 60
+          periodSeconds: 20
+          timeoutSeconds: 10
         volumeMounts:
         - name: data
           mountPath: "{{ .Values.volumes.chaindir.mountPath }}"

@@ -13,7 +13,7 @@ service:
 replicaCount: 1
 image:
   repository: quay.io/maicoin/ottoman_geth
-  tag: les
+  tag: latest
   pullPolicy: Always
 
 ethereum:
@@ -73,12 +73,12 @@ genesis:
 
 # Geth parameters for benchmark
 benchmark:
-  gasprice: "0"
-  targetgaslimit: "31500000"
+  gasprice: "1"
+  targetgaslimit: "42000000"
   txpool:
     globalslots: "10240"
     accountslots: "10240"
     globalqueue: "2048"
     accountqueue: "2048"
   prometheus:
-    url: http://52.163.252.208:9091
+    url: #http://52.187.23.178:9091
