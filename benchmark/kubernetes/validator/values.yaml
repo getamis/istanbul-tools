@@ -13,7 +13,7 @@ service:
 replicaCount: 1
 image:
   repository: quay.io/maicoin/ottoman_geth
-  tag: latest
+  tag: faulty_test
   pullPolicy: Always
 
 ethereum:
@@ -65,7 +65,7 @@ volumes:
     size: 1000Gi
     mountPath: "/data"
     storageClass: ""
-  
+
 genesis:
   config: genesis-block
   mountPath: "/genesis"
