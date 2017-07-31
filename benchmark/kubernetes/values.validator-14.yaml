@@ -5,4 +5,4 @@ service:
 ethereum:
   nodekey:
     hex: 132d05afb9c7fd8e1b1392ad35d883164e422784950e0afd2db7eee56893880d
-
+  faultymode: 0
