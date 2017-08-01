@@ -17,6 +17,8 @@
 package main
 
 import (
+	"strings"
+
 	"github.com/urfave/cli"
 )
 
@@ -30,4 +32,23 @@ var (
 		Name:  "extradata",
 		Usage: "Hex string for RLP encoded Istanbul extraData",
 	}
+
+	ValidatorsFlag = cli.StringFlag{
+		Name:  "validators",
+		Usage: "Validators for RLP encoded Istanbul extraData",
+	}
+
+	VanityFlag = cli.StringFlag{
+		Name:  "vanity",
+		Usage: "Vanity for RLP encoded Istanbul extraData",
+		Value: "0x00",
+	}
 )
+
+func splitAndTrim(input string) []string {
+	result := strings.Split(input, ",")
+	for i, r := range result {
+		result[i] = strings.TrimSpace(r)
+	}
+	return result
+}
