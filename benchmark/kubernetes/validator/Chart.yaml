@@ -1,0 +1,10 @@
+name: validator
+home: https://github.com/maichain/mchain_service
+apiVersion: v1
+description: A reference Helm chart for Ethereum validator
+maintainers:
+  - name: Alan Chen
+    email: alan@am.is
+version: 0.2.3
+sources:
+  - https://github.com/maichain/mchain_service/kubernetes/amis/generic/validator

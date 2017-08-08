@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "fullname" . }}
+  labels:
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"
+    environment: {{ template "environment" . }}
+spec:
+  type: {{ .Values.service.type }}
+  {{- if .Values.service.staticIP }}
+  clusterIP: {{ .Values.service.staticIP | quote }}
+  {{- end }}
+  ports:
+  - port: {{ .Values.service.externalPeerPort }}
+    targetPort: {{ .Values.ethereum.port }}
+    protocol: TCP
+    name: peer
+  {{- if .Values.ethereum.rpc.enabled }}
+  - port: {{ .Values.service.externalRPCPort }}
+    targetPort: {{ .Values.ethereum.rpc.port }}
+    protocol: TCP
+    name: rpc
+  {{- end }}
+  {{- if .Values.ethereum.ws.enabled }}
+  - port: {{ .Values.service.externalWSPort }}
+    targetPort: {{ .Values.ethereum.ws.port }}
+    protocol: TCP
+    name: ws
+  {{- end }}
+  selector:
+    app: {{ template "fullname" . }}

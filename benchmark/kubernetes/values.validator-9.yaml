@@ -1,0 +1,8 @@
+nameOverride: "9"
+service:
+  name: validator-9
+  staticIP: "10.0.1.11"
+ethereum:
+  nodekey:
+    hex: 44fad729e6c2008387c0e4f027e2d54ce43cf539a097e7428009f59b44cb8bc0
+

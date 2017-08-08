@@ -1,0 +1,244 @@
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: {{ template "fullname" . }}
+  labels:
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"
+    environment: {{ template "environment" . }}
+spec:
+  serviceName: {{ template "fullname" . }}
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "fullname" . }}
+        chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+        release: "{{ .Release.Name }}"
+        heritage: "{{ .Release.Service }}"
+        environment: {{ template "environment" . }}
+      annotations:
+        pod.beta.kubernetes.io/init-containers: '[
+            {
+                "name": "init-genesis",
+                "image": "{{ .Values.image.repository }}:{{ .Values.image.tag }}",
+                "imagePullPolicy": "{{ .Values.image.pullPolicy }}",
+                "command": [
+                    "geth", 
+                    "--datadir", 
+                    "{{ .Values.volumes.chaindir.mountPath }}", 
+                    "init",
+                    "{{ .Values.genesis.mountPath }}/{{ .Values.genesis.fileName }}"
+                ],
+                "volumeMounts": [
+                    {
+                        "name": "data",
+                        "mountPath": "{{ .Values.volumes.chaindir.mountPath }}"
+                    },
+                    {
+                        "name": "genesis",
+                        "mountPath": "{{ .Values.genesis.mountPath }}"
+                    }
+                ]
+            },
+            {
+                "name": "copy-files",
+                "image": "library/busybox",
+                "imagePullPolicy": "IfNotPresent",
+                "command": [
+                    "sh",
+                    "-c",
+                    "cp {{ .Values.ethereum.staticNodes.mountPath }}/static-nodes.json {{ .Values.volumes.chaindir.mountPath }}/"
+                ],
+                "volumeMounts": [
+                    {
+                        "name": "data",
+                        "mountPath": "{{ .Values.volumes.chaindir.mountPath }}"
+                    },
+                    {
+                        "name": "static-nodes",
+                        "mountPath": "{{ .Values.ethereum.staticNodes.mountPath }}"
+                    }
+                ]
+            }
+        ]'
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        command: ["geth"]
+        args:
+          - --datadir
+          - "{{ .Values.volumes.chaindir.mountPath }}"
+          - --keystore
+          - "{{ .Values.volumes.keystore.mountPath }}"
+          - --port
+          - "{{ .Values.ethereum.port }}"
+          - --nat
+          - any
+          - --nodiscover
+          - --identity
+          - "{{ default "$(POD_NAME)" .Values.ethereum.identity }}"
+          {{- if .Values.ethereum.networkID }}
+          - --networkid
+          - "{{ .Values.ethereum.networkID }}"
+          {{- end }}
+          {{- if .Values.ethereum.useTestNet }}
+          - --testnet
+          {{- end }}
+          {{- if .Values.ethereum.useDeveloperMode }}
+          - --dev
+          {{- end }}
+          {{- if .Values.ethereum.cache }}
+          - --cache
+          - "{{ .Values.ethereum.cache }}"
+          {{- end }}
+          {{- if .Values.ethereum.rpc.enabled }}
+          - --rpc
+          - --rpcaddr
+          - "{{ .Values.ethereum.rpc.addr }}"
+          - --rpcport
+          - "{{ .Values.ethereum.rpc.port }}"
+          - --rpcapi
+          - "{{ .Values.ethereum.rpc.api }}"
+          - --rpccorsdomain
+          - "{{ .Values.ethereum.rpc.corsdomain }}"
+          {{- end }}
+          {{- if .Values.ethereum.ws.enabled }}
+          - --ws
+          - --wsaddr
+          - "{{ .Values.ethereum.ws.addr }}"
+          - --wsport
+          - "{{ .Values.ethereum.ws.port }}"
+          - --wsapi
+          - "{{ .Values.ethereum.ws.api }}"
+          - --wsorigins
+          - "{{ .Values.ethereum.ws.origins }}"
+          {{- end }}
+          {{- if .Values.ethereum.mining.etherbase }}
+          - --etherbase
+          - "{{ .Values.ethereum.mining.etherbase }}"
+          {{- end }}
+          {{- if .Values.ethereum.mining.enabled }}
+          - --mine
+          - --minerthreads
+          - "{{ .Values.ethereum.mining.threads }}"
+          {{- end }}
+          {{- if .Values.ethereum.ethstats.enabled }}
+          - --ethstats
+          - "$(POD_NAME):{{ .Values.ethereum.ethstats.secret }}@{{ .Values.ethereum.ethstats.addr }}.{{ template "environment" . }}:{{ .Values.ethereum.ethstats.port }}"
+          {{- end }}
+          {{- if .Values.benchmark.gasprice }}
+          - --gasprice
+          - {{ .Values.benchmark.gasprice | quote }}
+          - --txpool.pricelimit
+          - {{ .Values.benchmark.gasprice | quote }}
+          {{- end }}
+          {{- if .Values.benchmark.targetgaslimit }}
+          - --targetgaslimit
+          - {{ .Values.benchmark.targetgaslimit | quote }}
+          {{- end }}
+          {{- if .Values.benchmark.txpool.globalslots }}
+          - --txpool.globalslots
+          - {{ .Values.benchmark.txpool.globalslots | quote }}
+          {{- end }}
+          {{- if .Values.benchmark.txpool.accountslots }}
+          - --txpool.accountslots
+          - {{ .Values.benchmark.txpool.accountslots | quote }}
+          {{- end }}
+          {{- if .Values.benchmark.txpool.globalqueue }}
+          - --txpool.globalqueue
+          - {{ .Values.benchmark.txpool.globalqueue | quote }}
+          {{- end }}
+          {{- if .Values.benchmark.txpool.accountqueue }}
+          - --txpool.accountqueue
+          - {{ .Values.benchmark.txpool.accountqueue | quote }}
+          {{- end }}
+          - --metrics
+          {{- if .Values.benchmark.prometheus.url }}
+          - --promaddr
+          - {{ .Values.benchmark.prometheus.url }}
+          {{- end }}
+          - --debug
+          - --maxpeers
+          - "100"
+          - --maxpendpeers
+          - "20"
+          - --syncmode
+          - "light"
+          - --v5disc
+        ports:
+        - containerPort: {{ .Values.ethereum.port }}
+          name: peer
+        {{- if .Values.ethereum.rpc.enabled }}
+        - containerPort: {{ .Values.ethereum.rpc.port }}
+          name: rpc
+        {{- end }}
+        {{- if .Values.ethereum.ws.enabled }}
+        - containerPort: {{ .Values.ethereum.ws.port }}
+          name: ws
+        {{- end }}
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        livenessProbe:
+          exec:
+            command:
+            - "geth"
+            - "--exec"
+            - "eth.blockNumber"
+            - "attach"
+            {{- if .Values.ethereum.ipc.path }}
+            - {{ .Values.ethereum.ipc.path | quote }}
+            {{- else }}
+            - "{{ .Values.volumes.chaindir.mountPath }}/geth.ipc"
+            {{- end }}
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+        readinessProbe:
+          exec:
+            command:
+            - "geth"
+            - "--exec"
+            - "eth.blockNumber"
+            - "attach"
+            {{- if .Values.ethereum.ipc.path }}
+            - {{ .Values.ethereum.ipc.path | quote }}
+            {{- else }}
+            - "{{ .Values.volumes.chaindir.mountPath }}/geth.ipc"
+            {{- end }}
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 5
+        volumeMounts:
+        - name: data
+          mountPath: "{{ .Values.volumes.chaindir.mountPath }}"
+        - name: keystore
+          mountPath: "{{ .Values.volumes.keystore.mountPath }}"
+      volumes:
+      - name: genesis
+        configMap:
+          name: {{ .Values.genesis.config }}
+      - name: keystore
+        azureFile:
+          secretName: "{{ template "fullname" . }}-secret"
+          shareName: "keystore"
+          readOnly: {{ .Values.volumes.keystore.readOnly }}
+      - name: static-nodes
+        configMap:
+          name: {{ .Values.ethereum.staticNodes.config }}
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes:
+        - "ReadWriteOnce"
+      resources:
+        requests:
+          storage: {{ .Values.volumes.chaindir.size }}

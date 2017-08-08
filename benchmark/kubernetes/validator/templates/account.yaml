@@ -1,0 +1,12 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: "{{ template "name" . }}-account"
+  labels:
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"
+    environment: {{ template "environment" . }}
+data:
+{{ .Values.ethereum.account.address | indent 2 }}: |-
+{{ .Values.ethereum.account.data | indent 4 }}
