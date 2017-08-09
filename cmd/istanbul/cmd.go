@@ -23,8 +23,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rlp"
-	atypes "github.com/getamis/go-ethereum/core/types"
 	"github.com/naoina/toml"
 	"github.com/urfave/cli"
 )
@@ -123,14 +123,14 @@ func encodeExtraData(vanity string, validators []common.Address) error {
 		return err
 	}
 
-	if len(newVanity) < atypes.IstanbulExtraVanity {
-		newVanity = append(newVanity, bytes.Repeat([]byte{0x00}, atypes.IstanbulExtraVanity-len(newVanity))...)
+	if len(newVanity) < types.IstanbulExtraVanity {
+		newVanity = append(newVanity, bytes.Repeat([]byte{0x00}, types.IstanbulExtraVanity-len(newVanity))...)
 	}
-	newVanity = newVanity[:atypes.IstanbulExtraVanity]
+	newVanity = newVanity[:types.IstanbulExtraVanity]
 
-	ist := &atypes.IstanbulExtra{
+	ist := &types.IstanbulExtra{
 		Validators:    validators,
-		Seal:          make([]byte, atypes.IstanbulExtraSeal),
+		Seal:          make([]byte, types.IstanbulExtraSeal),
 		CommittedSeal: [][]byte{},
 	}
 
@@ -149,12 +149,12 @@ func decodeExtraData(extraData string) error {
 		return err
 	}
 
-	istanbulExtra, err := atypes.ExtractIstanbulExtra(&atypes.Header{Extra: extra})
+	istanbulExtra, err := types.ExtractIstanbulExtra(&types.Header{Extra: extra})
 	if err != nil {
 		return err
 	}
 
-	fmt.Println("vanity: ", "0x"+common.Bytes2Hex(extra[:atypes.IstanbulExtraVanity]))
+	fmt.Println("vanity: ", "0x"+common.Bytes2Hex(extra[:types.IstanbulExtraVanity]))
 
 	for _, v := range istanbulExtra.Validators {
 		fmt.Println("validator: ", v.Hex())
