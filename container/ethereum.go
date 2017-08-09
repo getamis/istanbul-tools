@@ -25,37 +25,48 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
-	"github.com/moby/moby/client"
+	"github.com/docker/docker/client"
 )
 
-func NewEthereum(imageName string, id string) *ethereum {
+func NewEthereum(options ...Option) *ethereum {
 	client, err := client.NewEnvClient()
 	if err != nil {
 		log.Fatalf("Cannot connect to Docker daemon, err: %v", err)
 	}
-	return &ethereum{
-		id:        id,
-		imageName: imageName,
-		client:    client,
+
+	geth := &ethereum{
+		client: client,
 	}
+
+	for _, opt := range options {
+		opt(geth)
+	}
+
+	return geth
 }
 
 type ethereum struct {
-	id          string
+	flags       []string
+	hostName    string
 	containerID string
 	imageName   string
 	client      *client.Client
 }
 
 func (eth *ethereum) Start(showLog bool) error {
-	_, err := eth.client.ImagePull(context.Background(), eth.imageName, types.ImagePullOptions{})
+	out, err := eth.client.ImagePull(context.Background(), eth.imageName, types.ImagePullOptions{})
 	if err != nil {
 		log.Printf("Cannot pull %s, err: %v", eth.imageName, err)
 		return err
 	}
+	if showLog {
+		io.Copy(os.Stdout, out)
+	} else {
+		_ = out
+	}
 
 	resp, err := eth.client.ContainerCreate(context.Background(), &container.Config{
-		Hostname:     "geth-" + eth.id,
+		Hostname:     "geth-" + eth.hostName,
 		Image:        eth.imageName,
 		AttachStdout: true,
 	}, nil, nil, "")

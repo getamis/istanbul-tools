@@ -19,9 +19,11 @@ package container
 import "testing"
 
 func TestEthereumContainer(t *testing.T) {
-	geth := NewEthereum("quay.io/maicoin/ottoman_geth:istanbul_develop", "001")
+	geth := NewEthereum(
+		ImageName("quay.io/maicoin/ottoman_geth:istanbul_develop"),
+	)
 
-	err := geth.Start(true)
+	err := geth.Start(false)
 	if err != nil {
 		t.Error(err)
 	}
