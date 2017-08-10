@@ -1,0 +1,260 @@
+hash: eb90dd3f38fb4dead998c624f39c7897e252105342c15e909f32835eb99d65fc
+updated: 2017-08-09T16:37:30.171348623+08:00
+imports:
+- name: github.com/aristanetworks/goarista
+  version: 8e44bec0a94d7c1f0cdf28ed5215e5cfab441ad0
+  subpackages:
+  - monotime
+- name: github.com/btcsuite/btcd
+  version: 47885ab8702485be6b6f87a03d4f3be0bc5c982c
+  subpackages:
+  - btcec
+- name: github.com/docker/distribution
+  version: 7a8efe719e55bbfaff7bc5718cdf0ed51ca821df
+  subpackages:
+  - digestset
+  - reference
+- name: github.com/docker/docker
+  version: c7911389e646104180063f069280a8b6cbc47211
+  subpackages:
+  - api
+  - api/types
+  - api/types/blkiodev
+  - api/types/container
+  - api/types/events
+  - api/types/filters
+  - api/types/image
+  - api/types/mount
+  - api/types/network
+  - api/types/registry
+  - api/types/strslice
+  - api/types/swarm
+  - api/types/swarm/runtime
+  - api/types/time
+  - api/types/versions
+  - api/types/volume
+  - client
+  - pkg/ioutils
+  - pkg/longpath
+  - pkg/mount
+  - pkg/system
+  - pkg/tlsconfig
+- name: github.com/docker/go-connections
+  version: 3ede32e2033de7505e6500d6c868c2b9ed9f169d
+  subpackages:
+  - nat
+  - sockets
+  - tlsconfig
+- name: github.com/docker/go-units
+  version: 0dadbb0345b35ec7ef35e228dabb8de89a65bf52
+- name: github.com/docker/libtrust
+  version: aabc10ec26b754e797f9028f4589c5b7bd90dc20
+- name: github.com/edsrzf/mmap-go
+  version: 0bce6a6887123b67a60366d2c9fe2dfb74289d2e
+- name: github.com/ethereum/go-ethereum
+  version: 35d36a28822151f1db3722f87647b316f50e11a3
+  repo: git@github.com:getamis/go-ethereum
+  vcs: git
+  subpackages:
+  - accounts
+  - accounts/keystore
+  - accounts/usbwallet
+  - cmd/utils
+  - common
+  - common/bitutil
+  - common/hexutil
+  - common/math
+  - common/mclock
+  - consensus
+  - consensus/clique
+  - consensus/ethash
+  - consensus/istanbul
+  - consensus/istanbul/backend
+  - consensus/istanbul/core
+  - consensus/istanbul/validator
+  - consensus/misc
+  - core
+  - core/state
+  - core/types
+  - core/vm
+  - crypto
+  - crypto/ecies
+  - crypto/randentropy
+  - crypto/secp256k1
+  - crypto/sha3
+  - eth
+  - eth/downloader
+  - eth/fetcher
+  - eth/filters
+  - eth/gasprice
+  - ethclient
+  - ethdb
+  - ethstats
+  - event
+  - internal/debug
+  - internal/ethapi
+  - les
+  - les/flowcontrol
+  - light
+  - log
+  - log/term
+  - metrics
+  - miner
+  - node
+  - p2p
+  - p2p/discover
+  - p2p/discv5
+  - p2p/nat
+  - p2p/netutil
+  - params
+  - rlp
+  - rpc
+  - trie
+  - whisper/whisperv5
+- name: github.com/getamis/go-ethereum
+  version: 0f066fb0e5977635e543b2c8d008405c5abb734b
+  subpackages:
+  - cmd/utils
+- name: github.com/go-stack/stack
+  version: 817915b46b97fd7bb80e8ab6b69f01a53ac3eebf
+- name: github.com/gogo/protobuf
+  version: 1c2b16bc280d6635de6c52fc1471ab962dc36ec9
+  subpackages:
+  - proto
+- name: github.com/golang/snappy
+  version: 553a641470496b2327abcac10b36396bd98e45c9
+- name: github.com/hashicorp/golang-lru
+  version: 0a025b7e63adc15a622f29b0b2c4c3848243bbf6
+  subpackages:
+  - simplelru
+- name: github.com/huin/goupnp
+  version: 9b81a7424f2384e4df098d4ac9096f9ed9d8ef95
+  subpackages:
+  - dcps/internetgateway1
+  - dcps/internetgateway2
+  - httpu
+  - scpd
+  - soap
+  - ssdp
+- name: github.com/jackpal/go-nat-pmp
+  version: 28a68d0c24adce1da43f8df6a57340909ecd7fdd
+- name: github.com/karalabe/hid
+  version: 875879887cf0560a993b57e04615944e1dd02a73
+- name: github.com/mattn/go-colorable
+  version: 6c0fd4aa6ec5818d5e3ea9e03ae436972a6c5a9a
+- name: github.com/mattn/go-isatty
+  version: fc9e8d8ef48496124e79ae0df75490096eccf6fe
+- name: github.com/Microsoft/go-winio
+  version: 78439966b38d69bf38227fbf57ac8a6fee70f69a
+- name: github.com/naoina/go-stringutil
+  version: 6b638e95a32d0c1131db0e7fe83775cbea4a0d0b
+- name: github.com/naoina/toml
+  version: e6f5723bf2a66af014955e0888881314cf294129
+  subpackages:
+  - ast
+- name: github.com/opencontainers/go-digest
+  version: 279bed98673dd5bef374d3b6e4b09e2af76183bf
+- name: github.com/opencontainers/image-spec
+  version: 710038243d857231f17df1c3f4c10850154bd1f7
+  subpackages:
+  - specs-go
+  - specs-go/v1
+- name: github.com/pborman/uuid
+  version: e790cca94e6cc75c7064b1332e63811d4aae1a53
+- name: github.com/pkg/errors
+  version: c605e284fe17294bda444b34710735b29d1a9d90
+- name: github.com/rcrowley/go-metrics
+  version: 1f30fe9094a513ce4c700b9a54458bbb0c96996c
+  subpackages:
+  - exp
+- name: github.com/rjeczalik/notify
+  version: 88a54d914928e1faebb1c2195605dc87bd98dc27
+- name: github.com/robertkrimen/otto
+  version: fc2eb1bbf1c5c462313c810bb02dc93cd964aebe
+  subpackages:
+  - ast
+  - dbg
+  - file
+  - parser
+  - registry
+  - token
+- name: github.com/rs/cors
+  version: eabcc6af4bbe5ad3a949d36450326a2b0b9894b8
+- name: github.com/sirupsen/logrus
+  version: 181d419aa9e2223811b824e8f0b4af96f9ba9302
+- name: github.com/syndtr/goleveldb
+  version: b89cc31ef7977104127d34c1bd31ebd1a9db2199
+  subpackages:
+  - leveldb
+  - leveldb/cache
+  - leveldb/comparer
+  - leveldb/errors
+  - leveldb/filter
+  - leveldb/iterator
+  - leveldb/journal
+  - leveldb/memdb
+  - leveldb/opt
+  - leveldb/storage
+  - leveldb/table
+  - leveldb/util
+- name: github.com/urfave/cli
+  version: b99aa811b4c1dd84cc6bccb8499c82c72098085a
+- name: golang.org/x/crypto
+  version: b176d7def5d71bdd214203491f89843ed217f420
+  subpackages:
+  - pbkdf2
+  - ripemd160
+  - scrypt
+  - ssh/terminal
+- name: golang.org/x/net
+  version: 1c05540f6879653db88113bc4a2b70aec4bd491f
+  subpackages:
+  - context
+  - context/ctxhttp
+  - html
+  - html/atom
+  - html/charset
+  - proxy
+  - websocket
+- name: golang.org/x/sync
+  version: f52d1811a62927559de87708c8913c1650ce4f26
+  subpackages:
+  - syncmap
+- name: golang.org/x/sys
+  version: b0e0dd72976dc482b6cb37c5640440f876ac1907
+  subpackages:
+  - unix
+  - windows
+- name: golang.org/x/text
+  version: 3bd178b88a8180be2df394a1fbb81313916f0e7b
+  subpackages:
+  - encoding
+  - encoding/charmap
+  - encoding/htmlindex
+  - encoding/internal
+  - encoding/internal/identifier
+  - encoding/japanese
+  - encoding/korean
+  - encoding/simplifiedchinese
+  - encoding/traditionalchinese
+  - encoding/unicode
+  - internal/tag
+  - internal/utf8internal
+  - language
+  - runes
+  - transform
+- name: gopkg.in/fatih/set.v0
+  version: 27c40922c40b43fe04554d8223a402af3ea333f3
+- name: gopkg.in/karalabe/cookiejar.v2
+  version: 8dcd6a7f4951f6ff3ee9cbb919a06d8925822e57
+  subpackages:
+  - collections/prque
+- name: gopkg.in/natefinch/npipe.v2
+  version: c1b8fa8bdccecb0b8db834ee0b92fdbcfa606dd6
+- name: gopkg.in/sourcemap.v1
+  version: 6e83acea0053641eff084973fee085f0c193c61a
+  subpackages:
+  - base64vlq
+- name: gopkg.in/urfave/cli.v1
+  version: 0bdeddeeb0f650497d603c4ad7b20cfe685682f6
+testImports: []

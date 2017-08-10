@@ -1,0 +1,22 @@
+package: github.com/getamis/istanbul-tools
+import:
+- package: github.com/ethereum/go-ethereum
+  version: istanbul/develop
+  repo:    git@github.com:getamis/go-ethereum
+  vcs:     git
+  subpackages:
+  - cmd/utils
+  - common
+  - common/hexutil
+  - core/types
+  - crypto
+  - ethclient
+  - rlp
+- package: github.com/docker/docker
+  subpackages:
+  - api/types
+  - api/types/container
+  - client
+- package: github.com/naoina/toml
+- package: github.com/urfave/cli
+- package: github.com/opencontainers/go-digest
