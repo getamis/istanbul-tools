@@ -41,7 +41,7 @@ const (
 
 	clientIdentifier = "geth"
 	staticNodeJson   = "static-nodes.json"
-	genesisJson      = "genesis.json"
+	GenesisJson      = "genesis.json"
 )
 
 var (
@@ -66,6 +66,12 @@ type Env struct {
 	RpcPort  uint16
 	DataDir  string
 	Key      *ecdsa.PrivateKey
+}
+
+func Teardown(envs []*Env) {
+	for _, env := range envs {
+		os.RemoveAll(env.DataDir)
+	}
 }
 
 func SetupEnv(prvKeys []*ecdsa.PrivateKey) []*Env {

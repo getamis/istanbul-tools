@@ -1,5 +1,5 @@
-hash: 89546c4f43145476a4e79907fdddddd9e982ddb8e035db13051ef08d03f07dcf
-updated: 2017-08-11T13:30:18.848541104+08:00
+hash: 28202d900c347323812a1eba9604b5bce2f0fba41e1ccc67bf560a00dea77292
+updated: 2017-08-11T14:11:13.71198807+08:00
 imports:
 - name: github.com/aristanetworks/goarista
   version: 8e44bec0a94d7c1f0cdf28ed5215e5cfab441ad0
@@ -153,6 +153,12 @@ imports:
   version: e6f5723bf2a66af014955e0888881314cf294129
   subpackages:
   - ast
+- name: github.com/onsi/ginkgo
+  version: 9eda700730cba42af70d53180f9dcce9266bc2bc
+  subpackages:
+  - ginkgo
+- name: github.com/onsi/gomega
+  version: c893efa28eb45626cdaa76c9f653b62488858837
 - name: github.com/opencontainers/go-digest
   version: 279bed98673dd5bef374d3b6e4b09e2af76183bf
 - name: github.com/opencontainers/image-spec
