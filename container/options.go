@@ -17,6 +17,8 @@
 package container
 
 import (
+	"fmt"
+
 	"github.com/getamis/go-ethereum/cmd/utils"
 )
 
@@ -129,6 +131,7 @@ func Port(port string) Option {
 	return func(eth *ethereum) {
 		eth.flags = append(eth.flags, "--"+utils.ListenPortFlag.Name)
 		eth.flags = append(eth.flags, port)
+		eth.port = port
 	}
 }
 
@@ -156,5 +159,13 @@ func RPCPort(port string) Option {
 	return func(eth *ethereum) {
 		eth.flags = append(eth.flags, "--"+utils.RPCPortFlag.Name)
 		eth.flags = append(eth.flags, port)
+		eth.rpcPort = port
+	}
+}
+
+func Verbosity(verbosity int) Option {
+	return func(eth *ethereum) {
+		eth.flags = append(eth.flags, "--verbosity")
+		eth.flags = append(eth.flags, fmt.Sprintf("%d", verbosity))
 	}
 }

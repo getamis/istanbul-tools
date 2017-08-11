@@ -18,8 +18,10 @@ package container
 
 import (
 	"context"
+	"errors"
 	"io"
 	"log"
+	"math/big"
 	"os"
 	"path/filepath"
 	"time"
@@ -27,9 +29,22 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
+	"github.com/docker/go-connections/nat"
 	"github.com/getamis/go-ethereum/cmd/utils"
+	"github.com/getamis/go-ethereum/ethclient"
 	"github.com/getamis/istanbul-tools/core"
 )
+
+const (
+	healthCheckRetryCount = 5
+	healthCheckRetryDelay = 2 * time.Second
+)
+
+type Ethereum interface {
+	Init(string) error
+	Start() error
+	Stop() error
+}
 
 func NewEthereum(options ...Option) *ethereum {
 	client, err := client.NewEnvClient()
@@ -49,9 +64,12 @@ func NewEthereum(options ...Option) *ethereum {
 }
 
 type ethereum struct {
+	ok          bool
 	flags       []string
 	hostDataDir string
 	dataDir     string
+	port        string
+	rpcPort     string
 	hostName    string
 	containerID string
 	imageName   string
@@ -60,15 +78,25 @@ type ethereum struct {
 }
 
 func (eth *ethereum) Init(genesisFile string) error {
-	out, err := eth.client.ImagePull(context.Background(), eth.imageName, types.ImagePullOptions{})
+	results, err := eth.client.ImageSearch(context.Background(), eth.imageName, types.ImageSearchOptions{
+		Limit: 1,
+	})
 	if err != nil {
-		log.Printf("Cannot pull %s, err: %v", eth.imageName, err)
+		log.Printf("Cannot search %s, err: %v", eth.imageName, err)
 		return err
 	}
-	if eth.logging {
-		io.Copy(os.Stdout, out)
-	} else {
-		_ = out
+
+	if len(results) == 0 {
+		out, err := eth.client.ImagePull(context.Background(), eth.imageName, types.ImagePullOptions{})
+		if err != nil {
+			log.Printf("Cannot pull %s, err: %v", eth.imageName, err)
+			return err
+		}
+		if eth.logging {
+			io.Copy(os.Stdout, out)
+		} else {
+			_ = out
+		}
 	}
 
 	resp, err := eth.client.ContainerCreate(context.Background(),
@@ -108,10 +136,28 @@ func (eth *ethereum) Start() error {
 			Hostname: "geth-" + eth.hostName,
 			Image:    eth.imageName,
 			Cmd:      eth.flags,
+			ExposedPorts: map[nat.Port]struct{}{
+				nat.Port(eth.port):    {},
+				nat.Port(eth.rpcPort): {},
+			},
 		},
 		&container.HostConfig{
 			Binds: []string{
 				eth.hostDataDir + ":" + eth.dataDir,
+			},
+			PortBindings: nat.PortMap{
+				nat.Port(eth.port): []nat.PortBinding{
+					{
+						HostIP:   "0.0.0.0",
+						HostPort: eth.port,
+					},
+				},
+				nat.Port(eth.rpcPort): []nat.PortBinding{
+					{
+						HostIP:   "0.0.0.0",
+						HostPort: eth.rpcPort,
+					},
+				},
 			},
 		}, nil, "")
 	if err != nil {
@@ -126,7 +172,32 @@ func (eth *ethereum) Start() error {
 	}()
 	eth.containerID = resp.ID
 
-	return eth.client.ContainerStart(context.Background(), eth.containerID, types.ContainerStartOptions{})
+	err = eth.client.ContainerStart(context.Background(), eth.containerID, types.ContainerStartOptions{})
+	if err != nil {
+		log.Printf("Failed to start container, err: %v", err)
+		return err
+	}
+
+	for i := 0; i < healthCheckRetryCount; i++ {
+		cli, err := ethclient.Dial("http://localhost:" + eth.rpcPort)
+		if err != nil {
+			time.Sleep(healthCheckRetryDelay)
+			continue
+		}
+		_, err = cli.BlockByNumber(context.Background(), big.NewInt(0))
+		if err != nil {
+			time.Sleep(healthCheckRetryDelay)
+			continue
+		} else {
+			eth.ok = true
+		}
+	}
+
+	if !eth.ok {
+		return errors.New("Failed to start geth")
+	}
+
+	return nil
 }
 
 func (eth *ethereum) Stop() error {
