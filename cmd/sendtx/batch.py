@@ -10,7 +10,7 @@ import random
 
 ADMIN='c921c91aa4c5f9886bd1e084a848e7e564644d5cc2f265beebb0d51bd251b7e7'
 ACCS=100
-TX_NUM=120
+TX_NUM=100
 PERIOD=600
 NODES=['http://127.0.0.1:8811', 'http://127.0.0.1:8822', 'http://127.0.0.1:8833', 'http://127.0.0.1:8844']
 
