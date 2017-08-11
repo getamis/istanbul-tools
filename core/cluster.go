@@ -38,11 +38,14 @@ const (
 
 	defaultLocalDir   = "/tmp/gdata"
 	datadirPrivateKey = "nodekey"
-	defaultIP         = net.IPv4(127, 0, 0, 1)
 
 	clientIdentifier = "geth"
 	staticNodeJson   = "static-nodes.json"
 	genesisJson      = "genesis.json"
+)
+
+var (
+	defaultIP = net.IPv4(127, 0, 0, 1)
 )
 
 func GenerateClusterKeys(numbers int) []*ecdsa.PrivateKey {
