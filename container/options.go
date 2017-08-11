@@ -34,12 +34,25 @@ func HostName(hostName string) Option {
 	}
 }
 
+func HostDataDir(path string) Option {
+	return func(eth *ethereum) {
+		eth.hostDataDir = path
+	}
+}
+
+func Logging(enabled bool) Option {
+	return func(eth *ethereum) {
+		eth.logging = enabled
+	}
+}
+
 // ----------------------------------------------------------------------------
 
 func DataDir(dir string) Option {
 	return func(eth *ethereum) {
 		eth.flags = append(eth.flags, "--"+utils.DataDirFlag.Name)
 		eth.flags = append(eth.flags, dir)
+		eth.dataDir = dir
 	}
 }
 
@@ -54,6 +67,14 @@ func Identity(id string) Option {
 	return func(eth *ethereum) {
 		eth.flags = append(eth.flags, "--"+utils.IdentityFlag.Name)
 		eth.flags = append(eth.flags, id)
+	}
+}
+
+func IPC(enabled bool) Option {
+	return func(eth *ethereum) {
+		if !enabled {
+			eth.flags = append(eth.flags, "--"+utils.IPCDisabledFlag.Name)
+		}
 	}
 }
 

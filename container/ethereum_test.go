@@ -16,24 +16,53 @@
 
 package container
 
-import "testing"
+import (
+	"fmt"
+	"path/filepath"
+	"testing"
+
+	"github.com/getamis/istanbul-tools/core"
+)
 
 func TestEthereumContainer(t *testing.T) {
-	geth := NewEthereum(
-		ImageName("quay.io/maicoin/ottoman_geth:istanbul_develop"),
-	)
-
-	err := geth.Start(false)
+	keys := core.GenerateClusterKeys(1)
+	envs := core.SetupEnv(keys)
+	defer core.Teardown(envs)
+	err := core.SetupNodes(envs)
 	if err != nil {
 		t.Error(err)
 	}
 
-	if !geth.Running() {
-		t.Error("geth should be running")
-	}
+	for _, env := range envs {
+		geth := NewEthereum(
+			ImageName("quay.io/maicoin/ottoman_geth:istanbul_develop"),
+			HostDataDir(env.DataDir),
+			DataDir("/data"),
+			Port(fmt.Sprintf("%d", env.HttpPort)),
+			RPC(),
+			RPCAddress("0.0.0.0"),
+			RPCAPI("eth,net,web3,personal"),
+			RPCPort(fmt.Sprintf("%d", env.RpcPort)),
+			Logging(true),
+		)
 
-	err = geth.Stop()
-	if err != nil {
-		t.Error(err)
+		err := geth.Init(filepath.Join(env.DataDir, core.GenesisJson))
+		if err != nil {
+			t.Error(err)
+		}
+
+		err = geth.Start()
+		if err != nil {
+			t.Error(err)
+		}
+
+		if !geth.Running() {
+			t.Error("geth should be running")
+		}
+
+		err = geth.Stop()
+		if err != nil {
+			t.Error(err)
+		}
 	}
 }

@@ -60,7 +60,7 @@ func GenerateGenesis(addrs []common.Address) *core.Genesis {
 }
 
 func saveGenesis(dataDir string, genesis *core.Genesis) error {
-	filePath := filepath.Join(dataDir, genesisJson)
+	filePath := filepath.Join(dataDir, GenesisJson)
 
 	raw, err := json.Marshal(genesis)
 	if err != nil {

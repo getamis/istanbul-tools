@@ -21,11 +21,14 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
+	"github.com/getamis/go-ethereum/cmd/utils"
+	"github.com/getamis/istanbul-tools/core"
 )
 
 func NewEthereum(options ...Option) *ethereum {
@@ -47,36 +50,77 @@ func NewEthereum(options ...Option) *ethereum {
 
 type ethereum struct {
 	flags       []string
+	hostDataDir string
+	dataDir     string
 	hostName    string
 	containerID string
 	imageName   string
+	logging     bool
 	client      *client.Client
 }
 
-func (eth *ethereum) Start(showLog bool) error {
+func (eth *ethereum) Init(genesisFile string) error {
 	out, err := eth.client.ImagePull(context.Background(), eth.imageName, types.ImagePullOptions{})
 	if err != nil {
 		log.Printf("Cannot pull %s, err: %v", eth.imageName, err)
 		return err
 	}
-	if showLog {
+	if eth.logging {
 		io.Copy(os.Stdout, out)
 	} else {
 		_ = out
 	}
 
-	resp, err := eth.client.ContainerCreate(context.Background(), &container.Config{
-		Hostname:     "geth-" + eth.hostName,
-		Image:        eth.imageName,
-		AttachStdout: true,
-	}, nil, nil, "")
+	resp, err := eth.client.ContainerCreate(context.Background(),
+		&container.Config{
+			Image: eth.imageName,
+			Cmd: []string{
+				"init",
+				"--" + utils.DataDirFlag.Name,
+				eth.dataDir,
+				filepath.Join("/", core.GenesisJson),
+			},
+		},
+		&container.HostConfig{
+			Binds: []string{
+				genesisFile + ":" + filepath.Join("/", core.GenesisJson),
+				eth.hostDataDir + ":" + eth.dataDir,
+			},
+		}, nil, "")
 	if err != nil {
 		log.Printf("Failed to create container, err: %v", err)
 		return err
 	}
 
 	defer func() {
-		if showLog {
+		if eth.logging {
+			go eth.showLog(context.Background())
+		}
+	}()
+	eth.containerID = resp.ID
+
+	return eth.client.ContainerStart(context.Background(), eth.containerID, types.ContainerStartOptions{})
+}
+
+func (eth *ethereum) Start() error {
+	resp, err := eth.client.ContainerCreate(context.Background(),
+		&container.Config{
+			Hostname: "geth-" + eth.hostName,
+			Image:    eth.imageName,
+			Cmd:      eth.flags,
+		},
+		&container.HostConfig{
+			Binds: []string{
+				eth.hostDataDir + ":" + eth.dataDir,
+			},
+		}, nil, "")
+	if err != nil {
+		log.Printf("Failed to create container, err: %v", err)
+		return err
+	}
+
+	defer func() {
+		if eth.logging {
 			go eth.showLog(context.Background())
 		}
 	}()
