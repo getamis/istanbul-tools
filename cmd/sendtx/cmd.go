@@ -138,15 +138,6 @@ func sendTx(conn *ethclient.Client, tx *types.Transaction) error {
 	return nil
 }
 
-func sendTxs(conn *ethclient.Client, txs []*types.Transaction) error {
-	err := conn.SendTransactions(context.Background(), txs)
-	if err != nil {
-		return err
-	}
-	fmt.Println("txs", len(txs))
-	return nil
-}
-
 func sendEther(prv *ecdsa.PrivateKey, to common.Address, amount *big.Int, nonce uint64) (*types.Transaction, error) {
 	signer := types.FrontierSigner{}
 	tx := types.NewTransaction(nonce, to, amount, big.NewInt(GAS_LIMIT), big.NewInt(GAS_PRICE), []byte{})
@@ -209,19 +200,18 @@ func batchSend(conn *ethclient.Client, prv *ecdsa.PrivateKey, to common.Address,
 			return
 		default:
 			fmt.Println("round", round)
-			var txs []*types.Transaction
 			for i := 0; i < count; i++ {
 				tx, err := sendEther(prv, to, common.Big1, nonce)
 				if err != nil {
 					fmt.Printf("Failed to gen tx, err:%v\n", err)
 					continue
 				}
-				txs = append(txs, tx)
+				err = sendTx(conn, tx)
+				if err != nil {
+					fmt.Printf("Failed to send tx, err:%v\n", err)
+					continue
+				}
 				nonce++
-			}
-			err := sendTxs(conn, txs)
-			if err != nil {
-				fmt.Printf("Failed to send txs, err:%v\n", err)
 			}
 			round++
 			<-time.After(time.Duration(20+rand.Int()%10) * time.Second)
