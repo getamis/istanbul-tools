@@ -17,14 +17,11 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/getamis/istanbul-tools/cmd/istanbul/extradata"
 	"github.com/naoina/toml"
 	"github.com/urfave/cli"
 )
@@ -67,33 +64,37 @@ func encode(ctx *cli.Context) error {
 	}
 
 	if len(path) != 0 {
-		if err := fromConfig(path); err != nil {
+		extraData, err := fromConfig(path)
+		if err != nil {
 			return cli.NewExitError("Failed to encode from config data", 0)
 		}
+		fmt.Println("Encoded Istanbul extra-data:", extraData)
 	}
 
 	if len(validators) != 0 {
-		if err := fromRawData(ctx.String(VanityFlag.Name), validators); err != nil {
+		extraData, err := fromRawData(ctx.String(VanityFlag.Name), validators)
+		if err != nil {
 			return cli.NewExitError("Failed to encode from flags", 0)
 		}
+		fmt.Println("Encoded Istanbul extra-data:", extraData)
 	}
 	return nil
 }
 
-func fromRawData(vanity string, validators string) error {
+func fromRawData(vanity string, validators string) (string, error) {
 	vs := splitAndTrim(validators)
 
 	addrs := make([]common.Address, len(vs))
 	for i, v := range vs {
 		addrs[i] = common.HexToAddress(v)
 	}
-	return encodeExtraData(vanity, addrs)
+	return extradata.Encode(vanity, addrs)
 }
 
-func fromConfig(path string) error {
+func fromConfig(path string) (string, error) {
 	file, err := os.Open(path)
 	if err != nil {
-		return cli.NewExitError(fmt.Sprintf("Failed to read config file: %v", err), 1)
+		return "", cli.NewExitError(fmt.Sprintf("Failed to read config file: %v", err), 1)
 	}
 	defer file.Close()
 
@@ -103,10 +104,10 @@ func fromConfig(path string) error {
 	}
 
 	if err := toml.NewDecoder(file).Decode(&config); err != nil {
-		return cli.NewExitError(fmt.Sprintf("Failed to parse config file: %v", err), 2)
+		return "", cli.NewExitError(fmt.Sprintf("Failed to parse config file: %v", err), 2)
 	}
 
-	return encodeExtraData(config.Vanity, config.Validators)
+	return extradata.Encode(config.Vanity, config.Validators)
 }
 
 func decode(ctx *cli.Context) error {
@@ -114,47 +115,13 @@ func decode(ctx *cli.Context) error {
 		return cli.NewExitError("Must supply extra data", 10)
 	}
 
-	return decodeExtraData(ctx.String(ExtraDataFlag.Name))
-}
-
-func encodeExtraData(vanity string, validators []common.Address) error {
-	newVanity, err := hexutil.Decode(vanity)
+	extraString := ctx.String(ExtraDataFlag.Name)
+	vanity, istanbulExtra, err := extradata.Decode(extraString)
 	if err != nil {
 		return err
 	}
 
-	if len(newVanity) < types.IstanbulExtraVanity {
-		newVanity = append(newVanity, bytes.Repeat([]byte{0x00}, types.IstanbulExtraVanity-len(newVanity))...)
-	}
-	newVanity = newVanity[:types.IstanbulExtraVanity]
-
-	ist := &types.IstanbulExtra{
-		Validators:    validators,
-		Seal:          make([]byte, types.IstanbulExtraSeal),
-		CommittedSeal: [][]byte{},
-	}
-
-	payload, err := rlp.EncodeToBytes(&ist)
-	if err != nil {
-		return err
-	}
-	fmt.Println("Encoded Istanbul extra-data:", "0x"+common.Bytes2Hex(append(newVanity, payload...)))
-
-	return nil
-}
-
-func decodeExtraData(extraData string) error {
-	extra, err := hexutil.Decode(extraData)
-	if err != nil {
-		return err
-	}
-
-	istanbulExtra, err := types.ExtractIstanbulExtra(&types.Header{Extra: extra})
-	if err != nil {
-		return err
-	}
-
-	fmt.Println("vanity: ", "0x"+common.Bytes2Hex(extra[:types.IstanbulExtraVanity]))
+	fmt.Println("vanity: ", "0x"+common.Bytes2Hex(vanity))
 
 	for _, v := range istanbulExtra.Validators {
 		fmt.Println("validator: ", v.Hex())
