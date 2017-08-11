@@ -38,7 +38,7 @@ const (
 
 	defaultLocalDir   = "/tmp/gdata"
 	datadirPrivateKey = "nodekey"
-	defaultIP         = "localhost"
+	defaultIP         = net.IPv4(127, 0, 0, 1)
 
 	clientIdentifier = "geth"
 	staticNodeJson   = "static-nodes.json"
@@ -134,7 +134,7 @@ func saveNodeKey(key *ecdsa.PrivateKey) (string, error) {
 	return instanceDir, nil
 }
 
-func saveStaticNode(dataDir string, nodes []*discover.Node) error {
+func saveStaticNode(dataDir string, nodes []string) error {
 	filePath := filepath.Join(dataDir, clientIdentifier)
 	keyPath := filepath.Join(filePath, staticNodeJson)
 
@@ -146,12 +146,12 @@ func saveStaticNode(dataDir string, nodes []*discover.Node) error {
 	return ioutil.WriteFile(keyPath, raw, 0600)
 }
 
-func transformToStaticNodes(envs []*Env) []*discover.Node {
-	nodes := make([]*discover.Node, len(envs))
+func transformToStaticNodes(envs []*Env) []string {
+	nodes := make([]string, len(envs))
 
 	for i, env := range envs {
 		nodeID := discover.PubkeyID(&env.Key.PublicKey)
-		nodes[i] = discover.NewNode(nodeID, net.ParseIP(defaultIP), 0, env.HttpPort)
+		nodes[i] = discover.NewNode(nodeID, defaultIP, 0, env.HttpPort).String()
 	}
 	return nodes
 }
