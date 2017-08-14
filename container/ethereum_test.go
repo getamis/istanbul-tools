@@ -39,7 +39,7 @@ func TestEthereumContainer(t *testing.T) {
 			ImageName("quay.io/maicoin/ottoman_geth:istanbul_develop"),
 			HostDataDir(env.DataDir),
 			DataDir("/data"),
-			Port(fmt.Sprintf("%d", env.HttpPort)),
+			Port(fmt.Sprintf("%d", env.P2PPort)),
 			RPC(),
 			RPCAddress("0.0.0.0"),
 			RPCAPI("eth,net,web3,personal"),

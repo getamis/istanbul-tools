@@ -36,7 +36,7 @@ import (
 
 const (
 	defaultBaseRpcPort = uint16(8545)
-	defaultHttpPort    = uint16(30303)
+	defaultP2PPort     = uint16(30303)
 
 	defaultLocalDir   = "/tmp/gdata"
 	datadirPrivateKey = "nodekey"
@@ -59,12 +59,12 @@ func GenerateClusterKeys(numbers int) []*ecdsa.PrivateKey {
 }
 
 type Env struct {
-	GethID   int
-	HttpPort uint16
-	RpcPort  uint16
-	DataDir  string
-	Key      *ecdsa.PrivateKey
-	Client   *client.Client
+	GethID  int
+	P2PPort uint16
+	RpcPort uint16
+	DataDir string
+	Key     *ecdsa.PrivateKey
+	Client  *client.Client
 }
 
 func Teardown(envs []*Env) {
@@ -76,7 +76,7 @@ func Teardown(envs []*Env) {
 func SetupEnv(prvKeys []*ecdsa.PrivateKey) []*Env {
 	envs := make([]*Env, len(prvKeys))
 	rpcPort := defaultBaseRpcPort
-	httpPort := defaultHttpPort
+	p2pPort := defaultP2PPort
 
 	for i := 0; i < len(envs); i++ {
 		client, err := client.NewEnvClient()
@@ -90,16 +90,16 @@ func SetupEnv(prvKeys []*ecdsa.PrivateKey) []*Env {
 		}
 
 		envs[i] = &Env{
-			GethID:   i,
-			HttpPort: httpPort,
-			RpcPort:  rpcPort,
-			DataDir:  dataDir,
-			Key:      prvKeys[i],
-			Client:   client,
+			GethID:  i,
+			P2PPort: p2pPort,
+			RpcPort: rpcPort,
+			DataDir: dataDir,
+			Key:     prvKeys[i],
+			Client:  client,
 		}
 
 		rpcPort = rpcPort + 1
-		httpPort = httpPort + 1
+		p2pPort = p2pPort + 1
 	}
 	return envs
 }
@@ -175,7 +175,7 @@ func transformToStaticNodes(envs []*Env) []string {
 		}
 
 		nodeID := discover.PubkeyID(&env.Key.PublicKey)
-		nodes[i] = discover.NewNode(nodeID, net.ParseIP(host), 0, env.HttpPort).String()
+		nodes[i] = discover.NewNode(nodeID, net.ParseIP(host), 0, env.P2PPort).String()
 	}
 	return nodes
 }

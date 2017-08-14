@@ -53,7 +53,7 @@ var _ = Describe("4 validators Istanbul", func() {
 				container.ImageName("quay.io/maicoin/ottoman_geth:istanbul_develop"),
 				container.HostDataDir(env.DataDir),
 				container.DataDir("/data"),
-				container.Port(fmt.Sprintf("%d", env.HttpPort)),
+				container.Port(fmt.Sprintf("%d", env.P2PPort)),
 				container.RPC(),
 				container.RPCAddress("0.0.0.0"),
 				container.RPCAPI("eth,net,web3,personal"),
