@@ -29,6 +29,7 @@ import (
 	"github.com/getamis/go-ethereum/ethclient"
 	"github.com/getamis/istanbul-tools/container"
 	"github.com/getamis/istanbul-tools/core"
+	"github.com/getamis/istanbul-tools/core/genesis"
 )
 
 // var geths []container.Ethereum
@@ -43,13 +44,13 @@ var _ = Describe("4 validators Istanbul", func() {
 	)
 
 	BeforeSuite(func() {
-		keys := core.GenerateClusterKeys(numberOfValidators)
-		envs = core.SetupEnv(keys)
+		envs = core.SetupEnv(numberOfValidators)
 		err := core.SetupNodes(envs)
 		Expect(err).To(BeNil())
 
 		for _, env := range envs {
 			geth := container.NewEthereum(
+				env.Client,
 				container.ImageName("quay.io/amis/geth:istanbul_develop"),
 				container.HostDataDir(env.DataDir),
 				container.DataDir("/data"),
@@ -63,7 +64,7 @@ var _ = Describe("4 validators Istanbul", func() {
 				container.Logging(true),
 			)
 
-			err := geth.Init(filepath.Join(env.DataDir, core.GenesisJson))
+			err := geth.Init(filepath.Join(env.DataDir, genesis.FileName))
 			Expect(err).To(BeNil())
 
 			geths = append(geths, geth)
