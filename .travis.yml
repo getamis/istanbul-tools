@@ -1,0 +1,32 @@
+language: go
+go_import_path: github.com/getamis/istanbul-tools
+sudo: required
+matrix:
+  include:
+    - os: linux
+      dist: trusty
+      sudo: required
+      go: 1.7.6
+      script:
+        - go test $(glide novendor)
+
+    # These are the latest Go versions.
+    - os: linux
+      dist: trusty
+      sudo: required
+      go: 1.8.3
+      script:
+        - go test $(glide novendor)
+
+services:
+  - docker
+
+install:
+  - docker pull quay.io/amis/geth:istanbul_develop
+  - go get github.com/Masterminds/glide
+
+script:
+  - go test $(glide novendor)
+
+notifications:
+    slack: maicoin:p2HicxEGvZveE900zgacSYwL
