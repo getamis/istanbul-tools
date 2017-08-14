@@ -25,8 +25,7 @@ import (
 )
 
 func TestEthereumContainer(t *testing.T) {
-	keys := core.GenerateClusterKeys(1)
-	envs := core.SetupEnv(keys)
+	envs := core.SetupEnv(1)
 	defer core.Teardown(envs)
 	err := core.SetupNodes(envs)
 	if err != nil {

@@ -46,18 +46,6 @@ const (
 	GenesisJson      = "genesis.json"
 )
 
-func GenerateClusterKeys(numbers int) []*ecdsa.PrivateKey {
-	keys := make([]*ecdsa.PrivateKey, numbers)
-	for i := 0; i < len(keys); i++ {
-		key, err := crypto.GenerateKey()
-		if err != nil {
-			panic("couldn't generate key: " + err.Error())
-		}
-		keys[i] = key
-	}
-	return keys
-}
-
 type Env struct {
 	GethID  int
 	P2PPort uint16
@@ -73,8 +61,8 @@ func Teardown(envs []*Env) {
 	}
 }
 
-func SetupEnv(prvKeys []*ecdsa.PrivateKey) []*Env {
-	envs := make([]*Env, len(prvKeys))
+func SetupEnv(numbers int) []*Env {
+	envs := make([]*Env, numbers)
 	rpcPort := defaultBaseRpcPort
 	p2pPort := defaultP2PPort
 
@@ -84,9 +72,14 @@ func SetupEnv(prvKeys []*ecdsa.PrivateKey) []*Env {
 			log.Fatalf("Cannot connect to Docker daemon, err: %v", err)
 		}
 
-		dataDir, err := saveNodeKey(prvKeys[i])
+		key, err := crypto.GenerateKey()
 		if err != nil {
-			panic("Failed to save node key")
+			log.Fatalf("couldn't generate key: " + err.Error())
+		}
+
+		dataDir, err := saveNodeKey(key)
+		if err != nil {
+			log.Fatalf("Failed to save node key")
 		}
 
 		envs[i] = &Env{
@@ -94,7 +87,7 @@ func SetupEnv(prvKeys []*ecdsa.PrivateKey) []*Env {
 			P2PPort: p2pPort,
 			RpcPort: rpcPort,
 			DataDir: dataDir,
-			Key:     prvKeys[i],
+			Key:     key,
 			Client:  client,
 		}
 

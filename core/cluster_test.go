@@ -22,12 +22,12 @@ import (
 )
 
 func TestWriteFile(t *testing.T) {
-	keys := GenerateClusterKeys(4)
-	envs := SetupEnv(keys)
+	envs := SetupEnv(4)
 	err := SetupNodes(envs)
 	if err != nil {
 		t.Fatal("failed to setup nodes", err)
 	}
+	defer Teardown(envs)
 	for _, env := range envs {
 		fmt.Println(fmt.Sprintf("%s%d%s%s", "geth ID:", env.GethID, ", dataDir:", env.DataDir))
 	}
