@@ -98,14 +98,14 @@ func SetupEnv(numbers int) []*Env {
 }
 
 func SetupNodes(envs []*Env) error {
-	nodes := transformToStaticNodes(envs)
+	nodes := toStaticNodes(envs)
 	for _, env := range envs {
 		if err := saveStaticNode(env.DataDir, nodes); err != nil {
 			return err
 		}
 	}
 
-	addrs := transformToAddress(envs)
+	addrs := toAddress(envs)
 	genesis := GenerateGenesis(addrs)
 	for _, env := range envs {
 		if err := saveGenesis(env.DataDir, genesis); err != nil {
@@ -153,7 +153,7 @@ func saveStaticNode(dataDir string, nodes []string) error {
 	return ioutil.WriteFile(keyPath, raw, 0600)
 }
 
-func transformToStaticNodes(envs []*Env) []string {
+func toStaticNodes(envs []*Env) []string {
 	nodes := make([]string, len(envs))
 
 	for i, env := range envs {
@@ -173,7 +173,7 @@ func transformToStaticNodes(envs []*Env) []string {
 	return nodes
 }
 
-func transformToAddress(envs []*Env) []common.Address {
+func toAddress(envs []*Env) []common.Address {
 	addrs := make([]common.Address, len(envs))
 
 	for i, env := range envs {
