@@ -160,9 +160,15 @@ func toStaticNodes(envs []*Env) []string {
 		if err != nil {
 			log.Fatalf("Failed to parse daemon host, err: %v", err)
 		}
-		host, _, err := net.SplitHostPort(url.Host)
-		if err != nil {
-			log.Fatalf("Failed to split host and port, err: %v", err)
+
+		var host string
+		if url.Scheme == "unix" {
+			host = "127.0.0.1"
+		} else {
+			host, _, err = net.SplitHostPort(url.Host)
+			if err != nil {
+				log.Fatalf("Failed to split host and port, err: %v", err)
+			}
 		}
 
 		nodeID := discover.PubkeyID(&env.Key.PublicKey)
