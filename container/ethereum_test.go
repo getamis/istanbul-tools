@@ -22,11 +22,11 @@ import (
 	"testing"
 
 	"github.com/getamis/istanbul-tools/core"
+	"github.com/getamis/istanbul-tools/core/genesis"
 )
 
 func TestEthereumContainer(t *testing.T) {
-	keys := core.GenerateClusterKeys(1)
-	envs := core.SetupEnv(keys)
+	envs := core.SetupEnv(1)
 	defer core.Teardown(envs)
 	err := core.SetupNodes(envs)
 	if err != nil {
@@ -35,10 +35,11 @@ func TestEthereumContainer(t *testing.T) {
 
 	for _, env := range envs {
 		geth := NewEthereum(
+			env.Client,
 			ImageName("quay.io/maicoin/ottoman_geth:istanbul_develop"),
 			HostDataDir(env.DataDir),
 			DataDir("/data"),
-			Port(fmt.Sprintf("%d", env.HttpPort)),
+			Port(fmt.Sprintf("%d", env.P2PPort)),
 			RPC(),
 			RPCAddress("0.0.0.0"),
 			RPCAPI("eth,net,web3,personal"),
@@ -46,7 +47,7 @@ func TestEthereumContainer(t *testing.T) {
 			Logging(true),
 		)
 
-		err := geth.Init(filepath.Join(env.DataDir, core.GenesisJson))
+		err := geth.Init(filepath.Join(env.DataDir, genesis.FileName))
 		if err != nil {
 			t.Error(err)
 		}

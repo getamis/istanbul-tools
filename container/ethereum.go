@@ -32,7 +32,7 @@ import (
 	"github.com/docker/go-connections/nat"
 	"github.com/getamis/go-ethereum/cmd/utils"
 	"github.com/getamis/go-ethereum/ethclient"
-	"github.com/getamis/istanbul-tools/core"
+	"github.com/getamis/istanbul-tools/core/genesis"
 )
 
 const (
@@ -46,14 +46,9 @@ type Ethereum interface {
 	Stop() error
 }
 
-func NewEthereum(options ...Option) *ethereum {
-	client, err := client.NewEnvClient()
-	if err != nil {
-		log.Fatalf("Cannot connect to Docker daemon, err: %v", err)
-	}
-
+func NewEthereum(c *client.Client, options ...Option) *ethereum {
 	geth := &ethereum{
-		client: client,
+		client: c,
 	}
 
 	for _, opt := range options {
@@ -106,12 +101,12 @@ func (eth *ethereum) Init(genesisFile string) error {
 				"init",
 				"--" + utils.DataDirFlag.Name,
 				eth.dataDir,
-				filepath.Join("/", core.GenesisJson),
+				filepath.Join("/", genesis.FileName),
 			},
 		},
 		&container.HostConfig{
 			Binds: []string{
-				genesisFile + ":" + filepath.Join("/", core.GenesisJson),
+				genesisFile + ":" + filepath.Join("/", genesis.FileName),
 				eth.hostDataDir + ":" + eth.dataDir,
 			},
 		}, nil, "")

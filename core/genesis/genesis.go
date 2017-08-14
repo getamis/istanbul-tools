@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-package core
+package genesis
 
 import (
 	"encoding/json"
@@ -23,6 +23,7 @@ import (
 	"math/big"
 	"path/filepath"
 	"time"
+	"log"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -33,10 +34,14 @@ import (
 	"github.com/getamis/istanbul-tools/cmd/istanbul/extradata"
 )
 
-func GenerateGenesis(addrs []common.Address) *core.Genesis {
+const (
+	FileName = "genesis.json"
+)
+
+func New(addrs []common.Address) *core.Genesis {
 	extraData, err := extradata.Encode("0x00", addrs)
 	if err != nil {
-		panic(fmt.Sprintf("%s%s", "Failed to generate genesis", err))
+		log.Fatalf("Failed to generate genesis, err:%s", err)
 	}
 
 	return &core.Genesis{
@@ -59,8 +64,8 @@ func GenerateGenesis(addrs []common.Address) *core.Genesis {
 	}
 }
 
-func saveGenesis(dataDir string, genesis *core.Genesis) error {
-	filePath := filepath.Join(dataDir, GenesisJson)
+func Save(dataDir string, genesis *core.Genesis) error {
+	filePath := filepath.Join(dataDir, FileName)
 
 	raw, err := json.Marshal(genesis)
 	if err != nil {

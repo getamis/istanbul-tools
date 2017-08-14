@@ -23,49 +23,36 @@ import (
 	"io/ioutil"
 	"log"
 	"net"
+	"net/url"
 	"os"
 	"path/filepath"
 
+	"github.com/docker/docker/client"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/p2p/discover"
+	"github.com/getamis/istanbul-tools/core/genesis"
 	"github.com/satori/go.uuid"
 )
 
 const (
 	defaultBaseRpcPort = uint16(8545)
-	defaultHttpPort    = uint16(30303)
+	defaultP2PPort     = uint16(30303)
 
 	defaultLocalDir   = "/tmp/gdata"
 	datadirPrivateKey = "nodekey"
 
 	clientIdentifier = "geth"
 	staticNodeJson   = "static-nodes.json"
-	GenesisJson      = "genesis.json"
 )
-
-var (
-	defaultIP = net.IPv4(127, 0, 0, 1)
-)
-
-func GenerateClusterKeys(numbers int) []*ecdsa.PrivateKey {
-	keys := make([]*ecdsa.PrivateKey, numbers)
-	for i := 0; i < len(keys); i++ {
-		key, err := crypto.GenerateKey()
-		if err != nil {
-			panic("couldn't generate key: " + err.Error())
-		}
-		keys[i] = key
-	}
-	return keys
-}
 
 type Env struct {
-	GethID   int
-	HttpPort uint16
-	RpcPort  uint16
-	DataDir  string
-	Key      *ecdsa.PrivateKey
+	GethID  int
+	P2PPort uint16
+	RpcPort uint16
+	DataDir string
+	Key     *ecdsa.PrivateKey
+	Client  *client.Client
 }
 
 func Teardown(envs []*Env) {
@@ -74,43 +61,54 @@ func Teardown(envs []*Env) {
 	}
 }
 
-func SetupEnv(prvKeys []*ecdsa.PrivateKey) []*Env {
-	envs := make([]*Env, len(prvKeys))
+func SetupEnv(numbers int) []*Env {
+	envs := make([]*Env, numbers)
 	rpcPort := defaultBaseRpcPort
-	httpPort := defaultHttpPort
+	p2pPort := defaultP2PPort
 
 	for i := 0; i < len(envs); i++ {
-		dataDir, err := saveNodeKey(prvKeys[i])
+		client, err := client.NewEnvClient()
 		if err != nil {
-			panic("Failed to save node key")
+			log.Fatalf("Cannot connect to Docker daemon, err: %v", err)
+		}
+
+		key, err := crypto.GenerateKey()
+		if err != nil {
+			log.Fatalf("couldn't generate key: " + err.Error())
+		}
+
+		dataDir, err := saveNodeKey(key)
+		if err != nil {
+			log.Fatalf("Failed to save node key")
 		}
 
 		envs[i] = &Env{
-			GethID:   i,
-			HttpPort: httpPort,
-			RpcPort:  rpcPort,
-			DataDir:  dataDir,
-			Key:      prvKeys[i],
+			GethID:  i,
+			P2PPort: p2pPort,
+			RpcPort: rpcPort,
+			DataDir: dataDir,
+			Key:     key,
+			Client:  client,
 		}
 
 		rpcPort = rpcPort + 1
-		httpPort = httpPort + 1
+		p2pPort = p2pPort + 1
 	}
 	return envs
 }
 
 func SetupNodes(envs []*Env) error {
-	nodes := transformToStaticNodes(envs)
+	nodes := toStaticNodes(envs)
 	for _, env := range envs {
 		if err := saveStaticNode(env.DataDir, nodes); err != nil {
 			return err
 		}
 	}
 
-	addrs := transformToAddress(envs)
-	genesis := GenerateGenesis(addrs)
+	addrs := toAddress(envs)
+	g := genesis.New(addrs)
 	for _, env := range envs {
-		if err := saveGenesis(env.DataDir, genesis); err != nil {
+		if err := genesis.Save(env.DataDir, g); err != nil {
 			return err
 		}
 	}
@@ -155,17 +153,27 @@ func saveStaticNode(dataDir string, nodes []string) error {
 	return ioutil.WriteFile(keyPath, raw, 0600)
 }
 
-func transformToStaticNodes(envs []*Env) []string {
+func toStaticNodes(envs []*Env) []string {
 	nodes := make([]string, len(envs))
 
 	for i, env := range envs {
+		daemonHost := env.Client.DaemonHost()
+		url, err := url.Parse(daemonHost)
+		if err != nil {
+			log.Fatalf("Failed to parse daemon host, err: %v", err)
+		}
+		host, _, err := net.SplitHostPort(url.Host)
+		if err != nil {
+			log.Fatalf("Failed to split host and port, err: %v", err)
+		}
+
 		nodeID := discover.PubkeyID(&env.Key.PublicKey)
-		nodes[i] = discover.NewNode(nodeID, defaultIP, 0, env.HttpPort).String()
+		nodes[i] = discover.NewNode(nodeID, net.ParseIP(host), 0, env.P2PPort).String()
 	}
 	return nodes
 }
 
-func transformToAddress(envs []*Env) []common.Address {
+func toAddress(envs []*Env) []common.Address {
 	addrs := make([]common.Address, len(envs))
 
 	for i, env := range envs {
