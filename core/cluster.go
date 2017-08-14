@@ -31,6 +31,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/p2p/discover"
+	"github.com/getamis/istanbul-tools/core/genesis"
 	"github.com/satori/go.uuid"
 )
 
@@ -43,7 +44,6 @@ const (
 
 	clientIdentifier = "geth"
 	staticNodeJson   = "static-nodes.json"
-	GenesisJson      = "genesis.json"
 )
 
 type Env struct {
@@ -106,9 +106,9 @@ func SetupNodes(envs []*Env) error {
 	}
 
 	addrs := toAddress(envs)
-	genesis := GenerateGenesis(addrs)
+	g := genesis.New(addrs)
 	for _, env := range envs {
-		if err := saveGenesis(env.DataDir, genesis); err != nil {
+		if err := genesis.Save(env.DataDir, g); err != nil {
 			return err
 		}
 	}

@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/getamis/istanbul-tools/core"
+	"github.com/getamis/istanbul-tools/core/genesis"
 )
 
 func TestEthereumContainer(t *testing.T) {
@@ -46,7 +47,7 @@ func TestEthereumContainer(t *testing.T) {
 			Logging(true),
 		)
 
-		err := geth.Init(filepath.Join(env.DataDir, core.GenesisJson))
+		err := geth.Init(filepath.Join(env.DataDir, genesis.FileName))
 		if err != nil {
 			t.Error(err)
 		}
