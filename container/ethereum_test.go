@@ -36,7 +36,7 @@ func TestEthereumContainer(t *testing.T) {
 	for _, env := range envs {
 		geth := NewEthereum(
 			env.Client,
-			ImageName("quay.io/maicoin/ottoman_geth:istanbul_develop"),
+			ImageName("quay.io/amis/geth:istanbul_develop"),
 			HostDataDir(env.DataDir),
 			DataDir("/data"),
 			Port(fmt.Sprintf("%d", env.P2PPort)),
