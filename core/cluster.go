@@ -32,13 +32,11 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/p2p/discover"
 	"github.com/getamis/istanbul-tools/core/genesis"
+	"github.com/phayes/freeport"
 	"github.com/satori/go.uuid"
 )
 
 const (
-	defaultBaseRpcPort = uint16(8545)
-	defaultP2PPort     = uint16(30303)
-
 	defaultLocalDir   = "/tmp/gdata"
 	datadirPrivateKey = "nodekey"
 
@@ -63,8 +61,8 @@ func Teardown(envs []*Env) {
 
 func SetupEnv(numbers int) []*Env {
 	envs := make([]*Env, numbers)
-	rpcPort := defaultBaseRpcPort
-	p2pPort := defaultP2PPort
+	rpcPort := uint16(freeport.GetPort())
+	p2pPort := uint16(freeport.GetPort())
 
 	for i := 0; i < len(envs); i++ {
 		client, err := client.NewEnvClient()
@@ -91,8 +89,8 @@ func SetupEnv(numbers int) []*Env {
 			Client:  client,
 		}
 
-		rpcPort = rpcPort + 1
-		p2pPort = p2pPort + 1
+		rpcPort = uint16(freeport.GetPort())
+		p2pPort = uint16(freeport.GetPort())
 	}
 	return envs
 }
