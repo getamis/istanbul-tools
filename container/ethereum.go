@@ -46,14 +46,9 @@ type Ethereum interface {
 	Stop() error
 }
 
-func NewEthereum(options ...Option) *ethereum {
-	client, err := client.NewEnvClient()
-	if err != nil {
-		log.Fatalf("Cannot connect to Docker daemon, err: %v", err)
-	}
-
+func NewEthereum(c *client.Client, options ...Option) *ethereum {
 	geth := &ethereum{
-		client: client,
+		client: c,
 	}
 
 	for _, opt := range options {

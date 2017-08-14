@@ -23,9 +23,11 @@ import (
 	"io/ioutil"
 	"log"
 	"net"
+	"net/url"
 	"os"
 	"path/filepath"
 
+	"github.com/docker/docker/client"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/p2p/discover"
@@ -42,10 +44,6 @@ const (
 	clientIdentifier = "geth"
 	staticNodeJson   = "static-nodes.json"
 	GenesisJson      = "genesis.json"
-)
-
-var (
-	defaultIP = net.IPv4(127, 0, 0, 1)
 )
 
 func GenerateClusterKeys(numbers int) []*ecdsa.PrivateKey {
@@ -66,6 +64,7 @@ type Env struct {
 	RpcPort  uint16
 	DataDir  string
 	Key      *ecdsa.PrivateKey
+	Client   *client.Client
 }
 
 func Teardown(envs []*Env) {
@@ -80,6 +79,11 @@ func SetupEnv(prvKeys []*ecdsa.PrivateKey) []*Env {
 	httpPort := defaultHttpPort
 
 	for i := 0; i < len(envs); i++ {
+		client, err := client.NewEnvClient()
+		if err != nil {
+			log.Fatalf("Cannot connect to Docker daemon, err: %v", err)
+		}
+
 		dataDir, err := saveNodeKey(prvKeys[i])
 		if err != nil {
 			panic("Failed to save node key")
@@ -91,6 +95,7 @@ func SetupEnv(prvKeys []*ecdsa.PrivateKey) []*Env {
 			RpcPort:  rpcPort,
 			DataDir:  dataDir,
 			Key:      prvKeys[i],
+			Client:   client,
 		}
 
 		rpcPort = rpcPort + 1
@@ -159,8 +164,18 @@ func transformToStaticNodes(envs []*Env) []string {
 	nodes := make([]string, len(envs))
 
 	for i, env := range envs {
+		daemonHost := env.Client.DaemonHost()
+		url, err := url.Parse(daemonHost)
+		if err != nil {
+			log.Fatalf("Failed to parse daemon host, err: %v", err)
+		}
+		host, _, err := net.SplitHostPort(url.Host)
+		if err != nil {
+			log.Fatalf("Failed to split host and port, err: %v", err)
+		}
+
 		nodeID := discover.PubkeyID(&env.Key.PublicKey)
-		nodes[i] = discover.NewNode(nodeID, defaultIP, 0, env.HttpPort).String()
+		nodes[i] = discover.NewNode(nodeID, net.ParseIP(host), 0, env.HttpPort).String()
 	}
 	return nodes
 }
