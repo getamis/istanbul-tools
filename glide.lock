@@ -1,5 +1,5 @@
-hash: 9099fc50c197f3783ebc0a260c2e75405761ebcffac9b161c1b061e6e6f9ef40
-updated: 2017-08-14T11:13:55.694170589+08:00
+hash: 586b41b5eee9053da918e7fcd053abfce93572b24d37f699e299754101672f19
+updated: 2017-08-14T14:01:32.710933452+08:00
 imports:
 - name: github.com/aristanetworks/goarista
   version: 8e44bec0a94d7c1f0cdf28ed5215e5cfab441ad0
@@ -198,6 +198,8 @@ imports:
   - specs-go/v1
 - name: github.com/pborman/uuid
   version: e790cca94e6cc75c7064b1332e63811d4aae1a53
+- name: github.com/phayes/freeport
+  version: e7681b37614941bf73b404e0caa37f19e33b5fed
 - name: github.com/pkg/errors
   version: c605e284fe17294bda444b34710735b29d1a9d90
 - name: github.com/rcrowley/go-metrics
