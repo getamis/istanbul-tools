@@ -22,7 +22,6 @@ services:
   - docker
 
 install:
-  - docker pull quay.io/amis/geth:istanbul_develop
   - go get github.com/Masterminds/glide
 
 script:
