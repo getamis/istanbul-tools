@@ -51,7 +51,8 @@ var _ = Describe("4 validators Istanbul", func() {
 		for _, env := range envs {
 			geth := container.NewEthereum(
 				env.Client,
-				container.ImageName("quay.io/amis/geth:istanbul_develop"),
+				container.ImageRepository("quay.io/amis/geth"),
+				container.ImageTag("istanbul_develop"),
 				container.HostDataDir(env.DataDir),
 				container.DataDir("/data"),
 				container.Port(fmt.Sprintf("%d", env.P2PPort)),

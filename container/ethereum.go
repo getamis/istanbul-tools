@@ -68,27 +68,30 @@ type ethereum struct {
 	rpcPort     string
 	hostName    string
 	containerID string
-	imageName   string
-	logging     bool
-	client      *client.Client
+
+	imageRepository string
+	imageTag        string
+
+	logging bool
+	client  *client.Client
 }
 
 func (eth *ethereum) Init(genesisFile string) error {
 	filters := filters.NewArgs()
-	filters.Add("reference", eth.imageName)
+	filters.Add("reference", eth.Image())
 
 	images, err := eth.client.ImageList(context.Background(), types.ImageListOptions{
 		Filters: filters,
 	})
 	if err != nil {
-		log.Printf("Cannot search %s, err: %v", eth.imageName, err)
+		log.Printf("Cannot search %s, err: %v", eth.Image(), err)
 		return err
 	}
 
 	if len(images) == 0 {
-		out, err := eth.client.ImagePull(context.Background(), eth.imageName, types.ImagePullOptions{})
+		out, err := eth.client.ImagePull(context.Background(), eth.Image(), types.ImagePullOptions{})
 		if err != nil {
-			log.Printf("Cannot pull %s, err: %v", eth.imageName, err)
+			log.Printf("Cannot pull %s, err: %v", eth.Image(), err)
 			return err
 		}
 		if eth.logging {
@@ -100,7 +103,7 @@ func (eth *ethereum) Init(genesisFile string) error {
 
 	resp, err := eth.client.ContainerCreate(context.Background(),
 		&container.Config{
-			Image: eth.imageName,
+			Image: eth.Image(),
 			Cmd: []string{
 				"init",
 				"--" + utils.DataDirFlag.Name,
@@ -133,7 +136,7 @@ func (eth *ethereum) Start() error {
 	resp, err := eth.client.ContainerCreate(context.Background(),
 		&container.Config{
 			Hostname: "geth-" + eth.hostName,
-			Image:    eth.imageName,
+			Image:    eth.Image(),
 			Cmd:      eth.flags,
 			ExposedPorts: map[nat.Port]struct{}{
 				nat.Port(eth.port):    {},
@@ -234,6 +237,8 @@ func (eth *ethereum) Running() bool {
 
 	return false
 }
+
+// ----------------------------------------------------------------------------
 
 func (eth *ethereum) showLog(context context.Context) {
 	if readCloser, err := eth.client.ContainerLogs(context, eth.containerID,
