@@ -28,7 +28,6 @@ import (
 
 	"github.com/getamis/istanbul-tools/container"
 	"github.com/getamis/istanbul-tools/core"
-	"github.com/getamis/istanbul-tools/core/genesis"
 )
 
 // var geths []container.Ethereum
@@ -44,7 +43,7 @@ var _ = Describe("4 validators Istanbul", func() {
 
 	BeforeSuite(func() {
 		envs = core.SetupEnv(numberOfValidators)
-		err := core.SetupNodes(envs)
+		err := core.SetupNodes(envs, core.NewGenesis(envs))
 		Expect(err).To(BeNil())
 
 		for _, env := range envs {
@@ -64,7 +63,7 @@ var _ = Describe("4 validators Istanbul", func() {
 				container.Logging(true),
 			)
 
-			err := geth.Init(filepath.Join(env.DataDir, genesis.FileName))
+			err := geth.Init(filepath.Join(env.DataDir, core.GenesisFile))
 			Expect(err).To(BeNil())
 
 			geths = append(geths, geth)

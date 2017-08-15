@@ -22,16 +22,23 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math/big"
 	"net"
 	"net/url"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/docker/docker/client"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/consensus/istanbul"
+	"github.com/ethereum/go-ethereum/core"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/p2p/discover"
-	"github.com/getamis/istanbul-tools/core/genesis"
+	"github.com/ethereum/go-ethereum/params"
+	"github.com/getamis/istanbul-tools/cmd/istanbul/extradata"
 	"github.com/phayes/freeport"
 	"github.com/satori/go.uuid"
 )
@@ -42,6 +49,8 @@ const (
 
 	clientIdentifier = "geth"
 	staticNodeJson   = "static-nodes.json"
+
+	GenesisFile = "genesis.json"
 )
 
 type Env struct {
@@ -90,10 +99,8 @@ func SetupEnv(numbers int) []*Env {
 	return envs
 }
 
-func SetupNodes(envs []*Env) error {
+func SetupNodes(envs []*Env, g *core.Genesis) error {
 	nodes := toStaticNodes(envs)
-	addrs := toAddress(envs)
-	g := genesis.New(addrs)
 
 	for _, env := range envs {
 		if err := saveNodeKey(env.DataDir, env.Key); err != nil {
@@ -104,11 +111,37 @@ func SetupNodes(envs []*Env) error {
 			return err
 		}
 
-		if err := genesis.Save(env.DataDir, g); err != nil {
+		if err := saveGenesis(env.DataDir, g); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func NewGenesis(envs []*Env) *core.Genesis {
+	extraData, err := extradata.Encode("0x00", toAddress(envs))
+	if err != nil {
+		log.Fatalf("Failed to generate genesis, err:%s", err)
+	}
+
+	return &core.Genesis{
+		Timestamp:  uint64(time.Now().Unix()),
+		GasLimit:   4700000,
+		Difficulty: big.NewInt(1),
+		Alloc:      make(core.GenesisAlloc),
+		Config: &params.ChainConfig{
+			HomesteadBlock: big.NewInt(1),
+			EIP150Block:    big.NewInt(2),
+			EIP155Block:    big.NewInt(3),
+			EIP158Block:    big.NewInt(3),
+			Istanbul: &params.IstanbulConfig{
+				ProposerPolicy: uint64(istanbul.DefaultConfig.ProposerPolicy),
+				Epoch:          istanbul.DefaultConfig.Epoch,
+			},
+		},
+		Mixhash:   types.IstanbulDigest,
+		ExtraData: hexutil.MustDecode(extraData),
+	}
 }
 
 func saveNodeKey(dataDir string, key *ecdsa.PrivateKey) error {
@@ -141,6 +174,17 @@ func saveStaticNode(dataDir string, nodes []string) error {
 	}
 
 	return ioutil.WriteFile(keyPath, raw, 0600)
+}
+
+func saveGenesis(dataDir string, genesis *core.Genesis) error {
+	filePath := filepath.Join(dataDir, GenesisFile)
+
+	raw, err := json.Marshal(genesis)
+	if err != nil {
+		return err
+	}
+
+	return ioutil.WriteFile(filePath, raw, 0600)
 }
 
 func toStaticNodes(envs []*Env) []string {

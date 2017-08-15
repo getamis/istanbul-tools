@@ -34,7 +34,7 @@ import (
 	"github.com/docker/go-connections/nat"
 	"github.com/getamis/go-ethereum/cmd/utils"
 	"github.com/getamis/go-ethereum/ethclient"
-	"github.com/getamis/istanbul-tools/core/genesis"
+	"github.com/getamis/istanbul-tools/core"
 )
 
 const (
@@ -108,12 +108,12 @@ func (eth *ethereum) Init(genesisFile string) error {
 				"init",
 				"--" + utils.DataDirFlag.Name,
 				eth.dataDir,
-				filepath.Join("/", genesis.FileName),
+				filepath.Join("/", core.GenesisFile),
 			},
 		},
 		&container.HostConfig{
 			Binds: []string{
-				genesisFile + ":" + filepath.Join("/", genesis.FileName),
+				genesisFile + ":" + filepath.Join("/", core.GenesisFile),
 				eth.hostDataDir + ":" + eth.dataDir,
 			},
 		}, nil, "")

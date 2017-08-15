@@ -23,7 +23,7 @@ import (
 
 func TestWriteFile(t *testing.T) {
 	envs := SetupEnv(4)
-	err := SetupNodes(envs)
+	err := SetupNodes(envs, NewGenesis(envs))
 	if err != nil {
 		t.Fatal("failed to setup nodes", err)
 	}
