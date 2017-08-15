@@ -45,7 +45,6 @@ func TestEthereumContainer(t *testing.T) {
 			RPCAddress("0.0.0.0"),
 			RPCAPI("eth,net,web3,personal"),
 			RPCPort(fmt.Sprintf("%d", env.RpcPort)),
-			Logging(true),
 		)
 
 		err := geth.Init(filepath.Join(env.DataDir, genesis.FileName))

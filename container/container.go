@@ -16,9 +16,36 @@
 
 package container
 
+import (
+	"log"
+	"net"
+	"net/url"
+)
+
 func (eth *ethereum) Image() string {
 	if eth.imageTag == "" {
 		return eth.imageRepository + ":latest"
 	}
 	return eth.imageRepository + ":" + eth.imageTag
+}
+
+func (eth *ethereum) Host() string {
+	var host string
+	daemonHost := eth.client.DaemonHost()
+	url, err := url.Parse(daemonHost)
+	if err != nil {
+		log.Printf("Failed to parse daemon host, err: %v", err)
+		return host
+	}
+
+	if url.Scheme == "unix" {
+		host = "localhost"
+	} else {
+		host, _, err = net.SplitHostPort(url.Host)
+		if err != nil {
+			log.Printf("Failed to split host and port, err: %v", err)
+		}
+	}
+
+	return host
 }

@@ -45,6 +45,9 @@ type Ethereum interface {
 	Init(string) error
 	Start() error
 	Stop() error
+
+	Host() string
+	NewClient() *ethclient.Client
 }
 
 func NewEthereum(c *client.Client, options ...Option) *ethereum {
@@ -181,8 +184,8 @@ func (eth *ethereum) Start() error {
 	}
 
 	for i := 0; i < healthCheckRetryCount; i++ {
-		cli, err := ethclient.Dial("http://localhost:" + eth.rpcPort)
-		if err != nil {
+		cli := eth.NewClient()
+		if cli == nil {
 			time.Sleep(healthCheckRetryDelay)
 			continue
 		}
@@ -236,6 +239,15 @@ func (eth *ethereum) Running() bool {
 	}
 
 	return false
+}
+
+func (eth *ethereum) NewClient() *ethclient.Client {
+	client, err := ethclient.Dial("http://" + eth.Host() + ":" + eth.rpcPort)
+	if err != nil {
+		log.Printf("Failed to dial to geth, err: %v", err)
+		return nil
+	}
+	return client
 }
 
 // ----------------------------------------------------------------------------
