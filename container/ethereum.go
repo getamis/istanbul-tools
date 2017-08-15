@@ -51,15 +51,35 @@ type Ethereum interface {
 }
 
 func NewEthereum(c *client.Client, options ...Option) *ethereum {
-	geth := &ethereum{
+	eth := &ethereum{
 		client: c,
 	}
 
 	for _, opt := range options {
-		opt(geth)
+		opt(eth)
 	}
 
-	return geth
+	filters := filters.NewArgs()
+	filters.Add("reference", eth.Image())
+
+	images, err := c.ImageList(context.Background(), types.ImageListOptions{
+		Filters: filters,
+	})
+
+	if len(images) == 0 || err != nil {
+		out, err := eth.client.ImagePull(context.Background(), eth.Image(), types.ImagePullOptions{})
+		if err != nil {
+			log.Printf("Cannot pull %s, err: %v", eth.Image(), err)
+			return nil
+		}
+		if eth.logging {
+			io.Copy(os.Stdout, out)
+		} else {
+			_ = out
+		}
+	}
+
+	return eth
 }
 
 type ethereum struct {
@@ -80,30 +100,6 @@ type ethereum struct {
 }
 
 func (eth *ethereum) Init(genesisFile string) error {
-	filters := filters.NewArgs()
-	filters.Add("reference", eth.Image())
-
-	images, err := eth.client.ImageList(context.Background(), types.ImageListOptions{
-		Filters: filters,
-	})
-	if err != nil {
-		log.Printf("Cannot search %s, err: %v", eth.Image(), err)
-		return err
-	}
-
-	if len(images) == 0 {
-		out, err := eth.client.ImagePull(context.Background(), eth.Image(), types.ImagePullOptions{})
-		if err != nil {
-			log.Printf("Cannot pull %s, err: %v", eth.Image(), err)
-			return err
-		}
-		if eth.logging {
-			io.Copy(os.Stdout, out)
-		} else {
-			_ = out
-		}
-	}
-
 	resp, err := eth.client.ContainerCreate(context.Background(),
 		&container.Config{
 			Image: eth.Image(),
@@ -130,9 +126,29 @@ func (eth *ethereum) Init(genesisFile string) error {
 			go eth.showLog(context.Background())
 		}
 	}()
-	eth.containerID = resp.ID
 
-	return eth.client.ContainerStart(context.Background(), eth.containerID, types.ContainerStartOptions{})
+	id := resp.ID
+
+	if err := eth.client.ContainerStart(context.Background(), id, types.ContainerStartOptions{}); err != nil {
+		log.Printf("Failed to start container, err: %v", err)
+		return err
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	resC, errC := eth.client.ContainerWait(ctx, id, container.WaitConditionNotRunning)
+	select {
+	case <-resC:
+	case <-errC:
+		log.Printf("Failed to wait container, err: %v", err)
+		return err
+	}
+
+	return eth.client.ContainerRemove(context.Background(), id,
+		types.ContainerRemoveOptions{
+			Force: true,
+		})
 }
 
 func (eth *ethereum) Start() error {
