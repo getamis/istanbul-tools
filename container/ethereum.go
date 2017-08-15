@@ -28,6 +28,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 	"github.com/getamis/go-ethereum/cmd/utils"
@@ -73,15 +74,18 @@ type ethereum struct {
 }
 
 func (eth *ethereum) Init(genesisFile string) error {
-	results, err := eth.client.ImageSearch(context.Background(), eth.imageName, types.ImageSearchOptions{
-		Limit: 1,
+	filters := filters.NewArgs()
+	filters.Add("reference", eth.imageName)
+
+	images, err := eth.client.ImageList(context.Background(), types.ImageListOptions{
+		Filters: filters,
 	})
 	if err != nil {
 		log.Printf("Cannot search %s, err: %v", eth.imageName, err)
 		return err
 	}
 
-	if len(results) == 0 {
+	if len(images) == 0 {
 		out, err := eth.client.ImagePull(context.Background(), eth.imageName, types.ImagePullOptions{})
 		if err != nil {
 			log.Printf("Cannot pull %s, err: %v", eth.imageName, err)
