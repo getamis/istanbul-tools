@@ -75,16 +75,11 @@ func SetupEnv(numbers int) []*Env {
 			log.Fatalf("couldn't generate key: " + err.Error())
 		}
 
-		dataDir, err := saveNodeKey(key)
-		if err != nil {
-			log.Fatalf("Failed to save node key")
-		}
-
 		envs[i] = &Env{
 			GethID:  i,
 			P2PPort: p2pPort,
 			RpcPort: rpcPort,
-			DataDir: dataDir,
+			DataDir: filepath.Join(defaultLocalDir, fmt.Sprintf("%s%s", clientIdentifier, uuid.NewV4().String())),
 			Key:     key,
 			Client:  client,
 		}
@@ -97,15 +92,18 @@ func SetupEnv(numbers int) []*Env {
 
 func SetupNodes(envs []*Env) error {
 	nodes := toStaticNodes(envs)
+	addrs := toAddress(envs)
+	g := genesis.New(addrs)
+
 	for _, env := range envs {
+		if err := saveNodeKey(env.DataDir, env.Key); err != nil {
+			log.Fatalf("Failed to save node key")
+		}
+
 		if err := saveStaticNode(env.DataDir, nodes); err != nil {
 			return err
 		}
-	}
 
-	addrs := toAddress(envs)
-	g := genesis.New(addrs)
-	for _, env := range envs {
 		if err := genesis.Save(env.DataDir, g); err != nil {
 			return err
 		}
@@ -113,30 +111,24 @@ func SetupNodes(envs []*Env) error {
 	return nil
 }
 
-func saveNodeKey(key *ecdsa.PrivateKey) (string, error) {
-	err := os.MkdirAll(filepath.Join(defaultLocalDir), 0700)
+func saveNodeKey(dataDir string, key *ecdsa.PrivateKey) error {
+	err := os.MkdirAll(dataDir, 0700)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	instanceDir := filepath.Join(defaultLocalDir, fmt.Sprintf("%s%s", clientIdentifier, uuid.NewV4().String()))
-	if err := os.MkdirAll(instanceDir, 0700); err != nil {
-		log.Println(fmt.Sprintf("Failed to create instance dir: %v", err))
-		return "", err
-	}
-
-	keyDir := filepath.Join(instanceDir, clientIdentifier)
+	keyDir := filepath.Join(dataDir, clientIdentifier)
 	if err := os.MkdirAll(keyDir, 0700); err != nil {
 		log.Println(fmt.Sprintf("Failed to create key dir: %v", err))
-		return "", err
+		return err
 	}
 
 	keyfile := filepath.Join(keyDir, datadirPrivateKey)
 	if err := crypto.SaveECDSA(keyfile, key); err != nil {
 		log.Println(fmt.Sprintf("Failed to persist node key: %v", err))
-		return "", err
+		return err
 	}
-	return instanceDir, nil
+	return nil
 }
 
 func saveStaticNode(dataDir string, nodes []string) error {
