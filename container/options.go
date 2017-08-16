@@ -24,9 +24,15 @@ import (
 
 type Option func(*ethereum)
 
-func ImageName(imageName string) Option {
+func ImageRepository(repository string) Option {
 	return func(eth *ethereum) {
-		eth.imageName = imageName
+		eth.imageRepository = repository
+	}
+}
+
+func ImageTag(tag string) Option {
+	return func(eth *ethereum) {
+		eth.imageTag = tag
 	}
 }
 

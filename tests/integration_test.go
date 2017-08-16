@@ -26,7 +26,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/getamis/go-ethereum/ethclient"
 	"github.com/getamis/istanbul-tools/container"
 	"github.com/getamis/istanbul-tools/core"
 	"github.com/getamis/istanbul-tools/core/genesis"
@@ -51,7 +50,8 @@ var _ = Describe("4 validators Istanbul", func() {
 		for _, env := range envs {
 			geth := container.NewEthereum(
 				env.Client,
-				container.ImageName("quay.io/amis/geth:istanbul_develop"),
+				container.ImageRepository("quay.io/amis/geth"),
+				container.ImageTag("istanbul_develop"),
 				container.HostDataDir(env.DataDir),
 				container.DataDir("/data"),
 				container.Port(fmt.Sprintf("%d", env.P2PPort)),
@@ -83,11 +83,11 @@ var _ = Describe("4 validators Istanbul", func() {
 	})
 
 	It("Blockchain creation", func() {
-		for _, env := range envs {
-			cli, err := ethclient.Dial("http://localhost:" + fmt.Sprintf("%d", env.RpcPort))
-			Expect(err).To(BeNil())
+		for _, geth := range geths {
+			client := geth.NewClient()
+			Expect(client).NotTo(BeNil())
 
-			block, err := cli.BlockByNumber(context.Background(), big.NewInt(0))
+			block, err := client.BlockByNumber(context.Background(), big.NewInt(0))
 			Expect(err).To(BeNil())
 			Expect(block).NotTo(BeNil())
 		}

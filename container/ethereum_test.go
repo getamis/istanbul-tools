@@ -36,7 +36,8 @@ func TestEthereumContainer(t *testing.T) {
 	for _, env := range envs {
 		geth := NewEthereum(
 			env.Client,
-			ImageName("quay.io/amis/geth:istanbul_develop"),
+			ImageRepository("quay.io/amis/geth"),
+			ImageTag("istanbul_develop"),
 			HostDataDir(env.DataDir),
 			DataDir("/data"),
 			Port(fmt.Sprintf("%d", env.P2PPort)),
@@ -44,7 +45,6 @@ func TestEthereumContainer(t *testing.T) {
 			RPCAddress("0.0.0.0"),
 			RPCAPI("eth,net,web3,personal"),
 			RPCPort(fmt.Sprintf("%d", env.RpcPort)),
-			Logging(true),
 		)
 
 		err := geth.Init(filepath.Join(env.DataDir, genesis.FileName))
