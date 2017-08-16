@@ -22,13 +22,12 @@ import (
 	"testing"
 
 	"github.com/getamis/istanbul-tools/core"
-	"github.com/getamis/istanbul-tools/core/genesis"
 )
 
 func TestEthereumContainer(t *testing.T) {
 	envs := core.SetupEnv(1)
 	defer core.Teardown(envs)
-	err := core.SetupNodes(envs)
+	err := core.SetupNodes(envs, core.NewGenesis(envs))
 	if err != nil {
 		t.Error(err)
 	}
@@ -47,7 +46,7 @@ func TestEthereumContainer(t *testing.T) {
 			RPCPort(fmt.Sprintf("%d", env.RpcPort)),
 		)
 
-		err := geth.Init(filepath.Join(env.DataDir, genesis.FileName))
+		err := geth.Init(filepath.Join(env.DataDir, core.GenesisFile))
 		if err != nil {
 			t.Error(err)
 		}
