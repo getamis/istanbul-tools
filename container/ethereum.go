@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"io/ioutil"
 	"log"
 	"math/big"
 	"os"
@@ -75,7 +76,7 @@ func NewEthereum(c *client.Client, options ...Option) *ethereum {
 		if eth.logging {
 			io.Copy(os.Stdout, out)
 		} else {
-			_ = out
+			io.Copy(ioutil.Discard, out)
 		}
 	}
 
