@@ -90,6 +90,7 @@ type ethereum struct {
 	dataDir     string
 	port        string
 	rpcPort     string
+	wsPort      string
 	hostName    string
 	containerID string
 
@@ -153,34 +154,51 @@ func (eth *ethereum) Init(genesisFile string) error {
 }
 
 func (eth *ethereum) Start() error {
+	exposedPorts := make(map[nat.Port]struct{})
+	portBindings := nat.PortMap{}
+
+	if eth.port != "" {
+		exposedPorts[nat.Port(eth.port)] = struct{}{}
+		portBindings[nat.Port(eth.port)] = []nat.PortBinding{
+			{
+				HostIP:   "0.0.0.0",
+				HostPort: eth.port,
+			},
+		}
+	}
+
+	if eth.rpcPort != "" {
+		exposedPorts[nat.Port(eth.rpcPort)] = struct{}{}
+		portBindings[nat.Port(eth.rpcPort)] = []nat.PortBinding{
+			{
+				HostIP:   "0.0.0.0",
+				HostPort: eth.rpcPort,
+			},
+		}
+	}
+
+	if eth.wsPort != "" {
+		exposedPorts[nat.Port(eth.wsPort)] = struct{}{}
+		portBindings[nat.Port(eth.wsPort)] = []nat.PortBinding{
+			{
+				HostIP:   "0.0.0.0",
+				HostPort: eth.wsPort,
+			},
+		}
+	}
+
 	resp, err := eth.client.ContainerCreate(context.Background(),
 		&container.Config{
-			Hostname: "geth-" + eth.hostName,
-			Image:    eth.Image(),
-			Cmd:      eth.flags,
-			ExposedPorts: map[nat.Port]struct{}{
-				nat.Port(eth.port):    {},
-				nat.Port(eth.rpcPort): {},
-			},
+			Hostname:     "geth-" + eth.hostName,
+			Image:        eth.Image(),
+			Cmd:          eth.flags,
+			ExposedPorts: exposedPorts,
 		},
 		&container.HostConfig{
 			Binds: []string{
 				eth.hostDataDir + ":" + eth.dataDir,
 			},
-			PortBindings: nat.PortMap{
-				nat.Port(eth.port): []nat.PortBinding{
-					{
-						HostIP:   "0.0.0.0",
-						HostPort: eth.port,
-					},
-				},
-				nat.Port(eth.rpcPort): []nat.PortBinding{
-					{
-						HostIP:   "0.0.0.0",
-						HostPort: eth.rpcPort,
-					},
-				},
-			},
+			PortBindings: portBindings,
 		}, nil, "")
 	if err != nil {
 		log.Printf("Failed to create container, err: %v", err)
@@ -259,7 +277,17 @@ func (eth *ethereum) Running() bool {
 }
 
 func (eth *ethereum) NewClient() *ethclient.Client {
-	client, err := ethclient.Dial("http://" + eth.Host() + ":" + eth.rpcPort)
+	var scheme, port string
+
+	if eth.rpcPort != "" {
+		scheme = "http://"
+		port = eth.rpcPort
+	}
+	if eth.wsPort != "" {
+		scheme = "ws://"
+		port = eth.wsPort
+	}
+	client, err := ethclient.Dial(scheme + eth.Host() + ":" + port)
 	if err != nil {
 		log.Printf("Failed to dial to geth, err: %v", err)
 		return nil
