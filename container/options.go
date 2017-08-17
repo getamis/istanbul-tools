@@ -17,6 +17,7 @@
 package container
 
 import (
+	"crypto/ecdsa"
 	"fmt"
 
 	"github.com/getamis/go-ethereum/cmd/utils"
@@ -44,7 +45,25 @@ func HostName(hostName string) Option {
 
 func HostDataDir(path string) Option {
 	return func(eth *ethereum) {
-		eth.hostDataDir = path
+		eth.dataDir = path
+	}
+}
+
+func HostPort(port int) Option {
+	return func(eth *ethereum) {
+		eth.port = fmt.Sprintf("%d", port)
+	}
+}
+
+func HostRPCPort(port int) Option {
+	return func(eth *ethereum) {
+		eth.rpcPort = fmt.Sprintf("%d", port)
+	}
+}
+
+func HostWebSocketPort(port int) Option {
+	return func(eth *ethereum) {
+		eth.wsPort = fmt.Sprintf("%d", port)
 	}
 }
 
@@ -56,11 +75,20 @@ func Logging(enabled bool) Option {
 
 // ----------------------------------------------------------------------------
 
+func Key(key *ecdsa.PrivateKey) Option {
+	return func(eth *ethereum) {
+		eth.key = key
+	}
+}
+
 func DataDir(dir string) Option {
 	return func(eth *ethereum) {
+		utils.DataDirFlag.Value = utils.DirectoryString{
+			Value: dir,
+		}
 		eth.flags = append(eth.flags, "--"+utils.DataDirFlag.Name)
 		eth.flags = append(eth.flags, dir)
-		eth.dataDir = dir
+
 	}
 }
 
@@ -133,11 +161,11 @@ func NoDiscover() Option {
 	}
 }
 
-func Port(port string) Option {
+func Port(port int) Option {
 	return func(eth *ethereum) {
+		utils.ListenPortFlag.Value = port
 		eth.flags = append(eth.flags, "--"+utils.ListenPortFlag.Name)
-		eth.flags = append(eth.flags, port)
-		eth.port = port
+		eth.flags = append(eth.flags, fmt.Sprintf("%d", port))
 	}
 }
 
@@ -161,11 +189,11 @@ func RPCAPI(apis string) Option {
 	}
 }
 
-func RPCPort(port string) Option {
+func RPCPort(port int) Option {
 	return func(eth *ethereum) {
+		utils.RPCPortFlag.Value = port
 		eth.flags = append(eth.flags, "--"+utils.RPCPortFlag.Name)
-		eth.flags = append(eth.flags, port)
-		eth.rpcPort = port
+		eth.flags = append(eth.flags, fmt.Sprintf("%d", port))
 	}
 }
 
@@ -189,11 +217,11 @@ func WebSocketAPI(apis string) Option {
 	}
 }
 
-func WebSocketPort(port string) Option {
+func WebSocketPort(port int) Option {
 	return func(eth *ethereum) {
+		utils.WSPortFlag.Value = port
 		eth.flags = append(eth.flags, "--"+utils.WSPortFlag.Name)
-		eth.flags = append(eth.flags, port)
-		eth.wsPort = port
+		eth.flags = append(eth.flags, fmt.Sprintf("%d", port))
 	}
 }
 

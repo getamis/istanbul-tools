@@ -18,7 +18,9 @@ package container
 
 import (
 	"context"
+	"crypto/ecdsa"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -32,9 +34,10 @@ import (
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
-	"github.com/getamis/go-ethereum/cmd/utils"
-	"github.com/getamis/go-ethereum/ethclient"
-	"github.com/getamis/istanbul-tools/core"
+	"github.com/ethereum/go-ethereum/cmd/utils"
+	"github.com/ethereum/go-ethereum/ethclient"
+
+	"github.com/getamis/istanbul-tools/genesis"
 )
 
 const (
@@ -86,7 +89,6 @@ func NewEthereum(c *client.Client, options ...Option) *ethereum {
 type ethereum struct {
 	ok          bool
 	flags       []string
-	hostDataDir string
 	dataDir     string
 	port        string
 	rpcPort     string
@@ -97,26 +99,35 @@ type ethereum struct {
 	imageRepository string
 	imageTag        string
 
+	key     *ecdsa.PrivateKey
 	logging bool
 	client  *client.Client
 }
 
 func (eth *ethereum) Init(genesisFile string) error {
+	if err := saveNodeKey(eth.key, eth.dataDir); err != nil {
+		log.Fatal("Failed to save nodekey", err)
+		return err
+	}
+
+	binds := []string{
+		genesisFile + ":" + filepath.Join("/", genesis.FileName),
+	}
+	if eth.dataDir != "" {
+		binds = append(binds, eth.dataDir+":"+utils.DataDirFlag.Value.Value)
+	}
 	resp, err := eth.client.ContainerCreate(context.Background(),
 		&container.Config{
 			Image: eth.Image(),
 			Cmd: []string{
 				"init",
 				"--" + utils.DataDirFlag.Name,
-				eth.dataDir,
-				filepath.Join("/", core.GenesisFile),
+				utils.DataDirFlag.Value.Value,
+				filepath.Join("/", genesis.FileName),
 			},
 		},
 		&container.HostConfig{
-			Binds: []string{
-				genesisFile + ":" + filepath.Join("/", core.GenesisFile),
-				eth.hostDataDir + ":" + eth.dataDir,
-			},
+			Binds: binds,
 		}, nil, "")
 	if err != nil {
 		log.Printf("Failed to create container, err: %v", err)
@@ -158,8 +169,9 @@ func (eth *ethereum) Start() error {
 	portBindings := nat.PortMap{}
 
 	if eth.port != "" {
-		exposedPorts[nat.Port(eth.port)] = struct{}{}
-		portBindings[nat.Port(eth.port)] = []nat.PortBinding{
+		port := fmt.Sprintf("%d", utils.ListenPortFlag.Value)
+		exposedPorts[nat.Port(port)] = struct{}{}
+		portBindings[nat.Port(port)] = []nat.PortBinding{
 			{
 				HostIP:   "0.0.0.0",
 				HostPort: eth.port,
@@ -168,8 +180,9 @@ func (eth *ethereum) Start() error {
 	}
 
 	if eth.rpcPort != "" {
-		exposedPorts[nat.Port(eth.rpcPort)] = struct{}{}
-		portBindings[nat.Port(eth.rpcPort)] = []nat.PortBinding{
+		port := fmt.Sprintf("%d", utils.RPCPortFlag.Value)
+		exposedPorts[nat.Port(port)] = struct{}{}
+		portBindings[nat.Port(port)] = []nat.PortBinding{
 			{
 				HostIP:   "0.0.0.0",
 				HostPort: eth.rpcPort,
@@ -178,13 +191,19 @@ func (eth *ethereum) Start() error {
 	}
 
 	if eth.wsPort != "" {
-		exposedPorts[nat.Port(eth.wsPort)] = struct{}{}
-		portBindings[nat.Port(eth.wsPort)] = []nat.PortBinding{
+		port := fmt.Sprintf("%d", utils.WSPortFlag.Value)
+		exposedPorts[nat.Port(port)] = struct{}{}
+		portBindings[nat.Port(port)] = []nat.PortBinding{
 			{
 				HostIP:   "0.0.0.0",
 				HostPort: eth.wsPort,
 			},
 		}
+	}
+
+	binds := []string{}
+	if eth.dataDir != "" {
+		binds = append(binds, eth.dataDir+":"+utils.DataDirFlag.Value.Value)
 	}
 
 	resp, err := eth.client.ContainerCreate(context.Background(),
@@ -195,9 +214,7 @@ func (eth *ethereum) Start() error {
 			ExposedPorts: exposedPorts,
 		},
 		&container.HostConfig{
-			Binds: []string{
-				eth.hostDataDir + ":" + eth.dataDir,
-			},
+			Binds:        binds,
 			PortBindings: portBindings,
 		}, nil, "")
 	if err != nil {
@@ -247,6 +264,8 @@ func (eth *ethereum) Stop() error {
 		return err
 	}
 
+	os.RemoveAll(eth.dataDir)
+
 	return eth.client.ContainerRemove(context.Background(), eth.containerID,
 		types.ContainerRemoveOptions{
 			Force: true,
@@ -289,7 +308,6 @@ func (eth *ethereum) NewClient() *ethclient.Client {
 	}
 	client, err := ethclient.Dial(scheme + eth.Host() + ":" + port)
 	if err != nil {
-		log.Printf("Failed to dial to geth, err: %v", err)
 		return nil
 	}
 	return client
