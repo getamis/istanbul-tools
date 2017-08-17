@@ -41,10 +41,12 @@ func TestEthereumContainer(t *testing.T) {
 			HostDataDir(env.DataDir),
 			DataDir("/data"),
 			Port(fmt.Sprintf("%d", env.P2PPort)),
-			RPC(),
-			RPCAddress("0.0.0.0"),
-			RPCAPI("eth,net,web3,personal"),
-			RPCPort(fmt.Sprintf("%d", env.RpcPort)),
+			WebSocket(),
+			WebSocketAddress("0.0.0.0"),
+			WebSocketAPI("eth,net,web3,personal"),
+			WebSocketPort(fmt.Sprintf("%d", env.RpcPort)),
+			WebSocketOrigin("*"),
+			NoDiscover(),
 		)
 
 		err := geth.Init(filepath.Join(env.DataDir, genesis.FileName))

@@ -169,6 +169,41 @@ func RPCPort(port string) Option {
 	}
 }
 
+func WebSocket() Option {
+	return func(eth *ethereum) {
+		eth.flags = append(eth.flags, "--"+utils.WSEnabledFlag.Name)
+	}
+}
+
+func WebSocketAddress(address string) Option {
+	return func(eth *ethereum) {
+		eth.flags = append(eth.flags, "--"+utils.WSListenAddrFlag.Name)
+		eth.flags = append(eth.flags, address)
+	}
+}
+
+func WebSocketAPI(apis string) Option {
+	return func(eth *ethereum) {
+		eth.flags = append(eth.flags, "--"+utils.WSApiFlag.Name)
+		eth.flags = append(eth.flags, apis)
+	}
+}
+
+func WebSocketPort(port string) Option {
+	return func(eth *ethereum) {
+		eth.flags = append(eth.flags, "--"+utils.WSPortFlag.Name)
+		eth.flags = append(eth.flags, port)
+		eth.wsPort = port
+	}
+}
+
+func WebSocketOrigin(origins string) Option {
+	return func(eth *ethereum) {
+		eth.flags = append(eth.flags, "--"+utils.WSAllowedOriginsFlag.Name)
+		eth.flags = append(eth.flags, origins)
+	}
+}
+
 func Verbosity(verbosity int) Option {
 	return func(eth *ethereum) {
 		eth.flags = append(eth.flags, "--verbosity")
