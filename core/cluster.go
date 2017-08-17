@@ -62,6 +62,33 @@ type Env struct {
 	Client  *client.Client
 }
 
+// TODO: need to refactor with ethereum/container
+func (e *Env) Address() common.Address {
+	addrs := toAddress([]*Env{e})
+	return addrs[0]
+}
+
+// TODO: need to refactor with ethereum/container
+func (e *Env) NodeURL() string {
+	nodeID := discover.PubkeyID(&e.Key.PublicKey)
+	daemonHost := e.Client.DaemonHost()
+	url, err := url.Parse(daemonHost)
+	if err != nil {
+		log.Fatalf("Failed to parse daemon host, err: %v", err)
+	}
+
+	var host string
+	if url.Scheme == "unix" {
+		host = "127.0.0.1"
+	} else {
+		host, _, err = net.SplitHostPort(url.Host)
+		if err != nil {
+			log.Fatalf("Failed to split host and port, err: %v", err)
+		}
+	}
+	return discover.NewNode(nodeID, net.ParseIP(host), 0, e.P2PPort).String()
+}
+
 func Teardown(envs []*Env) {
 	for _, env := range envs {
 		os.RemoveAll(env.DataDir)
@@ -191,24 +218,7 @@ func toStaticNodes(envs []*Env) []string {
 	nodes := make([]string, len(envs))
 
 	for i, env := range envs {
-		daemonHost := env.Client.DaemonHost()
-		url, err := url.Parse(daemonHost)
-		if err != nil {
-			log.Fatalf("Failed to parse daemon host, err: %v", err)
-		}
-
-		var host string
-		if url.Scheme == "unix" {
-			host = "127.0.0.1"
-		} else {
-			host, _, err = net.SplitHostPort(url.Host)
-			if err != nil {
-				log.Fatalf("Failed to split host and port, err: %v", err)
-			}
-		}
-
-		nodeID := discover.PubkeyID(&env.Key.PublicKey)
-		nodes[i] = discover.NewNode(nodeID, net.ParseIP(host), 0, env.P2PPort).String()
+		nodes[i] = env.NodeURL()
 	}
 	return nodes
 }
