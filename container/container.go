@@ -29,6 +29,10 @@ func (eth *ethereum) Image() string {
 	return eth.imageRepository + ":" + eth.imageTag
 }
 
+func (eth *ethereum) ContainerID() string {
+	return eth.containerID
+}
+
 func (eth *ethereum) Host() string {
 	var host string
 	daemonHost := eth.client.DaemonHost()

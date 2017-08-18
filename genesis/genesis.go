@@ -19,10 +19,10 @@ package genesis
 import (
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"math/big"
 	"path/filepath"
 	"time"
-	"log"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -30,6 +30,7 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
+
 	"github.com/getamis/istanbul-tools/cmd/istanbul/extradata"
 )
 

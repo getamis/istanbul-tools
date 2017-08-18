@@ -25,6 +25,7 @@ import (
 	"io/ioutil"
 	"log"
 	"math/big"
+	"net"
 	"os"
 	"path/filepath"
 	"time"
@@ -36,6 +37,7 @@ import (
 	"github.com/docker/go-connections/nat"
 	"github.com/ethereum/go-ethereum/cmd/utils"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/p2p/discover"
 
 	"github.com/getamis/istanbul-tools/genesis"
 )
@@ -50,6 +52,9 @@ type Ethereum interface {
 	Start() error
 	Stop() error
 
+	NodeAddress() string
+
+	ContainerID() string
 	Host() string
 	NewClient() *ethclient.Client
 }
@@ -95,6 +100,8 @@ type ethereum struct {
 	wsPort      string
 	hostName    string
 	containerID string
+	ipAddress   string
+	node        *discover.Node
 
 	imageRepository string
 	imageTag        string
@@ -116,6 +123,7 @@ func (eth *ethereum) Init(genesisFile string) error {
 	if eth.dataDir != "" {
 		binds = append(binds, eth.dataDir+":"+utils.DataDirFlag.Value.Value)
 	}
+
 	resp, err := eth.client.ContainerCreate(context.Background(),
 		&container.Config{
 			Image: eth.Image(),
@@ -134,12 +142,6 @@ func (eth *ethereum) Init(genesisFile string) error {
 		return err
 	}
 
-	defer func() {
-		if eth.logging {
-			go eth.showLog(context.Background())
-		}
-	}()
-
 	id := resp.ID
 
 	if err := eth.client.ContainerStart(context.Background(), id, types.ContainerStartOptions{}); err != nil {
@@ -147,15 +149,16 @@ func (eth *ethereum) Init(genesisFile string) error {
 		return err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	resC, errC := eth.client.ContainerWait(ctx, id, container.WaitConditionNotRunning)
+	resC, errC := eth.client.ContainerWait(context.Background(), id, container.WaitConditionNotRunning)
 	select {
 	case <-resC:
 	case <-errC:
 		log.Printf("Failed to wait container, err: %v", err)
 		return err
+	}
+
+	if eth.logging {
+		eth.showLog(context.Background())
 	}
 
 	return eth.client.ContainerRemove(context.Background(), id,
@@ -254,6 +257,21 @@ func (eth *ethereum) Start() error {
 		return errors.New("Failed to start geth")
 	}
 
+	containerJSON, err := eth.client.ContainerInspect(context.Background(), eth.containerID)
+	if err != nil {
+		log.Print("Failed to inspect container,", err)
+		return err
+	}
+
+	eth.ipAddress = containerJSON.NetworkSettings.IPAddress
+	if eth.key != nil {
+		eth.node = discover.NewNode(
+			discover.PubkeyID(&eth.key.PublicKey),
+			net.ParseIP(containerJSON.NetworkSettings.IPAddress),
+			0,
+			uint16(utils.ListenPortFlag.Value))
+	}
+
 	return nil
 }
 
@@ -311,6 +329,14 @@ func (eth *ethereum) NewClient() *ethclient.Client {
 		return nil
 	}
 	return client
+}
+
+func (eth *ethereum) NodeAddress() string {
+	if eth.node != nil {
+		return eth.node.String()
+	}
+
+	return ""
 }
 
 // ----------------------------------------------------------------------------
