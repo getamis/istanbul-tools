@@ -14,21 +14,37 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-package core
+package container
 
 import (
-	"fmt"
 	"testing"
+	"time"
 )
 
-func TestWriteFile(t *testing.T) {
-	envs := SetupEnv(4)
-	err := SetupNodes(envs, NewGenesis(envs))
+func TestEthereumBlockchain(t *testing.T) {
+	chain := NewBlockchain(
+		4,
+		ImageRepository("quay.io/amis/geth"),
+		ImageTag("istanbul_develop"),
+		DataDir("/data"),
+		WebSocket(),
+		WebSocketAddress("0.0.0.0"),
+		WebSocketAPI("eth,net,web3,personal"),
+		WebSocketOrigin("*"),
+		NoDiscover(),
+		Logging(true),
+	)
+	defer chain.Finalize()
+
+	err := chain.Start()
 	if err != nil {
-		t.Fatal("failed to setup nodes", err)
+		t.Error(err)
 	}
-	defer Teardown(envs)
-	for _, env := range envs {
-		fmt.Println(fmt.Sprintf("%s%d%s%s", "geth ID:", env.GethID, ", dataDir:", env.DataDir))
+
+	time.Sleep(5 * time.Second)
+
+	err = chain.Stop()
+	if err != nil {
+		t.Error(err)
 	}
 }

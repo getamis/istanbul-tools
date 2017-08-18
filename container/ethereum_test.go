@@ -17,54 +17,43 @@
 package container
 
 import (
-	"fmt"
-	"path/filepath"
 	"testing"
 
-	"github.com/getamis/istanbul-tools/core"
+	"github.com/docker/docker/client"
+	"github.com/phayes/freeport"
 )
 
 func TestEthereumContainer(t *testing.T) {
-	envs := core.SetupEnv(1)
-	defer core.Teardown(envs)
-	err := core.SetupNodes(envs, core.NewGenesis(envs))
+	dockerClient, err := client.NewEnvClient()
 	if err != nil {
 		t.Error(err)
 	}
 
-	for _, env := range envs {
-		geth := NewEthereum(
-			env.Client,
-			ImageRepository("quay.io/amis/geth"),
-			ImageTag("istanbul_develop"),
-			HostDataDir(env.DataDir),
-			DataDir("/data"),
-			Port(fmt.Sprintf("%d", env.P2PPort)),
-			WebSocket(),
-			WebSocketAddress("0.0.0.0"),
-			WebSocketAPI("eth,net,web3,personal"),
-			WebSocketPort(fmt.Sprintf("%d", env.RpcPort)),
-			WebSocketOrigin("*"),
-			NoDiscover(),
-		)
+	geth := NewEthereum(
+		dockerClient,
+		ImageRepository("quay.io/amis/geth"),
+		ImageTag("istanbul_develop"),
+		DataDir("/data"),
+		HostPort(freeport.GetPort()),
+		WebSocket(),
+		WebSocketAddress("0.0.0.0"),
+		WebSocketAPI("eth,net,web3,personal"),
+		HostWebSocketPort(freeport.GetPort()),
+		WebSocketOrigin("*"),
+		NoDiscover(),
+	)
 
-		err := geth.Init(filepath.Join(env.DataDir, core.GenesisFile))
-		if err != nil {
-			t.Error(err)
-		}
+	err = geth.Start()
+	if err != nil {
+		t.Error(err)
+	}
 
-		err = geth.Start()
-		if err != nil {
-			t.Error(err)
-		}
+	if !geth.Running() {
+		t.Error("geth should be running")
+	}
 
-		if !geth.Running() {
-			t.Error("geth should be running")
-		}
-
-		err = geth.Stop()
-		if err != nil {
-			t.Error(err)
-		}
+	err = geth.Stop()
+	if err != nil {
+		t.Error(err)
 	}
 }

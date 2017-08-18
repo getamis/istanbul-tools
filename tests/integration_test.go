@@ -18,74 +18,50 @@ package tests
 
 import (
 	"context"
-	"fmt"
 	"math/big"
-	"path/filepath"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	"github.com/getamis/istanbul-tools/container"
-	"github.com/getamis/istanbul-tools/core"
 )
-
-// var geths []container.Ethereum
 
 var _ = Describe("4 validators Istanbul", func() {
 	const (
 		numberOfValidators = 4
 	)
 	var (
-		envs  []*core.Env
-		geths []container.Ethereum
+		blockchain container.Blockchain
 	)
 
 	BeforeSuite(func() {
-		envs = core.SetupEnv(numberOfValidators)
-		err := core.SetupNodes(envs, core.NewGenesis(envs))
-		Expect(err).To(BeNil())
+		blockchain = container.NewBlockchain(
+			numberOfValidators,
+			container.ImageRepository("quay.io/amis/geth"),
+			container.ImageTag("istanbul_develop"),
+			container.DataDir("/data"),
+			container.WebSocket(),
+			container.WebSocketAddress("0.0.0.0"),
+			container.WebSocketAPI("eth,net,web3,personal,miner"),
+			container.WebSocketOrigin("*"),
+			container.NAT("any"),
+			container.NoDiscover(),
+			container.Etherbase("1a9afb711302c5f83b5902843d1c007a1a137632"),
+			container.Mine(),
+			container.Logging(true),
+		)
 
-		for _, env := range envs {
-			geth := container.NewEthereum(
-				env.Client,
-				container.ImageRepository("quay.io/amis/geth"),
-				container.ImageTag("istanbul_develop"),
-				container.HostDataDir(env.DataDir),
-				container.DataDir("/data"),
-				container.Port(fmt.Sprintf("%d", env.P2PPort)),
-				container.WebSocket(),
-				container.WebSocketAddress("0.0.0.0"),
-				container.WebSocketAPI("eth,net,web3,personal,miner"),
-				container.WebSocketPort(fmt.Sprintf("%d", env.RpcPort)),
-				container.WebSocketOrigin("*"),
-				container.NAT("any"),
-				container.NoDiscover(),
-				container.Etherbase("1a9afb711302c5f83b5902843d1c007a1a137632"),
-				container.Mine(),
-				container.Logging(true),
-			)
-
-			err := geth.Init(filepath.Join(env.DataDir, core.GenesisFile))
-			Expect(err).To(BeNil())
-
-			geths = append(geths, geth)
-
-			err = geth.Start()
-			Expect(err).To(BeNil())
-		}
+		Expect(blockchain.Start()).To(BeNil())
 	})
 
 	AfterSuite(func() {
-		for _, geth := range geths {
-			geth.Stop()
-		}
-
-		core.Teardown(envs)
+		Expect(blockchain.Stop()).To(BeNil())
+		blockchain.Finalize()
 	})
 
 	It("Blockchain creation", func() {
-		for _, geth := range geths {
+		for _, geth := range blockchain.Validators() {
 			client := geth.NewClient()
 			Expect(client).NotTo(BeNil())
 
