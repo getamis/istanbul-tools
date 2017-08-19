@@ -40,6 +40,7 @@ import (
 	"github.com/ethereum/go-ethereum/p2p/discover"
 
 	"github.com/getamis/istanbul-tools/genesis"
+	"github.com/getamis/istanbul-tools/istclient"
 )
 
 const (
@@ -57,6 +58,7 @@ type Ethereum interface {
 	ContainerID() string
 	Host() string
 	NewClient() *ethclient.Client
+	NewIstanbulClient() *istclient.Client
 }
 
 func NewEthereum(c *client.Client, options ...Option) *ethereum {
@@ -325,6 +327,24 @@ func (eth *ethereum) NewClient() *ethclient.Client {
 		port = eth.wsPort
 	}
 	client, err := ethclient.Dial(scheme + eth.Host() + ":" + port)
+	if err != nil {
+		return nil
+	}
+	return client
+}
+
+func (eth *ethereum) NewIstanbulClient() *istclient.Client {
+	var scheme, port string
+
+	if eth.rpcPort != "" {
+		scheme = "http://"
+		port = eth.rpcPort
+	}
+	if eth.wsPort != "" {
+		scheme = "ws://"
+		port = eth.wsPort
+	}
+	client, err := istclient.Dial(scheme + eth.Host() + ":" + port)
 	if err != nil {
 		return nil
 	}

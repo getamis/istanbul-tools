@@ -37,7 +37,7 @@ func TestEthereumContainer(t *testing.T) {
 		HostPort(freeport.GetPort()),
 		WebSocket(),
 		WebSocketAddress("0.0.0.0"),
-		WebSocketAPI("eth,net,web3,personal"),
+		WebSocketAPI("admin,eth,net,web3,personal"),
 		HostWebSocketPort(freeport.GetPort()),
 		WebSocketOrigin("*"),
 		NoDiscover(),
