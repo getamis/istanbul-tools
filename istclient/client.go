@@ -23,6 +23,7 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/p2p"
 	"github.com/ethereum/go-ethereum/rpc"
 )
 
@@ -55,15 +56,14 @@ func (ic *Client) AddPeer(ctx context.Context, nodeURL string) error {
 	return err
 }
 
-func (ic *Client) AdminPeers(ctx context.Context) error {
-	var r bool
-	// TODO: Result needs to be verified
+func (ic *Client) AdminPeers(ctx context.Context) ([]*p2p.PeerInfo, error) {
+	var r []*p2p.PeerInfo
 	// The response data type are bytes, but we cannot parse...
 	err := ic.c.CallContext(ctx, &r, "admin_peers")
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return err
+	return r, err
 }
 
 // ----------------------------------------------------------------------------
