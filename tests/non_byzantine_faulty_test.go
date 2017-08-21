@@ -18,8 +18,7 @@ package tests
 
 import (
 	"context"
-	"math/big"
-	"testing"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -27,7 +26,7 @@ import (
 	"github.com/getamis/istanbul-tools/container"
 )
 
-var _ = Describe("4 validators Istanbul", func() {
+var _ = Describe("TSU-04: Non-Byzantine Faulty", func() {
 	const (
 		numberOfValidators = 4
 	)
@@ -49,30 +48,61 @@ var _ = Describe("4 validators Istanbul", func() {
 			container.NoDiscover(),
 			container.Etherbase("1a9afb711302c5f83b5902843d1c007a1a137632"),
 			container.Mine(),
-			container.Logging(true),
+			container.Logging(false),
 		)
 
 		Expect(blockchain.Start()).To(BeNil())
 	})
 
 	AfterEach(func() {
-		Expect(blockchain.Stop()).To(BeNil())
+		blockchain.Stop() // This will return container not found error since we stop one
 		blockchain.Finalize()
 	})
 
-	It("Blockchain creation", func() {
-		for _, geth := range blockchain.Validators() {
-			client := geth.NewClient()
-			Expect(client).NotTo(BeNil())
+	It("TSU-04-01: Stop F validators", func(done Done) {
 
-			block, err := client.BlockByNumber(context.Background(), big.NewInt(0))
-			Expect(err).To(BeNil())
-			Expect(block).NotTo(BeNil())
+		By("Generating blocks")
+		v0 := blockchain.Validators()[0]
+		c0 := v0.NewIstanbulClient()
+		ticker := time.NewTicker(time.Millisecond * 100)
+		for _ = range ticker.C {
+			n, e := c0.BlockNumber(context.Background())
+			Expect(e).To(BeNil())
+			// Check if new blocks are getting generated
+			if n.Int64() > 1 {
+				ticker.Stop()
+				break
+			}
 		}
-	})
-})
+		By("Stopping validator 0")
+		e := v0.Stop()
+		Expect(e).To(BeNil())
 
-func TestIstanbul(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Istanbul Test Suite")
-}
+		ticker = time.NewTicker(time.Millisecond * 100)
+		for _ = range ticker.C {
+			e := v0.Stop()
+			// Wait for e to be non-nil to make sure the container is down
+			if e != nil {
+				ticker.Stop()
+				break
+			}
+		}
+
+		By("Checking blockchain progress")
+		v1 := blockchain.Validators()[1]
+		c1 := v1.NewIstanbulClient()
+		n1, e := c1.BlockNumber(context.Background())
+		Expect(e).To(BeNil())
+		ticker = time.NewTicker(time.Millisecond * 100)
+		for _ = range ticker.C {
+			newN1, e := c1.BlockNumber(context.Background())
+			Expect(e).To(BeNil())
+			if newN1.Int64() > n1.Int64() {
+				ticker.Stop()
+				break
+			}
+		}
+
+		close(done)
+	}, 60)
+})
