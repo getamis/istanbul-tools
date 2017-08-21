@@ -36,7 +36,9 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 	"github.com/ethereum/go-ethereum/cmd/utils"
+	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/p2p/discover"
 
@@ -59,6 +61,7 @@ type Ethereum interface {
 	Stop() error
 
 	NodeAddress() string
+	Address() common.Address
 
 	ContainerID() string
 	Host() string
@@ -361,6 +364,10 @@ func (eth *ethereum) NodeAddress() string {
 	}
 
 	return ""
+}
+
+func (eth *ethereum) Address() common.Address {
+	return crypto.PubkeyToAddress(eth.key.PublicKey)
 }
 
 func (eth *ethereum) ConsensusMonitor(errCh chan<- error, quit chan struct{}) {
