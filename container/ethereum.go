@@ -102,7 +102,6 @@ type ethereum struct {
 	wsPort      string
 	hostName    string
 	containerID string
-	ipAddress   string
 	node        *discover.Node
 
 	imageRepository string
@@ -265,7 +264,6 @@ func (eth *ethereum) Start() error {
 		return err
 	}
 
-	eth.ipAddress = containerJSON.NetworkSettings.IPAddress
 	if eth.key != nil {
 		eth.node = discover.NewNode(
 			discover.PubkeyID(&eth.key.PublicKey),
