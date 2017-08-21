@@ -20,6 +20,7 @@ import (
 	"context"
 	"math/big"
 	"testing"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -43,7 +44,7 @@ var _ = Describe("4 validators Istanbul", func() {
 			container.DataDir("/data"),
 			container.WebSocket(),
 			container.WebSocketAddress("0.0.0.0"),
-			container.WebSocketAPI("admin,eth,net,web3,personal,miner"),
+			container.WebSocketAPI("admin,eth,net,web3,personal,miner,istanbul"),
 			container.WebSocketOrigin("*"),
 			container.NAT("any"),
 			container.NoDiscover(),
@@ -69,8 +70,31 @@ var _ = Describe("4 validators Istanbul", func() {
 			Expect(err).To(BeNil())
 			Expect(block).NotTo(BeNil())
 		}
+
+		By("Ensure that consensus is working in 30 seconds", func() { ensureConsensusWorking(blockchain.Validators(), 30*time.Second) })
 	})
 })
+
+func ensureConsensusWorking(geths []container.Ethereum, t time.Duration) {
+	errCh := make(chan error, len(geths))
+	quitCh := make(chan struct{}, len(geths))
+	for _, geth := range geths {
+		go geth.ConsensusMonitor(errCh, quitCh)
+	}
+
+	timeout := time.NewTimer(t)
+
+	defer timeout.Stop()
+
+	select {
+	case err := <-errCh:
+		Expect(err).Should(BeNil())
+	case <-timeout.C:
+		for i := 0; i < len(geths); i++ {
+			quitCh <- struct{}{}
+		}
+	}
+}
 
 func TestIstanbul(t *testing.T) {
 	RegisterFailHandler(Fail)
