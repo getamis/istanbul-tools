@@ -20,10 +20,13 @@ import (
 	"crypto/ecdsa"
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
 	"path/filepath"
+	"time"
 
-	"github.com/getamis/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -32,6 +35,10 @@ const (
 	clientIdentifier = "geth"
 	nodekeyFileName  = "nodekey"
 )
+
+func init() {
+	rand.Seed(time.Now().UTC().UnixNano())
+}
 
 func generateRandomDir() (string, error) {
 	err := os.MkdirAll(filepath.Join(defaultLocalDir), 0700)
@@ -46,6 +53,21 @@ func generateRandomDir() (string, error) {
 	}
 
 	return instanceDir, nil
+}
+
+func generateKeys(num int) (keys []*ecdsa.PrivateKey, addrs []common.Address) {
+	for i := 0; i < num; i++ {
+		key, err := crypto.GenerateKey()
+		if err != nil {
+			log.Fatalf("couldn't generate key: " + err.Error())
+		}
+		keys = append(keys, key)
+
+		addr := crypto.PubkeyToAddress(key.PublicKey)
+		addrs = append(addrs, addr)
+	}
+
+	return keys, addrs
 }
 
 func saveNodeKey(key *ecdsa.PrivateKey, dataDir string) error {

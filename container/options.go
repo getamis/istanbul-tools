@@ -20,7 +20,7 @@ import (
 	"crypto/ecdsa"
 	"fmt"
 
-	"github.com/getamis/go-ethereum/cmd/utils"
+	"github.com/ethereum/go-ethereum/cmd/utils"
 )
 
 type Option func(*ethereum)

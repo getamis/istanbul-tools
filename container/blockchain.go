@@ -17,15 +17,20 @@
 package container
 
 import (
+	"context"
 	"crypto/ecdsa"
+	"fmt"
 	"log"
+	"math/rand"
 	"os"
 	"path/filepath"
 
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/phayes/freeport"
+	uuid "github.com/satori/go.uuid"
 
 	"github.com/getamis/istanbul-tools/genesis"
 )
@@ -38,63 +43,18 @@ type Blockchain interface {
 }
 
 func NewBlockchain(numOfValidators int, options ...Option) (bc *blockchain) {
-	var keys []*ecdsa.PrivateKey
-	var addrs []common.Address
-
 	bc = &blockchain{}
 
-	for i := 0; i < numOfValidators; i++ {
-		key, err := crypto.GenerateKey()
-		if err != nil {
-			log.Fatalf("couldn't generate key: " + err.Error())
-		}
-		keys = append(keys, key)
-
-		addr := crypto.PubkeyToAddress(key.PublicKey)
-		addrs = append(addrs, addr)
-	}
-
-	setupDir, err := generateRandomDir()
-	if err != nil {
-		log.Fatal("Failed to create setup dir", err)
-	}
-	err = genesis.Save(setupDir, genesis.New(addrs))
-	if err != nil {
-		log.Fatal("Failed to save genesis", err)
-	}
-	bc.genesisFile = filepath.Join(setupDir, genesis.FileName)
-
-	dockerClient, err := client.NewEnvClient()
+	var err error
+	bc.dockerClient, err = client.NewEnvClient()
 	if err != nil {
 		log.Fatalf("Cannot connect to Docker daemon, err: %v", err)
 	}
 
-	for i := 0; i < numOfValidators; i++ {
-		opts := make([]Option, len(options))
-		copy(opts, options)
-
-		// Host data directory
-		dataDir, err := generateRandomDir()
-		if err != nil {
-			log.Fatal("Failed to create data dir", err)
-		}
-		opts = append(opts, HostDataDir(dataDir))
-		opts = append(opts, HostPort(freeport.GetPort()))
-		opts = append(opts, HostWebSocketPort(freeport.GetPort()))
-		opts = append(opts, Key(keys[i]))
-
-		geth := NewEthereum(
-			dockerClient,
-			opts...,
-		)
-
-		err = geth.Init(bc.genesisFile)
-		if err != nil {
-			log.Fatal("Failed to init genesis", err)
-		}
-
-		bc.validators = append(bc.validators, geth)
-	}
+	bc.setupNetwork()
+	keys, addrs := generateKeys(numOfValidators)
+	bc.setupGenesis(addrs)
+	bc.setupValidators(keys, options...)
 
 	return bc
 }
@@ -102,14 +62,23 @@ func NewBlockchain(numOfValidators int, options ...Option) (bc *blockchain) {
 // ----------------------------------------------------------------------------
 
 type blockchain struct {
-	genesisFile string
-	validators  []Ethereum
+	dockerClient    *client.Client
+	dockerNetworkID string
+	netClass        string
+	genesisFile     string
+	validators      []Ethereum
 }
 
 func (bc *blockchain) Start() error {
-	for _, v := range bc.validators {
+	for i, v := range bc.validators {
 		if err := v.Start(); err != nil {
 			return err
+		}
+
+		if err := bc.dockerClient.NetworkConnect(context.Background(), bc.dockerNetworkID, v.ContainerID(), &network.EndpointSettings{
+			IPAddress: fmt.Sprintf(bc.netClass+".%d", i+1),
+		}); err != nil {
+			log.Printf("Failed to connect to network '%s', %v", bc.dockerNetworkID, err)
 		}
 	}
 
@@ -128,8 +97,73 @@ func (bc *blockchain) Stop() error {
 
 func (bc *blockchain) Finalize() {
 	os.RemoveAll(filepath.Dir(bc.genesisFile))
+
+	bc.dockerClient.NetworkRemove(context.Background(), bc.dockerNetworkID)
 }
 
 func (bc *blockchain) Validators() []Ethereum {
 	return bc.validators
+}
+
+// ----------------------------------------------------------------------------
+
+func (bc *blockchain) setupNetwork() {
+	name := "net" + uuid.NewV4().String()
+	bc.netClass = fmt.Sprintf("172.16.%d", rand.Uint32()%255)
+	resp, err := bc.dockerClient.NetworkCreate(context.Background(), name, types.NetworkCreate{
+		IPAM: &network.IPAM{
+			Config: []network.IPAMConfig{
+				network.IPAMConfig{
+					Subnet: bc.netClass + ".0/24",
+				},
+			},
+		},
+	})
+
+	if err != nil {
+		log.Fatal("Failed to setup blockchain network,", err)
+	}
+
+	bc.dockerNetworkID = resp.ID
+}
+
+func (bc *blockchain) setupGenesis(addrs []common.Address) {
+	setupDir, err := generateRandomDir()
+	if err != nil {
+		log.Fatal("Failed to create setup dir", err)
+	}
+	err = genesis.Save(setupDir, genesis.New(addrs))
+	if err != nil {
+		log.Fatal("Failed to save genesis", err)
+	}
+	bc.genesisFile = filepath.Join(setupDir, genesis.FileName)
+}
+
+func (bc *blockchain) setupValidators(keys []*ecdsa.PrivateKey, options ...Option) {
+	for i := 0; i < len(keys); i++ {
+		var opts []Option
+		opts = append(opts, options...)
+
+		// Host data directory
+		dataDir, err := generateRandomDir()
+		if err != nil {
+			log.Fatal("Failed to create data dir", err)
+		}
+		opts = append(opts, HostDataDir(dataDir))
+		opts = append(opts, HostPort(freeport.GetPort()))
+		opts = append(opts, HostWebSocketPort(freeport.GetPort()))
+		opts = append(opts, Key(keys[i]))
+
+		geth := NewEthereum(
+			bc.dockerClient,
+			opts...,
+		)
+
+		err = geth.Init(bc.genesisFile)
+		if err != nil {
+			log.Fatal("Failed to init genesis", err)
+		}
+
+		bc.validators = append(bc.validators, geth)
+	}
 }
