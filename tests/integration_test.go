@@ -43,7 +43,7 @@ var _ = Describe("4 validators Istanbul", func() {
 			container.DataDir("/data"),
 			container.WebSocket(),
 			container.WebSocketAddress("0.0.0.0"),
-			container.WebSocketAPI("eth,net,web3,personal,miner"),
+			container.WebSocketAPI("admin,eth,net,web3,personal,miner"),
 			container.WebSocketOrigin("*"),
 			container.NAT("any"),
 			container.NoDiscover(),

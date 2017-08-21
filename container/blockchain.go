@@ -82,7 +82,7 @@ func (bc *blockchain) Start() error {
 		}
 	}
 
-	return nil
+	return bc.connectAll()
 }
 
 func (bc *blockchain) Stop() error {
@@ -166,4 +166,20 @@ func (bc *blockchain) setupValidators(keys []*ecdsa.PrivateKey, options ...Optio
 
 		bc.validators = append(bc.validators, geth)
 	}
+}
+
+func (bc *blockchain) connectAll() error {
+	for i, v := range bc.validators {
+		istClient := v.NewIstanbulClient()
+		for j, v := range bc.validators {
+			if i == j {
+				continue
+			}
+			err := istClient.AddPeer(context.Background(), v.NodeAddress())
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

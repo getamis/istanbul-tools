@@ -29,7 +29,7 @@ func TestEthereumBlockchain(t *testing.T) {
 		DataDir("/data"),
 		WebSocket(),
 		WebSocketAddress("0.0.0.0"),
-		WebSocketAPI("eth,net,web3,personal"),
+		WebSocketAPI("admin,eth,net,web3,personal"),
 		WebSocketOrigin("*"),
 		NoDiscover(),
 		Logging(true),

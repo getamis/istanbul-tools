@@ -19,6 +19,7 @@ package istclient
 import (
 	"context"
 	"log"
+	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -48,7 +49,7 @@ func ExampleProposerValidator() {
 }
 
 func ExampleGetValidators() {
-	client, err := Dial("ws://192.168.99.100:53257")
+	client, err := Dial("ws://127.0.0.1:53257")
 	if err != nil {
 		log.Fatal("failed to dial, err:", err)
 	}
@@ -58,6 +59,35 @@ func ExampleGetValidators() {
 		log.Fatal("failed to get validators, err:", err)
 	}
 	for _, addr := range addrs {
-		log.Println("address:",addr.Hex())
+		log.Println("address:", addr.Hex())
+	}
+}
+
+func ExampleAdminPeers() {
+	client, err := Dial("ws://127.0.0.1:62975")
+	if err != nil {
+		log.Fatal("failed to dial, err:", err)
+	}
+
+	peersInfo, err := client.AdminPeers(context.Background())
+	if err != nil {
+		log.Fatal("failed to get validators, err:", err)
+	}
+
+	fmt.Println("connected peer length:", len(peersInfo))
+	for _, peer := range peersInfo {
+		fmt.Println("address:", peer)
+	}
+}
+
+func ExampleAddPeer() {
+	client, err := Dial("ws://127.0.0.1:62975")
+	if err != nil {
+		log.Fatal("failed to dial, err:", err)
+	}
+
+	err = client.AddPeer(context.Background(), "enode://ad5b4b201cc0ef5cd6ce27e32c223d1852a8b7d6069de5c3c597601e94841a5811a354261726da7b8f851e9042d5aeaed580dbb7493d22a5d922206dce3ccdb8@192.168.99.100:63040?discport=0")
+	if err != nil {
+		log.Fatal("failed to get validators, err:", err)
 	}
 }
