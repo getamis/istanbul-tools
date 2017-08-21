@@ -19,18 +19,13 @@ package container
 import (
 	"context"
 	"crypto/ecdsa"
-	"fmt"
 	"log"
-	"math/rand"
 	"os"
 	"path/filepath"
 
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/phayes/freeport"
-	uuid "github.com/satori/go.uuid"
 
 	"github.com/getamis/istanbul-tools/genesis"
 )
@@ -51,7 +46,6 @@ func NewBlockchain(numOfValidators int, options ...Option) (bc *blockchain) {
 		log.Fatalf("Cannot connect to Docker daemon, err: %v", err)
 	}
 
-	bc.setupNetwork()
 	keys, addrs := generateKeys(numOfValidators)
 	bc.setupGenesis(addrs)
 	bc.setupValidators(keys, options...)
@@ -62,23 +56,15 @@ func NewBlockchain(numOfValidators int, options ...Option) (bc *blockchain) {
 // ----------------------------------------------------------------------------
 
 type blockchain struct {
-	dockerClient    *client.Client
-	dockerNetworkID string
-	netClass        string
-	genesisFile     string
-	validators      []Ethereum
+	dockerClient *client.Client
+	genesisFile  string
+	validators   []Ethereum
 }
 
 func (bc *blockchain) Start() error {
-	for i, v := range bc.validators {
+	for _, v := range bc.validators {
 		if err := v.Start(); err != nil {
 			return err
-		}
-
-		if err := bc.dockerClient.NetworkConnect(context.Background(), bc.dockerNetworkID, v.ContainerID(), &network.EndpointSettings{
-			IPAddress: fmt.Sprintf(bc.netClass+".%d", i+1),
-		}); err != nil {
-			log.Printf("Failed to connect to network '%s', %v", bc.dockerNetworkID, err)
 		}
 	}
 
@@ -97,8 +83,6 @@ func (bc *blockchain) Stop() error {
 
 func (bc *blockchain) Finalize() {
 	os.RemoveAll(filepath.Dir(bc.genesisFile))
-
-	bc.dockerClient.NetworkRemove(context.Background(), bc.dockerNetworkID)
 }
 
 func (bc *blockchain) Validators() []Ethereum {
@@ -106,26 +90,6 @@ func (bc *blockchain) Validators() []Ethereum {
 }
 
 // ----------------------------------------------------------------------------
-
-func (bc *blockchain) setupNetwork() {
-	name := "net" + uuid.NewV4().String()
-	bc.netClass = fmt.Sprintf("172.16.%d", rand.Uint32()%255)
-	resp, err := bc.dockerClient.NetworkCreate(context.Background(), name, types.NetworkCreate{
-		IPAM: &network.IPAM{
-			Config: []network.IPAMConfig{
-				network.IPAMConfig{
-					Subnet: bc.netClass + ".0/24",
-				},
-			},
-		},
-	})
-
-	if err != nil {
-		log.Fatal("Failed to setup blockchain network,", err)
-	}
-
-	bc.dockerNetworkID = resp.ID
-}
 
 func (bc *blockchain) setupGenesis(addrs []common.Address) {
 	setupDir, err := generateRandomDir()

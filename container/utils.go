@@ -20,10 +20,8 @@ import (
 	"crypto/ecdsa"
 	"fmt"
 	"log"
-	"math/rand"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -35,10 +33,6 @@ const (
 	clientIdentifier = "geth"
 	nodekeyFileName  = "nodekey"
 )
-
-func init() {
-	rand.Seed(time.Now().UTC().UnixNano())
-}
 
 func generateRandomDir() (string, error) {
 	err := os.MkdirAll(filepath.Join(defaultLocalDir), 0700)
