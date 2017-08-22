@@ -71,30 +71,11 @@ var _ = Describe("4 validators Istanbul", func() {
 			Expect(block).NotTo(BeNil())
 		}
 
-		By("Ensure that consensus is working in 30 seconds", func() { ensureConsensusWorking(blockchain.Validators(), 30*time.Second) })
+		By("Ensure that consensus is working in 30 seconds", func() {
+			Expect(blockchain.EnsureConsensusWorking(blockchain.Validators(), 30*time.Second)).Should(BeNil())
+		})
 	})
 })
-
-func ensureConsensusWorking(geths []container.Ethereum, t time.Duration) {
-	errCh := make(chan error, len(geths))
-	quitCh := make(chan struct{}, len(geths))
-	for _, geth := range geths {
-		go geth.ConsensusMonitor(errCh, quitCh)
-	}
-
-	timeout := time.NewTimer(t)
-
-	defer timeout.Stop()
-
-	select {
-	case err := <-errCh:
-		Expect(err).Should(BeNil())
-	case <-timeout.C:
-		for i := 0; i < len(geths); i++ {
-			quitCh <- struct{}{}
-		}
-	}
-}
 
 func TestIstanbul(t *testing.T) {
 	RegisterFailHandler(Fail)
