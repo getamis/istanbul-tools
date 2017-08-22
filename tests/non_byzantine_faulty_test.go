@@ -17,7 +17,6 @@
 package tests
 
 import (
-	"context"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -61,46 +60,12 @@ var _ = Describe("TSU-04: Non-Byzantine Faulty", func() {
 
 	FIt("TSU-04-01: Stop F validators", func() {
 
-		By("Generating blocks")
+		By("Generating blocks", func() {blockchain.EnsureConsensusWorking(blockchain.Validators(), 10*time.Second)})
 		v0 := blockchain.Validators()[0]
-		c0 := v0.NewIstanbulClient()
-		ticker := time.NewTicker(time.Millisecond * 100)
-		for _ = range ticker.C {
-			n, e := c0.BlockNumber(context.Background())
-			Expect(e).To(BeNil())
-			// Check if new blocks are getting generated
-			if n.Int64() > 1 {
-				ticker.Stop()
-				break
-			}
-		}
 		By("Stopping validator 0")
-		e := v0.Stop()
-		Expect(e).To(BeNil())
+		Expect(v0.Stop()).To(BeNil())
 
-		ticker = time.NewTicker(time.Millisecond * 100)
-		for _ = range ticker.C {
-			e := v0.Stop()
-			// Wait for e to be non-nil to make sure the container is down
-			if e != nil {
-				ticker.Stop()
-				break
-			}
-		}
+		By("Checking blockchain progress", func() {blockchain.EnsureConsensusWorking(blockchain.Validators()[1:], 20*time.Second)})
 
-		By("Checking blockchain progress")
-		v1 := blockchain.Validators()[1]
-		c1 := v1.NewIstanbulClient()
-		n1, e := c1.BlockNumber(context.Background())
-		Expect(e).To(BeNil())
-		ticker = time.NewTicker(time.Millisecond * 100)
-		for _ = range ticker.C {
-			newN1, e := c1.BlockNumber(context.Background())
-			Expect(e).To(BeNil())
-			if newN1.Int64() > n1.Int64() {
-				ticker.Stop()
-				break
-			}
-		}
 	})
 })
