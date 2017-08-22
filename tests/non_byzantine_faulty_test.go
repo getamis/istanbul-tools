@@ -59,7 +59,7 @@ var _ = Describe("TSU-04: Non-Byzantine Faulty", func() {
 		blockchain.Finalize()
 	})
 
-	It("TSU-04-01: Stop F validators", func(done Done) {
+	FIt("TSU-04-01: Stop F validators", func() {
 
 		By("Generating blocks")
 		v0 := blockchain.Validators()[0]
@@ -102,7 +102,5 @@ var _ = Describe("TSU-04: Non-Byzantine Faulty", func() {
 				break
 			}
 		}
-
-		close(done)
-	}, 60)
+	})
 })
