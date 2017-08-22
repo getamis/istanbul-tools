@@ -38,6 +38,7 @@ type Blockchain interface {
 	Stop(bool) error
 	Validators() []Ethereum
 	Finalize()
+	CreateNodes(int, ...Option) ([]Ethereum, error)
 }
 
 func NewBlockchain(numOfValidators int, options ...Option) (bc *blockchain) {
@@ -148,6 +149,38 @@ func (bc *blockchain) Finalize() {
 
 func (bc *blockchain) Validators() []Ethereum {
 	return bc.validators
+}
+
+func (bc *blockchain) CreateNodes(num int, options ...Option) (nodes []Ethereum, err error) {
+	for i := 0; i < num; i++ {
+		var opts []Option
+		opts = append(opts, options...)
+
+		// Host data directory
+		dataDir, err := generateRandomDir()
+		if err != nil {
+			log.Println("Failed to create data dir", err)
+			return nil, err
+		}
+		opts = append(opts, HostDataDir(dataDir))
+		opts = append(opts, HostPort(freeport.GetPort()))
+		opts = append(opts, HostWebSocketPort(freeport.GetPort()))
+
+		geth := NewEthereum(
+			bc.dockerClient,
+			opts...,
+		)
+
+		err = geth.Init(bc.genesisFile)
+		if err != nil {
+			log.Println("Failed to init genesis", err)
+			return nil, err
+		}
+
+		nodes = append(nodes, geth)
+	}
+
+	return nodes, nil
 }
 
 // ----------------------------------------------------------------------------
