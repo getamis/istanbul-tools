@@ -50,6 +50,7 @@ const (
 )
 
 var (
+	ErrNoBlock          = errors.New("no block to generate")
 	ErrConsensusTimeout = errors.New("consensus timeout")
 )
 
@@ -385,6 +386,9 @@ func (eth *ethereum) ConsensusMonitor(errCh chan<- error, quit chan struct{}) {
 		case err := <-sub.Err():
 			log.Printf("Connection lost: %v", err)
 			errCh <- err
+			return
+		case <-time.After(10 * time.Second):
+			errCh <- ErrNoBlock
 			return
 		case head := <-subCh:
 			// Ensure that mining is stable.
