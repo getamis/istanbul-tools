@@ -401,7 +401,6 @@ func (eth *ethereum) ConsensusMonitor(errCh chan<- error, quit chan struct{}) {
 				errCh <- ErrConsensusTimeout
 				return
 			}
-			latestUpdate = time.Now()
 		case <-quit:
 			return
 		}
