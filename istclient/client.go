@@ -67,6 +67,17 @@ func (ic *Client) AdminPeers(ctx context.Context) ([]*p2p.PeerInfo, error) {
 }
 
 // ----------------------------------------------------------------------------
+func (ic *Client) BlockNumber(ctx context.Context) (*big.Int, error) {
+	var r string
+	err := ic.c.CallContext(ctx, &r, "eth_blockNumber")
+	if err != nil {
+		return nil, err
+	}
+	h, err := hexutil.DecodeBig(r)
+	return h, err
+}
+
+// ----------------------------------------------------------------------------
 
 func (ic *Client) StartMining(ctx context.Context) error {
 	var r []byte
