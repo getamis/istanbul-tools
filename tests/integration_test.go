@@ -17,50 +17,59 @@
 package tests
 
 import (
-	"context"
-	"math/big"
 	"testing"
-	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	"github.com/getamis/istanbul-tools/container"
 )
 
-var _ = Describe("4 validators Istanbul", func() {
-	const (
-		numberOfValidators = 4
-	)
-	var (
-		blockchain container.Blockchain
-	)
-
-	BeforeEach(func() {
-		blockchain = container.NewDefaultBlockchain(numberOfValidators)
-		Expect(blockchain.Start(true)).To(BeNil())
-	})
-
-	AfterEach(func() {
-		Expect(blockchain.Stop(false)).To(BeNil())
-		blockchain.Finalize()
-	})
-
-	It("Blockchain creation", func() {
-		for _, geth := range blockchain.Validators() {
-			client := geth.NewClient()
-			Expect(client).NotTo(BeNil())
-
-			block, err := client.BlockByNumber(context.Background(), big.NewInt(0))
-			Expect(err).To(BeNil())
-			Expect(block).NotTo(BeNil())
-		}
-
-		By("Ensure that consensus is working in 30 seconds", func() {
-			Expect(blockchain.EnsureConsensusWorking(blockchain.Validators(), 30*time.Second)).Should(BeNil())
-		})
-	})
-})
+// Example
+//
+// var _ = Describe("4 validators Istanbul", func() {
+// 	const (
+// 		numberOfValidators = 4
+// 	)
+// 	var (
+// 		blockchain container.Blockchain
+// 	)
+//
+// BeforeSuite(func() {
+// 	blockchain = container.NewBlockchain(
+// 		numberOfValidators,
+// 		container.ImageRepository("quay.io/amis/geth"),
+// 		container.ImageTag("istanbul_develop"),
+// 		container.DataDir("/data"),
+// 		container.WebSocket(),
+// 		container.WebSocketAddress("0.0.0.0"),
+// 		container.WebSocketAPI("admin,eth,net,web3,personal,miner"),
+// 		container.WebSocketOrigin("*"),
+// 		container.NAT("any"),
+// 		container.NoDiscover(),
+// 		container.Etherbase("1a9afb711302c5f83b5902843d1c007a1a137632"),
+// 		container.Mine(),
+// 		container.Logging(true),
+// 	)
+//
+// 	Expect(blockchain.Start()).To(BeNil())
+// })
+//
+// AfterSuite(func() {
+// 	Expect(blockchain.Stop()).To(BeNil())
+// 	blockchain.Finalize()
+// })
+//
+// 	It("Blockchain creation", func() {
+// 		for _, geth := range blockchain.Validators() {
+// 			client := geth.NewClient()
+// 			Expect(client).NotTo(BeNil())
+//
+// 			block, err := client.BlockByNumber(context.Background(), big.NewInt(0))
+// 			Expect(err).To(BeNil())
+// 			Expect(block).NotTo(BeNil())
+// 		}
+// 	})
+// })
+//
 
 func TestIstanbul(t *testing.T) {
 	RegisterFailHandler(Fail)
