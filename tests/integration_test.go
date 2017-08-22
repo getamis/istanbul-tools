@@ -20,6 +20,7 @@ import (
 	"context"
 	"math/big"
 	"testing"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -43,7 +44,7 @@ var _ = Describe("4 validators Istanbul", func() {
 			container.DataDir("/data"),
 			container.WebSocket(),
 			container.WebSocketAddress("0.0.0.0"),
-			container.WebSocketAPI("admin,eth,net,web3,personal,miner"),
+			container.WebSocketAPI("admin,eth,net,web3,personal,miner,istanbul"),
 			container.WebSocketOrigin("*"),
 			container.NAT("any"),
 			container.NoDiscover(),
@@ -69,6 +70,10 @@ var _ = Describe("4 validators Istanbul", func() {
 			Expect(err).To(BeNil())
 			Expect(block).NotTo(BeNil())
 		}
+
+		By("Ensure that consensus is working in 30 seconds", func() {
+			Expect(blockchain.EnsureConsensusWorking(blockchain.Validators(), 30*time.Second)).Should(BeNil())
+		})
 	})
 })
 

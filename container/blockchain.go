@@ -22,6 +22,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/docker/docker/client"
 	"github.com/ethereum/go-ethereum/common"
@@ -31,6 +32,7 @@ import (
 )
 
 type Blockchain interface {
+	EnsureConsensusWorking(geths []Ethereum, t time.Duration) error
 	Start() error
 	Stop(bool) error
 	Validators() []Ethereum
@@ -59,6 +61,27 @@ type blockchain struct {
 	dockerClient *client.Client
 	genesisFile  string
 	validators   []Ethereum
+}
+
+func (bc *blockchain) EnsureConsensusWorking(geths []Ethereum, t time.Duration) error {
+	errCh := make(chan error, len(geths))
+	quitCh := make(chan struct{}, len(geths))
+	for _, geth := range geths {
+		go geth.ConsensusMonitor(errCh, quitCh)
+	}
+
+	timeout := time.NewTimer(t)
+	defer timeout.Stop()
+
+	var err error
+	select {
+	case err = <-errCh:
+	case <-timeout.C:
+		for i := 0; i < len(geths); i++ {
+			quitCh <- struct{}{}
+		}
+	}
+	return err
 }
 
 func (bc *blockchain) Start() error {
