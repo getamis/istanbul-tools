@@ -104,5 +104,5 @@ var _ = Describe("TSU-04: Non-Byzantine Faulty", func() {
 		}
 
 		close(done)
-	}, 60)
+	}, 80)
 })
