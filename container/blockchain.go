@@ -32,7 +32,7 @@ import (
 
 type Blockchain interface {
 	Start() error
-	Stop() error
+	Stop(bool) error
 	Validators() []Ethereum
 	Finalize()
 }
@@ -71,9 +71,9 @@ func (bc *blockchain) Start() error {
 	return bc.connectAll()
 }
 
-func (bc *blockchain) Stop() error {
+func (bc *blockchain) Stop(force bool) error {
 	for _, v := range bc.validators {
-		if err := v.Stop(); err != nil {
+		if err := v.Stop(); err != nil && !force {
 			return err
 		}
 	}

@@ -56,7 +56,7 @@ var _ = Describe("4 validators Istanbul", func() {
 	})
 
 	AfterEach(func() {
-		Expect(blockchain.Stop()).To(BeNil())
+		Expect(blockchain.Stop(false)).To(BeNil())
 		blockchain.Finalize()
 	})
 

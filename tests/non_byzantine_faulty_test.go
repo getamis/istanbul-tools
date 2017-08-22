@@ -55,7 +55,7 @@ var _ = Describe("TSU-04: Non-Byzantine Faulty", func() {
 	})
 
 	AfterEach(func() {
-		blockchain.Stop() // This will return container not found error since we stop one
+		blockchain.Stop(true) // This will return container not found error since we stop one
 		blockchain.Finalize()
 	})
 
