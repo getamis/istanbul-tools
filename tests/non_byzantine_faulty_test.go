@@ -58,7 +58,7 @@ var _ = Describe("TSU-04: Non-Byzantine Faulty", func() {
 		blockchain.Finalize()
 	})
 
-	FIt("TSU-04-01: Stop F validators", func() {
+	It("TSU-04-01: Stop F validators", func() {
 
 		By("Generating blocks", func() {Expect(blockchain.EnsureConsensusWorking(blockchain.Validators(), 10*time.Second)).Should(BeNil())})
 		v0 := blockchain.Validators()[0]
