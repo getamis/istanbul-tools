@@ -99,6 +99,14 @@ func (ic *Client) StartMining(ctx context.Context) error {
 	return err
 }
 
+func (ic *Client) StopMining(ctx context.Context) error {
+	err := ic.c.CallContext(ctx, nil, "miner_stop", nil)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
 // ----------------------------------------------------------------------------
 
 func (ic *Client) ProposeValidator(ctx context.Context, address common.Address, auth bool) error {
