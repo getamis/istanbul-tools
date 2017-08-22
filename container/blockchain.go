@@ -131,7 +131,7 @@ func (bc *blockchain) RemoveValidators(candidates []Ethereum) error {
 	}
 
 	// FIXME: It is not good way to wait validator vote out candidates
-	<-time.After(time.Duration(math.Pow(2, float64(len(candidates)))*5) * time.Second)
+	<-time.After(time.Duration(math.Pow(2, float64(len(candidates)))*7) * time.Second)
 	bc.validators = newValidators
 
 	return bc.stop(candidates, false)
