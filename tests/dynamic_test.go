@@ -59,7 +59,7 @@ var _ = Describe("Dynamic validators addition/removal testing", func() {
 		blockchain.Finalize()
 	})
 
-	It("TFU-02-01 Add validators", func() {
+	It("TFS-02-01 Add validators", func() {
 		testValidators := 3
 
 		By("Ensure that numbers of validator is equal than $numberOfValidators", func() {
