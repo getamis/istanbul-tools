@@ -66,6 +66,15 @@ func (ic *Client) AdminPeers(ctx context.Context) ([]*p2p.PeerInfo, error) {
 	return r, err
 }
 
+func (ic *Client) NodeInfo(ctx context.Context) (*p2p.PeerInfo, error) {
+	var r *p2p.PeerInfo
+	err := ic.c.CallContext(ctx, &r, "admin_nodeInfo")
+	if err != nil {
+		return nil, err
+	}
+	return r, err
+}
+
 // ----------------------------------------------------------------------------
 func (ic *Client) BlockNumber(ctx context.Context) (*big.Int, error) {
 	var r string

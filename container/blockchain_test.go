@@ -36,7 +36,7 @@ func TestEthereumBlockchain(t *testing.T) {
 	)
 	defer chain.Finalize()
 
-	err := chain.Start()
+	err := chain.Start(true)
 	if err != nil {
 		t.Error(err)
 	}
