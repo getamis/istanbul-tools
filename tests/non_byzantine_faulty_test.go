@@ -60,12 +60,12 @@ var _ = Describe("TSU-04: Non-Byzantine Faulty", func() {
 
 	FIt("TSU-04-01: Stop F validators", func() {
 
-		By("Generating blocks", func() {blockchain.EnsureConsensusWorking(blockchain.Validators(), 10*time.Second)})
+		By("Generating blocks", func() {Expect(blockchain.EnsureConsensusWorking(blockchain.Validators(), 10*time.Second)).Should(BeNil())})
 		v0 := blockchain.Validators()[0]
 		By("Stopping validator 0")
 		Expect(v0.Stop()).To(BeNil())
 
-		By("Checking blockchain progress", func() {blockchain.EnsureConsensusWorking(blockchain.Validators()[1:], 20*time.Second)})
+		By("Checking blockchain progress", func() {Expect(blockchain.EnsureConsensusWorking(blockchain.Validators()[1:], 20*time.Second)).Should(BeNil())})
 
 	})
 })
