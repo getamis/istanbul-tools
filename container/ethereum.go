@@ -50,7 +50,7 @@ const (
 )
 
 var (
-	ErrNoBlock          = errors.New("no block to generate")
+	ErrNoBlock          = errors.New("no block generated")
 	ErrConsensusTimeout = errors.New("consensus timeout")
 )
 
