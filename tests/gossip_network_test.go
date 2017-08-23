@@ -18,7 +18,7 @@ package tests
 
 import (
 	"context"
-	"time"
+	"sync"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -55,19 +55,12 @@ var _ = Describe("TFS-07: Gossip Network", func() {
 		})
 
 		By("Checking blockchain progress", func() {
-			v0 := blockchain.Validators()[0]
-			c0 := v0.NewClient()
-			ticker := time.NewTicker(time.Millisecond * 100)
-			for _ = range ticker.C {
-				b, e := c0.BlockByNumber(context.Background(), nil)
-				Expect(e).To(BeNil())
-				// Check if new blocks are getting generated
-				if b.Number().Int64() > 1 {
-					ticker.Stop()
-					break
-				}
-			}
+			waitFor(blockchain.Validators(), func(geth container.Ethereum, wg *sync.WaitGroup) {
+				Expect(geth.WaitForBlocks(3)).To(BeNil())
+				wg.Done()
+			})
 		})
+
 		close(done)
 	}, 240)
 })

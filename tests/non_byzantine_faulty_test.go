@@ -17,7 +17,7 @@
 package tests
 
 import (
-	"context"
+	"sync"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -45,22 +45,15 @@ var _ = Describe("TFS-04: Non-Byzantine Faulty", func() {
 	})
 
 	It("TFS-04-01: Stop F validators", func(done Done) {
-		v0 := blockchain.Validators()[0]
 		By("Generating blockchain progress before stopping validator", func() {
-			c0 := v0.NewClient()
-			ticker := time.NewTicker(time.Millisecond * 100)
-			for _ = range ticker.C {
-				b, e := c0.BlockByNumber(context.Background(), nil)
-				Expect(e).To(BeNil())
-				// Check if new blocks are getting generated
-				if b.Number().Int64() > 1 {
-					ticker.Stop()
-					break
-				}
-			}
+			waitFor(blockchain.Validators(), func(geth container.Ethereum, wg *sync.WaitGroup) {
+				Expect(geth.WaitForBlocks(3)).To(BeNil())
+				wg.Done()
+			})
 		})
 
 		By("Stopping validator 0", func() {
+			v0 := blockchain.Validators()[0]
 			e := v0.Stop()
 			Expect(e).To(BeNil())
 			ticker := time.NewTicker(time.Millisecond * 100)
@@ -75,19 +68,10 @@ var _ = Describe("TFS-04: Non-Byzantine Faulty", func() {
 		})
 
 		By("Checking blockchain progress after stopping validator", func() {
-			v1 := blockchain.Validators()[1]
-			c1 := v1.NewClient()
-			b1, e := c1.BlockByNumber(context.Background(), nil)
-			Expect(e).To(BeNil())
-			ticker := time.NewTicker(time.Millisecond * 100)
-			for _ = range ticker.C {
-				newB1, e := c1.BlockByNumber(context.Background(), nil)
-				Expect(e).To(BeNil())
-				if newB1.Number().Int64() > b1.Number().Int64() {
-					ticker.Stop()
-					break
-				}
-			}
+			waitFor(blockchain.Validators()[1:], func(geth container.Ethereum, wg *sync.WaitGroup) {
+				Expect(geth.WaitForBlocks(3)).To(BeNil())
+				wg.Done()
+			})
 		})
 
 		close(done)
