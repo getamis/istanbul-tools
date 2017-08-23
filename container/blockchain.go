@@ -20,7 +20,6 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"log"
-	"math"
 	"os"
 	"path/filepath"
 	"time"
@@ -34,7 +33,7 @@ import (
 
 type Blockchain interface {
 	AddValidators(numOfValidators int) ([]Ethereum, error)
-	RemoveValidators(candidates []Ethereum) error
+	RemoveValidators(candidates []Ethereum, t time.Duration) error
 	EnsureConsensusWorking(geths []Ethereum, t time.Duration) error
 	Start(bool) error
 	Stop(bool) error
@@ -111,7 +110,7 @@ func (bc *blockchain) EnsureConsensusWorking(geths []Ethereum, t time.Duration) 
 	return err
 }
 
-func (bc *blockchain) RemoveValidators(candidates []Ethereum) error {
+func (bc *blockchain) RemoveValidators(candidates []Ethereum, processingTime time.Duration) error {
 	var newValidators []Ethereum
 
 	for _, v := range bc.validators {
@@ -131,7 +130,7 @@ func (bc *blockchain) RemoveValidators(candidates []Ethereum) error {
 	}
 
 	// FIXME: It is not good way to wait validator vote out candidates
-	<-time.After(time.Duration(math.Pow(2, float64(len(candidates)))*7) * time.Second)
+	<-time.After(processingTime)
 	bc.validators = newValidators
 
 	return bc.stop(candidates, false)

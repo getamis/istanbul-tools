@@ -19,6 +19,7 @@ package tests
 import (
 	"context"
 	"time"
+	"math"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -111,7 +112,9 @@ var _ = Describe("Dynamic validators addition/removal testing", func() {
 		}
 
 		// remove validators [1,2,3]
-		Expect(blockchain.RemoveValidators(blockchain.Validators()[:numOfCandidates])).Should(BeNil())
+		removalCandidates := blockchain.Validators()[:numOfCandidates]
+		processingTime := time.Duration(math.Pow(2, float64(len(removalCandidates)))*7) * time.Second
+		Expect(blockchain.RemoveValidators(removalCandidates, processingTime)).Should(BeNil())
 		By("Ensure that consensus is working in 10 seconds", func() {
 			Expect(blockchain.EnsureConsensusWorking(blockchain.Validators(), 10*time.Second)).Should(BeNil())
 		})
