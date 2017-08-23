@@ -32,6 +32,7 @@ import (
 )
 
 type Blockchain interface {
+	AddValidators(numOfValidators int) ([]Ethereum, error)
 	EnsureConsensusWorking(geths []Ethereum, t time.Duration) error
 	Start() error
 	Stop(bool) error
@@ -40,7 +41,7 @@ type Blockchain interface {
 }
 
 func NewBlockchain(numOfValidators int, options ...Option) (bc *blockchain) {
-	bc = &blockchain{}
+	bc = &blockchain{opts: options}
 
 	var err error
 	bc.dockerClient, err = client.NewEnvClient()
@@ -48,10 +49,7 @@ func NewBlockchain(numOfValidators int, options ...Option) (bc *blockchain) {
 		log.Fatalf("Cannot connect to Docker daemon, err: %v", err)
 	}
 
-	keys, addrs := generateKeys(numOfValidators)
-	bc.setupGenesis(addrs)
-	bc.setupValidators(keys, options...)
-
+	bc.addValidators(numOfValidators)
 	return bc
 }
 
@@ -61,6 +59,33 @@ type blockchain struct {
 	dockerClient *client.Client
 	genesisFile  string
 	validators   []Ethereum
+	opts         []Option
+}
+
+func (bc *blockchain) AddValidators(numOfValidators int) ([]Ethereum, error) {
+	// TODO: need a lock
+	lastLen := len(bc.validators)
+	bc.addValidators(numOfValidators)
+
+	newValidators := bc.validators[lastLen:]
+	if err := bc.start(newValidators); err != nil {
+		return nil, err
+	}
+
+	// propose new validators as validator in consensus
+	for _, v := range bc.validators[:lastLen] {
+		istClient := v.NewIstanbulClient()
+		for _, newV := range newValidators {
+			if err := istClient.ProposeValidator(context.Background(), newV.Address(), true); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	if err := bc.connectAll(); err != nil {
+		return nil, err
+	}
+	return newValidators, nil
 }
 
 func (bc *blockchain) EnsureConsensusWorking(geths []Ethereum, t time.Duration) error {
@@ -85,12 +110,9 @@ func (bc *blockchain) EnsureConsensusWorking(geths []Ethereum, t time.Duration) 
 }
 
 func (bc *blockchain) Start() error {
-	for _, v := range bc.validators {
-		if err := v.Start(); err != nil {
-			return err
-		}
+	if err := bc.start(bc.validators); err != nil {
+		return err
 	}
-
 	return bc.connectAll()
 }
 
@@ -100,7 +122,6 @@ func (bc *blockchain) Stop(force bool) error {
 			return err
 		}
 	}
-
 	return nil
 }
 
@@ -114,16 +135,42 @@ func (bc *blockchain) Validators() []Ethereum {
 
 // ----------------------------------------------------------------------------
 
+func (bc *blockchain) addValidators(numOfValidators int) error {
+	keys, addrs := generateKeys(numOfValidators)
+	bc.setupGenesis(addrs)
+	bc.setupValidators(keys, bc.opts...)
+
+	return nil
+}
+
+func (bc *blockchain) connectAll() error {
+	for i, v := range bc.validators {
+		istClient := v.NewIstanbulClient()
+		for j, v := range bc.validators {
+			if i == j {
+				continue
+			}
+			err := istClient.AddPeer(context.Background(), v.NodeAddress())
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func (bc *blockchain) setupGenesis(addrs []common.Address) {
-	setupDir, err := generateRandomDir()
-	if err != nil {
-		log.Fatal("Failed to create setup dir", err)
+	if bc.genesisFile == "" {
+		setupDir, err := generateRandomDir()
+		if err != nil {
+			log.Fatal("Failed to create setup dir", err)
+		}
+		err = genesis.Save(setupDir, genesis.New(addrs))
+		if err != nil {
+			log.Fatal("Failed to save genesis", err)
+		}
+		bc.genesisFile = filepath.Join(setupDir, genesis.FileName)
 	}
-	err = genesis.Save(setupDir, genesis.New(addrs))
-	if err != nil {
-		log.Fatal("Failed to save genesis", err)
-	}
-	bc.genesisFile = filepath.Join(setupDir, genesis.FileName)
 }
 
 func (bc *blockchain) setupValidators(keys []*ecdsa.PrivateKey, options ...Option) {
@@ -155,17 +202,19 @@ func (bc *blockchain) setupValidators(keys []*ecdsa.PrivateKey, options ...Optio
 	}
 }
 
-func (bc *blockchain) connectAll() error {
-	for i, v := range bc.validators {
-		istClient := v.NewIstanbulClient()
-		for j, v := range bc.validators {
-			if i == j {
-				continue
-			}
-			err := istClient.AddPeer(context.Background(), v.NodeAddress())
-			if err != nil {
-				return err
-			}
+func (bc *blockchain) start(validators []Ethereum) error {
+	for _, v := range validators {
+		if err := v.Start(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (bc *blockchain) stop(validators []Ethereum) error {
+	for _, v := range validators {
+		if err := v.Stop(); err != nil {
+			return err
 		}
 	}
 	return nil
