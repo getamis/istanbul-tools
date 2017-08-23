@@ -51,7 +51,7 @@ var _ = Describe("Dynamic validators addition/removal testing", func() {
 			container.Logging(true),
 		)
 
-		Expect(blockchain.Start()).To(BeNil())
+		Expect(blockchain.Start(true)).To(BeNil())
 	})
 
 	AfterEach(func() {

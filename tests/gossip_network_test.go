@@ -18,7 +18,6 @@ package tests
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -27,7 +26,7 @@ import (
 	"github.com/getamis/istanbul-tools/container"
 )
 
-var _ = Describe("TFS-01: General consensus", func() {
+var _ = Describe("TFS-07: Gossip Network", func() {
 	const (
 		numberOfValidators = 4
 	)
@@ -52,46 +51,38 @@ var _ = Describe("TFS-01: General consensus", func() {
 			container.Logging(false),
 		)
 
-		Expect(blockchain.Start(true)).To(BeNil())
+		Expect(blockchain.Start(false)).To(BeNil())
 	})
 
 	AfterEach(func() {
-		blockchain.Stop(true) // This will return container not found error since we stop one
+		Expect(blockchain.Stop(false)).To(BeNil())
 		blockchain.Finalize()
 	})
 
-	It("TFS-01-03: Peer connection", func() {
+	It("TFS-07-01: Gossip Network", func(done Done) {
+		By("Check peer count", func() {
+			for _, geth := range blockchain.Validators() {
+				c := geth.NewIstanbulClient()
+				peers, e := c.AdminPeers(context.Background())
+				Expect(e).To(BeNil())
+				Ω(len(peers)).Should(BeNumerically("<=", 2))
+			}
+		})
 
-		By("Check peer count")
-		errc := make(chan error, numberOfValidators)
-		for _, v := range blockchain.Validators() {
-			go func(v container.Ethereum) {
-				c := v.NewIstanbulClient()
-				ticker := time.NewTicker(time.Millisecond * 100)
-				timeout := time.NewTimer(time.Second * 10)
-				expPeerCnt := numberOfValidators - 1
-				for {
-					select {
-					case <-ticker.C:
-						peers, err := c.AdminPeers(context.Background())
-						Expect(err).To(BeNil())
-						if len(peers) != expPeerCnt {
-							continue
-						} else {
-							errc <- nil
-							return
-						}
-					case <-timeout.C:
-						errc <- errors.New("Check peer count timeout.")
-						return
-					}
+		By("Checking blockchain progress", func() {
+			v0 := blockchain.Validators()[0]
+			c0 := v0.NewClient()
+			ticker := time.NewTicker(time.Millisecond * 100)
+			for _ = range ticker.C {
+				b, e := c0.BlockByNumber(context.Background(), nil)
+				Expect(e).To(BeNil())
+				// Check if new blocks are getting generated
+				if b.Number().Int64() > 1 {
+					ticker.Stop()
+					break
 				}
-			}(v)
-		}
-
-		for i := 0; i < numberOfValidators; i++ {
-			err := <-errc
-			Expect(err).To(BeNil())
-		}
-	})
+			}
+		})
+		close(done)
+	}, 240)
 })

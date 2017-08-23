@@ -26,7 +26,7 @@ import (
 	"github.com/getamis/istanbul-tools/container"
 )
 
-var _ = Describe("TSU-04: Non-Byzantine Faulty", func() {
+var _ = Describe("TFS-04: Non-Byzantine Faulty", func() {
 	const (
 		numberOfValidators = 4
 	)
@@ -51,7 +51,7 @@ var _ = Describe("TSU-04: Non-Byzantine Faulty", func() {
 			container.Logging(false),
 		)
 
-		Expect(blockchain.Start()).To(BeNil())
+		Expect(blockchain.Start(true)).To(BeNil())
 	})
 
 	AfterEach(func() {
@@ -59,50 +59,52 @@ var _ = Describe("TSU-04: Non-Byzantine Faulty", func() {
 		blockchain.Finalize()
 	})
 
-	It("TSU-04-01: Stop F validators", func(done Done) {
-
-		By("Generating blocks")
+	It("TFS-04-01: Stop F validators", func(done Done) {
 		v0 := blockchain.Validators()[0]
-		c0 := v0.NewIstanbulClient()
-		ticker := time.NewTicker(time.Millisecond * 100)
-		for _ = range ticker.C {
-			n, e := c0.BlockNumber(context.Background())
-			Expect(e).To(BeNil())
-			// Check if new blocks are getting generated
-			if n.Int64() > 1 {
-				ticker.Stop()
-				break
+		By("Generating blockchain progress before stopping validator", func() {
+			c0 := v0.NewClient()
+			ticker := time.NewTicker(time.Millisecond * 100)
+			for _ = range ticker.C {
+				b, e := c0.BlockByNumber(context.Background(), nil)
+				Expect(e).To(BeNil())
+				// Check if new blocks are getting generated
+				if b.Number().Int64() > 1 {
+					ticker.Stop()
+					break
+				}
 			}
-		}
-		By("Stopping validator 0")
-		e := v0.Stop()
-		Expect(e).To(BeNil())
+		})
 
-		ticker = time.NewTicker(time.Millisecond * 100)
-		for _ = range ticker.C {
+		By("Stopping validator 0", func() {
 			e := v0.Stop()
-			// Wait for e to be non-nil to make sure the container is down
-			if e != nil {
-				ticker.Stop()
-				break
-			}
-		}
-
-		By("Checking blockchain progress")
-		v1 := blockchain.Validators()[1]
-		c1 := v1.NewIstanbulClient()
-		n1, e := c1.BlockNumber(context.Background())
-		Expect(e).To(BeNil())
-		ticker = time.NewTicker(time.Millisecond * 100)
-		for _ = range ticker.C {
-			newN1, e := c1.BlockNumber(context.Background())
 			Expect(e).To(BeNil())
-			if newN1.Int64() > n1.Int64() {
-				ticker.Stop()
-				break
+			ticker := time.NewTicker(time.Millisecond * 100)
+			for _ = range ticker.C {
+				e := v0.Stop()
+				// Wait for e to be non-nil to make sure the container is down
+				if e != nil {
+					ticker.Stop()
+					break
+				}
 			}
-		}
+		})
+
+		By("Checking blockchain progress after stopping validator", func() {
+			v1 := blockchain.Validators()[1]
+			c1 := v1.NewClient()
+			b1, e := c1.BlockByNumber(context.Background(), nil)
+			Expect(e).To(BeNil())
+			ticker := time.NewTicker(time.Millisecond * 100)
+			for _ = range ticker.C {
+				newB1, e := c1.BlockByNumber(context.Background(), nil)
+				Expect(e).To(BeNil())
+				if newB1.Number().Int64() > b1.Number().Int64() {
+					ticker.Stop()
+					break
+				}
+			}
+		})
 
 		close(done)
-	}, 60)
+	}, 120)
 })

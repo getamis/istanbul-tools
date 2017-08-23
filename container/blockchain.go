@@ -34,7 +34,7 @@ import (
 type Blockchain interface {
 	AddValidators(numOfValidators int) ([]Ethereum, error)
 	EnsureConsensusWorking(geths []Ethereum, t time.Duration) error
-	Start() error
+	Start(bool) error
 	Stop(bool) error
 	Validators() []Ethereum
 	Finalize()
@@ -82,7 +82,7 @@ func (bc *blockchain) AddValidators(numOfValidators int) ([]Ethereum, error) {
 		}
 	}
 
-	if err := bc.connectAll(); err != nil {
+	if err := bc.connectAll(true); err != nil {
 		return nil, err
 	}
 	return newValidators, nil
@@ -109,11 +109,11 @@ func (bc *blockchain) EnsureConsensusWorking(geths []Ethereum, t time.Duration) 
 	return err
 }
 
-func (bc *blockchain) Start() error {
+func (bc *blockchain) Start(strong bool) error {
 	if err := bc.start(bc.validators); err != nil {
 		return err
 	}
-	return bc.connectAll()
+	return bc.connectAll(strong)
 }
 
 func (bc *blockchain) Stop(force bool) error {
@@ -143,16 +143,15 @@ func (bc *blockchain) addValidators(numOfValidators int) error {
 	return nil
 }
 
-func (bc *blockchain) connectAll() error {
+func (bc *blockchain) connectAll(strong bool) error {
 	for i, v := range bc.validators {
 		istClient := v.NewIstanbulClient()
 		for j, v := range bc.validators {
-			if i == j {
-				continue
-			}
-			err := istClient.AddPeer(context.Background(), v.NodeAddress())
-			if err != nil {
-				return err
+			if (strong && j > i) || (!strong && j == i+1) {
+				err := istClient.AddPeer(context.Background(), v.NodeAddress())
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
