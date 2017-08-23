@@ -69,6 +69,12 @@ type Ethereum interface {
 	NewClient() *ethclient.Client
 	NewIstanbulClient() *istclient.Client
 	ConsensusMonitor(err chan<- error, quit chan struct{})
+
+	WaitForPeersConnected(int) error
+	WaitForBlocks(int) error
+	WaitForBlockHeight(int) error
+
+	AddPeer(string) error
 }
 
 func NewEthereum(c *client.Client, options ...Option) *ethereum {
@@ -415,6 +421,88 @@ func (eth *ethereum) ConsensusMonitor(errCh chan<- error, quit chan struct{}) {
 			return
 		}
 	}
+}
+
+func (eth *ethereum) WaitForPeersConnected(expectedPeercount int) error {
+	client := eth.NewIstanbulClient()
+	if client == nil {
+		return errors.New("failed to retrieve client")
+	}
+
+	ticker := time.NewTicker(time.Second * 1)
+	for _ = range ticker.C {
+		infos, err := client.AdminPeers(context.Background())
+		if err != nil {
+			return err
+		}
+		if len(infos) < expectedPeercount {
+			continue
+		} else {
+			ticker.Stop()
+			break
+		}
+	}
+
+	return nil
+}
+
+func (eth *ethereum) WaitForBlocks(num int) error {
+	var first *big.Int
+
+	client := eth.NewIstanbulClient()
+	if client == nil {
+		return errors.New("failed to retrieve client")
+	}
+
+	ticker := time.NewTicker(time.Millisecond * 500)
+	for _ = range ticker.C {
+		n, err := client.BlockNumber(context.Background())
+		if err != nil {
+			return err
+		}
+		if first == nil {
+			first = new(big.Int).Set(n)
+			continue
+		}
+		// Check if new blocks are getting generated
+		if new(big.Int).Sub(n, first).Int64() >= int64(num) {
+			ticker.Stop()
+			break
+		}
+	}
+
+	return nil
+}
+
+func (eth *ethereum) WaitForBlockHeight(num int) error {
+	client := eth.NewIstanbulClient()
+	if client == nil {
+		return errors.New("failed to retrieve client")
+	}
+
+	ticker := time.NewTicker(time.Millisecond * 500)
+	for _ = range ticker.C {
+		n, err := client.BlockNumber(context.Background())
+		if err != nil {
+			return err
+		}
+		if n.Int64() >= int64(num) {
+			ticker.Stop()
+			break
+		}
+	}
+
+	return nil
+}
+
+func (eth *ethereum) AddPeer(address string) error {
+	client := eth.NewIstanbulClient()
+	if client == nil {
+		return errors.New("failed to retrieve client")
+	}
+	defer client.Close()
+
+	return client.AddPeer(context.Background(), address)
 }
 
 // ----------------------------------------------------------------------------

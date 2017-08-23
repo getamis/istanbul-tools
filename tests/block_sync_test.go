@@ -18,9 +18,9 @@ package tests
 
 import (
 	"context"
-	"time"
+	"math/big"
+	"sync"
 
-	"github.com/ethereum/go-ethereum/core/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -45,7 +45,7 @@ var _ = Describe("Block synchronization testing", func() {
 		blockchain.Finalize()
 	})
 
-	Describe("TFS-06 block synchronization testing", func() {
+	Describe("TFS-06: block synchronization testing", func() {
 		const numberOfNodes = 2
 		var nodes []container.Ethereum
 
@@ -76,37 +76,31 @@ var _ = Describe("Block synchronization testing", func() {
 			}
 		})
 
-		It("TFS-06-01 node connection", func() {
+		It("TFS-06-01: Node connection", func(done Done) {
 			By("Connect all nodes to the validators")
-			for i := 0; i < numberOfNodes; i++ {
-				nodeClient := nodes[i].NewIstanbulClient()
-				Expect(nodeClient).NotTo(BeNil())
-
+			for _, n := range nodes {
 				for _, v := range blockchain.Validators() {
-					nodeClient.AddPeer(context.Background(), v.NodeAddress())
+					Expect(n.AddPeer(v.NodeAddress())).To(BeNil())
 				}
-
-				nodeClient.Close()
 			}
 
 			By("Wait for p2p connection")
-			<-time.After(10 * time.Second)
+			waitFor(nodes, func(node container.Ethereum, wg *sync.WaitGroup) {
+				Expect(node.WaitForPeersConnected(numberOfValidators)).To(BeNil())
+				wg.Done()
+			})
 
-			By("Check peer count")
-			for i := 0; i < numberOfNodes; i++ {
-				nodeClient := nodes[i].NewIstanbulClient()
-				p2pInfos, err := nodeClient.AdminPeers(context.Background())
+			close(done)
+		}, 15)
 
-				Expect(err).To(BeNil())
-				Expect(len(p2pInfos)).To(Equal(len(blockchain.Validators())))
+		It("TFS-06-02: Node synchronization", func(done Done) {
+			const targetBlockHeight = 10
 
-				nodeClient.Close()
-			}
-		})
-
-		It("TFS-06-02 node synchronization", func() {
-			By("Wait for block generation")
-			<-time.After(10 * time.Second)
+			By("Wait for blocks")
+			waitFor(blockchain.Validators(), func(geth container.Ethereum, wg *sync.WaitGroup) {
+				Expect(geth.WaitForBlocks(targetBlockHeight)).To(BeNil())
+				wg.Done()
+			})
 
 			By("Stop consensus")
 			for _, v := range blockchain.Validators() {
@@ -117,49 +111,41 @@ var _ = Describe("Block synchronization testing", func() {
 				client.Close()
 			}
 
-			By("Wait for block synchronization")
-			<-time.After(10 * time.Second)
-
-			By("Check block height of validators")
-			var latestBlock *types.Block
-			for _, v := range blockchain.Validators() {
-				client := v.NewClient()
-				block, err := client.BlockByNumber(context.Background(), nil)
-
-				Expect(err).To(BeNil())
-				Expect(block).NotTo(BeNil())
-
-				if latestBlock == nil {
-					latestBlock = block
-				} else {
-					Expect(latestBlock.Hash()).To(BeEquivalentTo(block.Hash()))
-				}
-			}
+			By("Get target block")
+			latestBlock, err := blockchain.Validators()[0].NewClient().BlockByNumber(context.Background(), big.NewInt(targetBlockHeight))
+			Expect(err).To(BeNil())
+			Expect(latestBlock).NotTo(BeNil())
 
 			By("Connect all nodes to the validators")
-			for i := 0; i < numberOfNodes; i++ {
-				nodeClient := nodes[i].NewIstanbulClient()
-				Expect(nodeClient).NotTo(BeNil())
-
+			for _, n := range nodes {
 				for _, v := range blockchain.Validators() {
-					nodeClient.AddPeer(context.Background(), v.NodeAddress())
+					Expect(n.AddPeer(v.NodeAddress())).To(BeNil())
 				}
-
-				nodeClient.Close()
 			}
 
-			By("Wait for block synchronization")
-			<-time.After(10 * time.Second)
+			By("Wait for p2p connection")
+			waitFor(nodes, func(node container.Ethereum, wg *sync.WaitGroup) {
+				Expect(node.WaitForPeersConnected(numberOfValidators)).To(BeNil())
+				wg.Done()
+			})
 
-			By("Check block height of nodes")
+			By("Wait for block synchronization between nodes and validators")
+			waitFor(nodes, func(geth container.Ethereum, wg *sync.WaitGroup) {
+				Expect(geth.WaitForBlockHeight(targetBlockHeight)).To(BeNil())
+				wg.Done()
+			})
+
+			By("Check target block hash of nodes")
 			for i := 0; i < numberOfNodes; i++ {
 				nodeClient := nodes[i].NewClient()
-				block, err := nodeClient.BlockByNumber(context.Background(), nil)
+				block, err := nodeClient.BlockByNumber(context.Background(), big.NewInt(targetBlockHeight))
 
 				Expect(err).To(BeNil())
 				Expect(block).NotTo(BeNil())
 				Expect(latestBlock.Hash()).To(BeEquivalentTo(block.Hash()))
 			}
-		})
+
+			close(done)
+		}, 30)
 	})
 })
