@@ -53,6 +53,23 @@ func NewBlockchain(numOfValidators int, options ...Option) (bc *blockchain) {
 	return bc
 }
 
+func NewDefaultBlockchain(numOfValidators int) (bc *blockchain) {
+	return NewBlockchain(numOfValidators,
+		ImageRepository("quay.io/amis/geth"),
+		ImageTag("istanbul_develop"),
+		DataDir("/data"),
+		WebSocket(),
+		WebSocketAddress("0.0.0.0"),
+		WebSocketAPI("admin,eth,net,web3,personal,miner,istanbul"),
+		WebSocketOrigin("*"),
+		NAT("any"),
+		NoDiscover(),
+		Etherbase("1a9afb711302c5f83b5902843d1c007a1a137632"),
+		Mine(),
+		Logging(false),
+	)
+}
+
 // ----------------------------------------------------------------------------
 
 type blockchain struct {
