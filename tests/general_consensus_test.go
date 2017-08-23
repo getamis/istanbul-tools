@@ -36,22 +36,7 @@ var _ = Describe("TFS-01: General consensus", func() {
 	)
 
 	BeforeEach(func() {
-		blockchain = container.NewBlockchain(
-			numberOfValidators,
-			container.ImageRepository("quay.io/amis/geth"),
-			container.ImageTag("istanbul_develop"),
-			container.DataDir("/data"),
-			container.WebSocket(),
-			container.WebSocketAddress("0.0.0.0"),
-			container.WebSocketAPI("admin,eth,net,web3,personal,miner"),
-			container.WebSocketOrigin("*"),
-			container.NAT("any"),
-			container.NoDiscover(),
-			container.Etherbase("1a9afb711302c5f83b5902843d1c007a1a137632"),
-			container.Mine(),
-			container.Logging(false),
-		)
-
+		blockchain = container.NewDefaultBlockchain(numberOfValidators)
 		Expect(blockchain.Start(true)).To(BeNil())
 	})
 
