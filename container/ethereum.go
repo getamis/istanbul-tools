@@ -37,13 +37,11 @@ import (
 	"github.com/docker/go-connections/nat"
 	"github.com/ethereum/go-ethereum/cmd/utils"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/consensus/istanbul"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/p2p/discover"
 
-	"github.com/getamis/istanbul-tools/cmd/istanbul/extradata"
 	"github.com/getamis/istanbul-tools/genesis"
 	"github.com/getamis/istanbul-tools/istclient"
 )
@@ -446,16 +444,7 @@ func (eth *ethereum) WaitForProposed(expectedAddress common.Address, timeout tim
 		case <-timer.C: // FIXME: this event may be missed
 			return errors.New("no result")
 		case head := <-subCh:
-			_, istanbulExtra, err := extradata.Decode(common.ToHex(head.Extra))
-			if err != nil {
-				return err
-			}
-			addr, err := istanbul.GetSignatureAddress(sigHash(head).Bytes(), istanbulExtra.Seal)
-			if err != nil {
-				return err
-			}
-
-			if addr.String() == expectedAddress.String() {
+			if getProposer(head).String() == expectedAddress.String() {
 				return nil
 			}
 		}
