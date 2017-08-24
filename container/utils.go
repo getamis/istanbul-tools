@@ -24,7 +24,10 @@ import (
 	"path/filepath"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/crypto/sha3"
+	"github.com/ethereum/go-ethereum/rlp"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -77,4 +80,13 @@ func saveNodeKey(key *ecdsa.PrivateKey, dataDir string) error {
 		return err
 	}
 	return nil
+}
+
+func sigHash(header *types.Header) (hash common.Hash) {
+	hasher := sha3.NewKeccak256()
+
+	// Clean seal is required for calculating proposer seal.
+	rlp.Encode(hasher, types.IstanbulFilteredHeader(header, false))
+	hasher.Sum(hash[:0])
+	return hash
 }
