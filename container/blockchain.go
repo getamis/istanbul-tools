@@ -216,14 +216,19 @@ func (bc *blockchain) addValidators(numOfValidators int) error {
 }
 
 func (bc *blockchain) connectAll(strong bool) error {
-	for i, v := range bc.validators {
-		istClient := v.NewIstanbulClient()
-		for j, v := range bc.validators {
-			if (strong && j > i) || (!strong && j == i+1) {
-				err := istClient.AddPeer(context.Background(), v.NodeAddress())
-				if err != nil {
-					return err
+	for idx, v := range bc.validators {
+		if strong {
+			for _, vv := range bc.validators {
+				if v.ContainerID() != vv.ContainerID() {
+					if err := v.AddPeer(vv.NodeAddress()); err != nil {
+						return err
+					}
 				}
+			}
+		} else {
+			nextValidator := bc.validators[(idx+1)%len(bc.validators)]
+			if err := v.AddPeer(nextValidator.NodeAddress()); err != nil {
+				return err
 			}
 		}
 	}
