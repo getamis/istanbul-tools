@@ -17,9 +17,7 @@
 package tests
 
 import (
-	"context"
-	"errors"
-	"time"
+	"sync"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -45,38 +43,13 @@ var _ = Describe("TFS-01: General consensus", func() {
 		blockchain.Finalize()
 	})
 
-	It("TFS-01-03: Peer connection", func() {
+	It("TFS-01-03: Peer connection", func(done Done) {
+		expectedPeerCount := len(blockchain.Validators()) - 1
+		waitFor(blockchain.Validators(), func(v container.Ethereum, wg *sync.WaitGroup) {
+			Expect(v.WaitForPeersConnected(expectedPeerCount)).To(BeNil())
+			wg.Done()
+		})
 
-		By("Check peer count")
-		errc := make(chan error, numberOfValidators)
-		for _, v := range blockchain.Validators() {
-			go func(v container.Ethereum) {
-				c := v.NewIstanbulClient()
-				ticker := time.NewTicker(time.Millisecond * 100)
-				timeout := time.NewTimer(time.Second * 10)
-				expPeerCnt := numberOfValidators - 1
-				for {
-					select {
-					case <-ticker.C:
-						peers, err := c.AdminPeers(context.Background())
-						Expect(err).To(BeNil())
-						if len(peers) != expPeerCnt {
-							continue
-						} else {
-							errc <- nil
-							return
-						}
-					case <-timeout.C:
-						errc <- errors.New("Check peer count timeout.")
-						return
-					}
-				}
-			}(v)
-		}
-
-		for i := 0; i < numberOfValidators; i++ {
-			err := <-errc
-			Expect(err).To(BeNil())
-		}
-	})
+		close(done)
+	}, 20)
 })
