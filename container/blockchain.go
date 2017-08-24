@@ -33,6 +33,7 @@ import (
 
 type Blockchain interface {
 	AddValidators(numOfValidators int) ([]Ethereum, error)
+	RemoveValidators(candidates []Ethereum, t time.Duration) error
 	EnsureConsensusWorking(geths []Ethereum, t time.Duration) error
 	Start(bool) error
 	Stop(bool) error
@@ -127,6 +128,32 @@ func (bc *blockchain) EnsureConsensusWorking(geths []Ethereum, t time.Duration) 
 	return err
 }
 
+func (bc *blockchain) RemoveValidators(candidates []Ethereum, processingTime time.Duration) error {
+	var newValidators []Ethereum
+
+	for _, v := range bc.validators {
+		istClient := v.NewIstanbulClient()
+		isFound := false
+		for _, c := range candidates {
+			if err := istClient.ProposeValidator(context.Background(), c.Address(), false); err != nil {
+				return err
+			}
+			if v.ContainerID() == c.ContainerID() {
+				isFound = true
+			}
+		}
+		if !isFound {
+			newValidators = append(newValidators, v)
+		}
+	}
+
+	// FIXME: It is not good way to wait validator vote out candidates
+	<-time.After(processingTime)
+	bc.validators = newValidators
+
+	return bc.stop(candidates, false)
+}
+
 func (bc *blockchain) Start(strong bool) error {
 	if err := bc.start(bc.validators); err != nil {
 		return err
@@ -135,12 +162,7 @@ func (bc *blockchain) Start(strong bool) error {
 }
 
 func (bc *blockchain) Stop(force bool) error {
-	for _, v := range bc.validators {
-		if err := v.Stop(); err != nil && !force {
-			return err
-		}
-	}
-	return nil
+	return bc.stop(bc.validators, force)
 }
 
 func (bc *blockchain) Finalize() {
@@ -260,9 +282,9 @@ func (bc *blockchain) start(validators []Ethereum) error {
 	return nil
 }
 
-func (bc *blockchain) stop(validators []Ethereum) error {
+func (bc *blockchain) stop(validators []Ethereum, force bool) error {
 	for _, v := range validators {
-		if err := v.Stop(); err != nil {
+		if err := v.Stop(); err != nil && !force {
 			return err
 		}
 	}

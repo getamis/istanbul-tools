@@ -19,6 +19,7 @@ package tests
 import (
 	"context"
 	"time"
+	"math"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -47,7 +48,7 @@ var _ = Describe("Dynamic validators addition/removal testing", func() {
 	It("TFS-02-01 Add validators", func() {
 		testValidators := 3
 
-		By("Ensure that numbers of validator is equal than $numberOfValidators", func() {
+		By("Ensure that numbers of validator is equal to $numberOfValidators", func() {
 			for _, v := range blockchain.Validators() {
 				client := v.NewIstanbulClient()
 				validators, err := client.GetValidators(context.Background(), nil)
@@ -68,5 +69,49 @@ var _ = Describe("Dynamic validators addition/removal testing", func() {
 			Expect(err).Should(BeNil())
 			Expect(len(validators)).Should(BeNumerically("==", numberOfValidators+testValidators))
 		}
+	})
+
+	It("TFS-02-03 Remove validators", func() {
+		numOfCandidates := 3
+
+		By("Ensure that numbers of validator is equal to $numberOfValidators", func() {
+			for _, v := range blockchain.Validators() {
+				client := v.NewIstanbulClient()
+				validators, err := client.GetValidators(context.Background(), nil)
+				Expect(err).Should(BeNil())
+				Expect(len(validators)).Should(BeNumerically("==", numberOfValidators))
+			}
+		})
+
+		_, err := blockchain.AddValidators(numOfCandidates)
+		Expect(err).Should(BeNil())
+
+		By("Ensure that consensus is working in 50 seconds", func() {
+			Expect(blockchain.EnsureConsensusWorking(blockchain.Validators(), 50*time.Second)).Should(BeNil())
+		})
+		for _, v := range blockchain.Validators() {
+			client := v.NewIstanbulClient()
+			validators, err := client.GetValidators(context.Background(), nil)
+			Expect(err).Should(BeNil())
+			Expect(len(validators)).Should(BeNumerically("==", numberOfValidators+numOfCandidates))
+		}
+
+		// remove validators [1,2,3]
+		removalCandidates := blockchain.Validators()[:numOfCandidates]
+		processingTime := time.Duration(math.Pow(2, float64(len(removalCandidates)))*7) * time.Second
+		Expect(blockchain.RemoveValidators(removalCandidates, processingTime)).Should(BeNil())
+		By("Ensure that consensus is working in 20 seconds", func() {
+			Expect(blockchain.EnsureConsensusWorking(blockchain.Validators(), 20*time.Second)).Should(BeNil())
+		})
+
+		for _, v := range blockchain.Validators() {
+			client := v.NewIstanbulClient()
+			validators, err := client.GetValidators(context.Background(), nil)
+			Expect(err).Should(BeNil())
+			Expect(len(validators)).Should(BeNumerically("==", numberOfValidators))
+		}
+		By("Ensure that consensus is working in 30 seconds", func() {
+			Expect(blockchain.EnsureConsensusWorking(blockchain.Validators(), 30*time.Second)).Should(BeNil())
+		})
 	})
 })
