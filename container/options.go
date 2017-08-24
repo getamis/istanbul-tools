@@ -238,3 +238,10 @@ func Verbosity(verbosity int) Option {
 		eth.flags = append(eth.flags, fmt.Sprintf("%d", verbosity))
 	}
 }
+
+func FaultyMode(mode int) Option {
+	return func(eth *ethereum) {
+		eth.flags = append(eth.flags, "--istanbul.faultymode")
+		eth.flags = append(eth.flags, fmt.Sprintf("%d", mode))
+	}
+}

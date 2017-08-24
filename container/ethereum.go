@@ -73,6 +73,8 @@ type Ethereum interface {
 	WaitForPeersConnected(int) error
 	WaitForBlocks(int) error
 	WaitForBlockHeight(int) error
+	// Want for block for no more than the given number during the given time duration
+	WaitForNoBlocks(int, time.Duration) error
 
 	AddPeer(string) error
 }
@@ -493,6 +495,37 @@ func (eth *ethereum) WaitForBlockHeight(num int) error {
 	}
 
 	return nil
+}
+
+func (eth *ethereum) WaitForNoBlocks(num int, duration time.Duration) error {
+	var first *big.Int
+
+	client := eth.NewIstanbulClient()
+	if client == nil {
+		return errors.New("failed to retrieve client")
+	}
+
+	timeout := time.After(duration)
+	tick := time.Tick(time.Millisecond * 500)
+	for {
+		select {
+		case <-timeout:
+			return nil
+		case <-tick:
+			n, err := client.BlockNumber(context.Background())
+			if err != nil {
+				return err
+			}
+			if first == nil {
+				first = new(big.Int).Set(n)
+				continue
+			}
+			// Check if new blocks are getting generated
+			if new(big.Int).Sub(n, first).Int64() > int64(num) {
+				return errors.New("generated more blocks than expected")
+			}
+		}
+	}
 }
 
 func (eth *ethereum) AddPeer(address string) error {
