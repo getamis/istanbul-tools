@@ -17,6 +17,9 @@
 package tests
 
 import (
+	"context"
+	"errors"
+	"math/big"
 	"sync"
 
 	. "github.com/onsi/ginkgo"
@@ -52,4 +55,50 @@ var _ = Describe("TFS-01: General consensus", func() {
 
 		close(done)
 	}, 20)
+
+	It("TFS-01-04: Consensus progress", func(done Done) {
+		const (
+			targetBlockHeight = 10
+			maxBlockPeriod    = 3
+		)
+
+		By("Wait for consensus progress", func() {
+			waitFor(blockchain.Validators(), func(geth container.Ethereum, wg *sync.WaitGroup) {
+				Expect(geth.WaitForBlockHeight(targetBlockHeight)).To(BeNil())
+				wg.Done()
+			})
+		})
+
+		By("Check the block period should less than 3 seconds", func() {
+			errc := make(chan error, len(blockchain.Validators()))
+			for _, geth := range blockchain.Validators() {
+				go func(geth container.Ethereum) {
+					c := geth.NewClient()
+					lastBlockTime := int64(0)
+					for i := 1; i <= targetBlockHeight; i++ {
+						header, err := c.HeaderByNumber(context.Background(), big.NewInt(int64(i)))
+						if err != nil {
+							errc <- err
+							return
+						}
+						if lastBlockTime != 0 {
+							diff := header.Time.Int64() - lastBlockTime
+							if diff > maxBlockPeriod {
+								errc <- errors.New("Invalid block period.")
+								return
+							}
+						}
+						lastBlockTime = header.Time.Int64()
+					}
+					errc <- nil
+				}(geth)
+			}
+
+			for i := 0; i < len(blockchain.Validators()); i++ {
+				err := <-errc
+				Expect(err).To(BeNil())
+			}
+		})
+		close(done)
+	}, 60)
 })
