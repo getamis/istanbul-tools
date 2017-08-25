@@ -72,12 +72,15 @@ type Ethereum interface {
 
 	WaitForProposed(expectedAddress common.Address, t time.Duration) error
 	WaitForPeersConnected(int) error
-	WaitForBlocks(int) error
+	WaitForBlocks(int, ...time.Duration) error
 	WaitForBlockHeight(int) error
 	// Want for block for no more than the given number during the given time duration
 	WaitForNoBlocks(int, time.Duration) error
 
 	AddPeer(string) error
+
+	StartMining() error
+	StopMining() error
 }
 
 func NewEthereum(c *client.Client, options ...Option) *ethereum {
@@ -181,26 +184,18 @@ func (eth *ethereum) Init(genesisFile string) error {
 		eth.showLog(context.Background())
 	}
 
-	return eth.client.ContainerRemove(context.Background(), id,
-		types.ContainerRemoveOptions{
-			Force: true,
-		})
+	return eth.client.ContainerRemove(context.Background(), id, types.ContainerRemoveOptions{Force: true})
 }
 
 func (eth *ethereum) Start() error {
+	defer func() {
+		if eth.logging {
+			go eth.showLog(context.Background())
+		}
+	}()
+
 	exposedPorts := make(map[nat.Port]struct{})
 	portBindings := nat.PortMap{}
-
-	if eth.port != "" {
-		port := fmt.Sprintf("%d", utils.ListenPortFlag.Value)
-		exposedPorts[nat.Port(port)] = struct{}{}
-		portBindings[nat.Port(port)] = []nat.PortBinding{
-			{
-				HostIP:   "0.0.0.0",
-				HostPort: eth.port,
-			},
-		}
-	}
 
 	if eth.rpcPort != "" {
 		port := fmt.Sprintf("%d", utils.RPCPortFlag.Value)
@@ -245,11 +240,6 @@ func (eth *ethereum) Start() error {
 		return err
 	}
 
-	defer func() {
-		if eth.logging {
-			go eth.showLog(context.Background())
-		}
-	}()
 	eth.containerID = resp.ID
 
 	err = eth.client.ContainerStart(context.Background(), eth.containerID, types.ContainerStartOptions{})
@@ -266,10 +256,11 @@ func (eth *ethereum) Start() error {
 		}
 		_, err = cli.BlockByNumber(context.Background(), big.NewInt(0))
 		if err != nil {
-			time.Sleep(healthCheckRetryDelay)
+			<-time.After(healthCheckRetryDelay)
 			continue
 		} else {
 			eth.ok = true
+			break
 		}
 	}
 
@@ -295,13 +286,12 @@ func (eth *ethereum) Start() error {
 }
 
 func (eth *ethereum) Stop() error {
-	timeout := 10 * time.Second
-	err := eth.client.ContainerStop(context.Background(), eth.containerID, &timeout)
+	err := eth.client.ContainerStop(context.Background(), eth.containerID, nil)
 	if err != nil {
 		return err
 	}
 
-	os.RemoveAll(eth.dataDir)
+	defer os.RemoveAll(eth.dataDir)
 
 	return eth.client.ContainerRemove(context.Background(), eth.containerID,
 		types.ContainerRemoveOptions{
@@ -458,6 +448,7 @@ func (eth *ethereum) WaitForPeersConnected(expectedPeercount int) error {
 	if client == nil {
 		return errors.New("failed to retrieve client")
 	}
+	defer client.Close()
 
 	ticker := time.NewTicker(time.Second * 1)
 	for _ = range ticker.C {
@@ -476,32 +467,45 @@ func (eth *ethereum) WaitForPeersConnected(expectedPeercount int) error {
 	return nil
 }
 
-func (eth *ethereum) WaitForBlocks(num int) error {
+func (eth *ethereum) WaitForBlocks(num int, waitingTime ...time.Duration) error {
 	var first *big.Int
 
 	client := eth.NewIstanbulClient()
 	if client == nil {
 		return errors.New("failed to retrieve client")
 	}
+	defer client.Close()
 
-	ticker := time.NewTicker(time.Millisecond * 500)
-	for _ = range ticker.C {
-		n, err := client.BlockNumber(context.Background())
-		if err != nil {
-			return err
-		}
-		if first == nil {
-			first = new(big.Int).Set(n)
-			continue
-		}
-		// Check if new blocks are getting generated
-		if new(big.Int).Sub(n, first).Int64() >= int64(num) {
-			ticker.Stop()
-			break
-		}
+	var t time.Duration
+	if len(waitingTime) > 0 {
+		t = waitingTime[0]
+	} else {
+		t = 1 * time.Hour
 	}
 
-	return nil
+	timeout := time.After(t)
+	ticker := time.NewTicker(time.Millisecond * 500)
+	for {
+		select {
+		case <-timeout:
+			ticker.Stop()
+			return ErrNoBlock
+		case <-ticker.C:
+			n, err := client.BlockNumber(context.Background())
+			if err != nil {
+				return err
+			}
+			if first == nil {
+				first = new(big.Int).Set(n)
+				continue
+			}
+			// Check if new blocks are getting generated
+			if new(big.Int).Sub(n, first).Int64() >= int64(num) {
+				ticker.Stop()
+				return nil
+			}
+		}
+	}
 }
 
 func (eth *ethereum) WaitForBlockHeight(num int) error {
@@ -509,6 +513,7 @@ func (eth *ethereum) WaitForBlockHeight(num int) error {
 	if client == nil {
 		return errors.New("failed to retrieve client")
 	}
+	defer client.Close()
 
 	ticker := time.NewTicker(time.Millisecond * 500)
 	for _ = range ticker.C {
@@ -564,6 +569,26 @@ func (eth *ethereum) AddPeer(address string) error {
 	defer client.Close()
 
 	return client.AddPeer(context.Background(), address)
+}
+
+func (eth *ethereum) StartMining() error {
+	client := eth.NewIstanbulClient()
+	if client == nil {
+		return errors.New("failed to retrieve client")
+	}
+	defer client.Close()
+
+	return client.StartMining(context.Background())
+}
+
+func (eth *ethereum) StopMining() error {
+	client := eth.NewIstanbulClient()
+	if client == nil {
+		return errors.New("failed to retrieve client")
+	}
+	defer client.Close()
+
+	return client.StopMining(context.Background())
 }
 
 // ----------------------------------------------------------------------------

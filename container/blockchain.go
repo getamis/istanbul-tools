@@ -223,7 +223,6 @@ func (bc *blockchain) CreateNodes(num int, options ...Option) (nodes []Ethereum,
 			return nil, err
 		}
 		opts = append(opts, HostDataDir(dataDir))
-		opts = append(opts, HostPort(freeport.GetPort()))
 		opts = append(opts, HostWebSocketPort(freeport.GetPort()))
 
 		geth := NewEthereum(
@@ -298,7 +297,6 @@ func (bc *blockchain) setupValidators(keys []*ecdsa.PrivateKey, options ...Optio
 			log.Fatal("Failed to create data dir", err)
 		}
 		opts = append(opts, HostDataDir(dataDir))
-		opts = append(opts, HostPort(freeport.GetPort()))
 		opts = append(opts, HostWebSocketPort(freeport.GetPort()))
 		opts = append(opts, Key(keys[i]))
 
