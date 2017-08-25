@@ -19,6 +19,8 @@ package istclient
 import (
 	"context"
 	"math/big"
+	"sort"
+	"strings"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
@@ -120,12 +122,29 @@ func (ic *Client) ProposeValidator(ctx context.Context, address common.Address, 
 	return err
 }
 
+type addresses []common.Address
+
+func (addrs addresses) Len() int {
+	return len(addrs)
+}
+
+func (addrs addresses) Less(i, j int) bool {
+	return strings.Compare(addrs[i].String(), addrs[j].String()) < 0
+}
+
+func (addrs addresses) Swap(i, j int) {
+	addrs[i], addrs[j] = addrs[j], addrs[i]
+}
+
 func (ic *Client) GetValidators(ctx context.Context, blockNumbers *big.Int) ([]common.Address, error) {
 	var r []common.Address
 	err := ic.c.CallContext(ctx, &r, "istanbul_getValidators", toNumArg(blockNumbers))
 	if err == nil && r == nil {
 		return nil, ethereum.NotFound
 	}
+
+	sort.Sort(addresses(r))
+
 	return r, err
 }
 

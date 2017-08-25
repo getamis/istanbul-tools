@@ -152,7 +152,8 @@ var _ = Describe("TFS-01: General consensus", func() {
 						if lastBlockTime != 0 {
 							diff := header.Time.Int64() - lastBlockTime
 							if diff > maxBlockPeriod {
-								errc <- errors.New("Invalid block period.")
+								errStr := fmt.Sprintf("Invaild block(%v) period, want:%v, got:%v", header.Number.Int64(), maxBlockPeriod, diff)
+								errc <- errors.New(errStr)
 								return
 							}
 						}
@@ -169,4 +170,92 @@ var _ = Describe("TFS-01: General consensus", func() {
 		})
 		close(done)
 	}, 60)
+
+	It("TFS-01-05: Round robin proposer selection", func(done Done) {
+		var (
+			timesOfBeProposer = 3
+			targetBlockHeight = timesOfBeProposer * numberOfValidators
+			emptyProposer     = common.Address{}
+		)
+
+		By("Wait for consensus progress", func() {
+			waitFor(blockchain.Validators(), func(geth container.Ethereum, wg *sync.WaitGroup) {
+				Expect(geth.WaitForBlockHeight(targetBlockHeight)).To(BeNil())
+				wg.Done()
+			})
+		})
+
+		By("Block proposer selection should follow round-robin policy", func() {
+			errc := make(chan error, len(blockchain.Validators()))
+			for _, geth := range blockchain.Validators() {
+				go func(geth container.Ethereum) {
+					c := geth.NewClient()
+					istClient := geth.NewIstanbulClient()
+
+					// get initial validator set
+					vals, err := istClient.GetValidators(context.Background(), big.NewInt(0))
+					if err != nil {
+						errc <- err
+						return
+					}
+
+					lastProposerIdx := -1
+					counts := make(map[common.Address]int, numberOfValidators)
+					// initial count map
+					for _, addr := range vals {
+						counts[addr] = 0
+					}
+					for i := 1; i <= targetBlockHeight; i++ {
+						header, err := c.HeaderByNumber(context.Background(), big.NewInt(int64(i)))
+						if err != nil {
+							errc <- err
+							return
+						}
+
+						p := container.GetProposer(header)
+						if p == emptyProposer {
+							errStr := fmt.Sprintf("Empty block(%v) proposer", header.Number.Int64())
+							errc <- errors.New(errStr)
+							return
+						}
+						// count the times to be the proposer
+						if count, ok := counts[p]; ok {
+							counts[p] = count + 1
+						}
+						// check if the proposer is valid
+						if lastProposerIdx == -1 {
+							for i, val := range vals {
+								if p == val {
+									lastProposerIdx = i
+									break
+								}
+							}
+						} else {
+							proposerIdx := (lastProposerIdx + 1) % len(vals)
+							if p != vals[proposerIdx] {
+								errStr := fmt.Sprintf("Invaild block(%v) proposer, want:%v, got:%v", header.Number.Int64(), vals[proposerIdx], p)
+								errc <- errors.New(errStr)
+								return
+							}
+							lastProposerIdx = proposerIdx
+						}
+					}
+					// check times to be proposer
+					for _, count := range counts {
+						if count != timesOfBeProposer {
+							errc <- errors.New("Wrong times to be proposer.")
+							return
+						}
+					}
+					errc <- nil
+				}(geth)
+			}
+
+			for i := 0; i < len(blockchain.Validators()); i++ {
+				err := <-errc
+				Expect(err).To(BeNil())
+			}
+		})
+		close(done)
+	}, 120)
 })
