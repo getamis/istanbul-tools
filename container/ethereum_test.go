@@ -34,7 +34,6 @@ func TestEthereumContainer(t *testing.T) {
 		ImageRepository("quay.io/amis/geth"),
 		ImageTag("istanbul_develop"),
 		DataDir("/data"),
-		HostPort(freeport.GetPort()),
 		WebSocket(),
 		WebSocketAddress("0.0.0.0"),
 		WebSocketAPI("admin,eth,net,web3,personal"),

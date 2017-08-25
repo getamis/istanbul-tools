@@ -194,17 +194,6 @@ func (eth *ethereum) Start() error {
 	exposedPorts := make(map[nat.Port]struct{})
 	portBindings := nat.PortMap{}
 
-	if eth.port != "" {
-		port := fmt.Sprintf("%d", utils.ListenPortFlag.Value)
-		exposedPorts[nat.Port(port)] = struct{}{}
-		portBindings[nat.Port(port)] = []nat.PortBinding{
-			{
-				HostIP:   "0.0.0.0",
-				HostPort: eth.port,
-			},
-		}
-	}
-
 	if eth.rpcPort != "" {
 		port := fmt.Sprintf("%d", utils.RPCPortFlag.Value)
 		exposedPorts[nat.Port(port)] = struct{}{}
