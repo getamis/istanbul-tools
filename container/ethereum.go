@@ -444,7 +444,7 @@ func (eth *ethereum) WaitForProposed(expectedAddress common.Address, timeout tim
 		case <-timer.C: // FIXME: this event may be missed
 			return errors.New("no result")
 		case head := <-subCh:
-			if getProposer(head).String() == expectedAddress.String() {
+			if getProposer(head) == expectedAddress {
 				return nil
 			}
 		}
