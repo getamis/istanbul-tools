@@ -72,6 +72,44 @@ func NewDefaultBlockchain(numOfValidators int) (bc *blockchain) {
 	)
 }
 
+func NewDefaultBlockchainWithFaulty(numOfNormal int, numOfFaulty int) (bc *blockchain) {
+	commonOpts := [...]Option{
+		DataDir("/data"),
+		WebSocket(),
+		WebSocketAddress("0.0.0.0"),
+		WebSocketAPI("admin,eth,net,web3,personal,miner,istanbul"),
+		WebSocketOrigin("*"),
+		NAT("any"),
+		NoDiscover(),
+		Etherbase("1a9afb711302c5f83b5902843d1c007a1a137632"),
+		Mine(),
+		Logging(false)}
+	normalOpts := make([]Option, len(commonOpts), len(commonOpts)+2)
+	copy(normalOpts, commonOpts[:])
+	normalOpts = append(normalOpts, ImageRepository("quay.io/amis/geth"), ImageTag("istanbul_develop"))
+	faultyOpts := make([]Option, len(commonOpts), len(commonOpts)+3)
+	copy(faultyOpts, commonOpts[:])
+	faultyOpts = append(faultyOpts, ImageRepository("quay.io/amis/geth_faulty"), ImageTag("latest"), FaultyMode(1))
+
+	// New env client
+	bc = &blockchain{}
+	var err error
+	bc.dockerClient, err = client.NewEnvClient()
+	if err != nil {
+		log.Fatalf("Cannot connect to Docker daemon, err: %v", err)
+	}
+
+	keys, addrs := generateKeys(numOfNormal + numOfFaulty)
+	bc.setupGenesis(addrs)
+	// Create normal validators
+	bc.opts = normalOpts
+	bc.setupValidators(keys[:numOfNormal], bc.opts...)
+	// Create faulty validators
+	bc.opts = faultyOpts
+	bc.setupValidators(keys[numOfNormal:], bc.opts...)
+	return bc
+}
+
 // ----------------------------------------------------------------------------
 
 type blockchain struct {
