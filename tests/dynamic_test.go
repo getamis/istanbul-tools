@@ -80,6 +80,18 @@ var _ = Describe("Dynamic validators addition/removal testing", func() {
 		})
 	})
 
+	It("TFS-02-02 New validators consensus participation", func() {
+		testValidator := 1
+
+		newValidators, err := blockchain.AddValidators(testValidator)
+		Expect(err).Should(BeNil())
+
+		waitFor(blockchain.Validators()[numberOfValidators:], func(eth container.Ethereum, wg *sync.WaitGroup) {
+			Expect(eth.WaitForProposed(newValidators[0].Address(), 100*time.Second)).Should(BeNil())
+			wg.Done()
+		})
+	})
+
 	It("TFS-02-03 Remove validators", func() {
 		numOfCandidates := 3
 

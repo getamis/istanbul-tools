@@ -70,6 +70,7 @@ type Ethereum interface {
 	NewIstanbulClient() *istclient.Client
 	ConsensusMonitor(err chan<- error, quit chan struct{})
 
+	WaitForProposed(expectedAddress common.Address, t time.Duration) error
 	WaitForPeersConnected(int) error
 	WaitForBlocks(int) error
 	WaitForBlockHeight(int) error
@@ -401,7 +402,7 @@ func (eth *ethereum) ConsensusMonitor(errCh chan<- error, quit chan struct{}) {
 			log.Printf("Connection lost: %v", err)
 			errCh <- err
 			return
-		case <-timer.C:
+		case <-timer.C: // FIXME: this event may be missed
 			if blockNumber == 0 {
 				errCh <- ErrNoBlock
 			} else {
@@ -419,6 +420,33 @@ func (eth *ethereum) ConsensusMonitor(errCh chan<- error, quit chan struct{}) {
 			timer.Reset(3 * time.Second)
 		case <-quit:
 			return
+		}
+	}
+}
+
+// TODO: refactor with ConsensusMonitor
+func (eth *ethereum) WaitForProposed(expectedAddress common.Address, timeout time.Duration) error {
+	cli := eth.NewClient()
+
+	subCh := make(chan *ethtypes.Header)
+
+	sub, err := cli.SubscribeNewHead(context.Background(), subCh)
+	if err != nil {
+		return err
+	}
+	defer sub.Unsubscribe()
+
+	timer := time.NewTimer(timeout)
+	for {
+		select {
+		case err := <-sub.Err():
+			return err
+		case <-timer.C: // FIXME: this event may be missed
+			return errors.New("no result")
+		case head := <-subCh:
+			if getProposer(head) == expectedAddress {
+				return nil
+			}
 		}
 	}
 }

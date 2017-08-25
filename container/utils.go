@@ -24,7 +24,12 @@ import (
 	"path/filepath"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/consensus/istanbul"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/crypto/sha3"
+	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/getamis/istanbul-tools/cmd/istanbul/extradata"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -77,4 +82,30 @@ func saveNodeKey(key *ecdsa.PrivateKey, dataDir string) error {
 		return err
 	}
 	return nil
+}
+
+func sigHash(header *types.Header) (hash common.Hash) {
+	hasher := sha3.NewKeccak256()
+
+	// Clean seal is required for calculating proposer seal.
+	rlp.Encode(hasher, types.IstanbulFilteredHeader(header, false))
+	hasher.Sum(hash[:0])
+	return hash
+}
+
+func getProposer(header *types.Header) common.Address {
+	if header == nil {
+		return common.Address{}
+	}
+
+	_, istanbulExtra, err := extradata.Decode(common.ToHex(header.Extra))
+	if err != nil {
+		return common.Address{}
+	}
+
+	addr, err := istanbul.GetSignatureAddress(sigHash(header).Bytes(), istanbulExtra.Seal)
+	if err != nil {
+		return common.Address{}
+	}
+	return addr
 }
