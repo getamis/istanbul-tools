@@ -19,13 +19,17 @@ package tests
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math/big"
 	"sync"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/getamis/istanbul-tools/container"
+	"github.com/getamis/istanbul-tools/genesis"
 )
 
 var _ = Describe("TFS-01: General consensus", func() {
@@ -44,6 +48,67 @@ var _ = Describe("TFS-01: General consensus", func() {
 	AfterEach(func() {
 		blockchain.Stop(true) // This will return container not found error since we stop one
 		blockchain.Finalize()
+	})
+
+	It("TFS-01-01, TFS-01-02: Blockchain initialization and run", func() {
+		errc := make(chan error, len(blockchain.Validators()))
+		valSet := make(map[common.Address]bool, numberOfValidators)
+		for _, geth := range blockchain.Validators() {
+			valSet[geth.Address()] = true
+		}
+		for _, geth := range blockchain.Validators() {
+			go func(geth container.Ethereum) {
+				// 1. Verify genesis block
+				c := geth.NewClient()
+				header, err := c.HeaderByNumber(context.Background(), big.NewInt(0))
+				if err != nil {
+					errc <- err
+					return
+				}
+
+				if header.GasLimit.Int64() != genesis.InitGasLimit {
+					errStr := fmt.Sprintf("Invalid genesis gas limit. want:%v, got:%v", genesis.InitGasLimit, header.GasLimit.Int64())
+					errc <- errors.New(errStr)
+					return
+				}
+
+				if header.Difficulty.Int64() != genesis.InitDifficulty {
+					errStr := fmt.Sprintf("Invalid genesis difficulty. want:%v, got:%v", genesis.InitDifficulty, header.Difficulty.Int64())
+					errc <- errors.New(errStr)
+					return
+				}
+
+				if header.MixDigest != types.IstanbulDigest {
+					errStr := fmt.Sprintf("Invalid block mixhash. want:%v, got:%v", types.IstanbulDigest, header.MixDigest)
+					errc <- errors.New(errStr)
+					return
+
+				}
+
+				// 2. Check validator set
+				istClient := geth.NewIstanbulClient()
+				vals, err := istClient.GetValidators(context.Background(), big.NewInt(0))
+				if err != nil {
+					errc <- err
+					return
+				}
+
+				for _, val := range vals {
+					if _, ok := valSet[val]; !ok {
+						errc <- errors.New("Invalid validator address.")
+						return
+					}
+				}
+
+				errc <- nil
+			}(geth)
+		}
+
+		for i := 0; i < len(blockchain.Validators()); i++ {
+			err := <-errc
+			Expect(err).To(BeNil())
+		}
+
 	})
 
 	It("TFS-01-03: Peer connection", func(done Done) {

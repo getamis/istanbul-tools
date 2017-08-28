@@ -35,7 +35,9 @@ import (
 )
 
 const (
-	FileName = "genesis.json"
+	FileName       = "genesis.json"
+	InitGasLimit   = 4700000
+	InitDifficulty = 1
 )
 
 func New(addrs []common.Address) *core.Genesis {
@@ -46,8 +48,8 @@ func New(addrs []common.Address) *core.Genesis {
 
 	return &core.Genesis{
 		Timestamp:  uint64(time.Now().Unix()),
-		GasLimit:   4700000,
-		Difficulty: big.NewInt(1),
+		GasLimit:   InitGasLimit,
+		Difficulty: big.NewInt(InitDifficulty),
 		Alloc:      make(core.GenesisAlloc),
 		Config: &params.ChainConfig{
 			HomesteadBlock: big.NewInt(1),
