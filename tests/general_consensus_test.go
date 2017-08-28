@@ -75,7 +75,10 @@ var _ = Describe("TFS-01: General consensus", func() {
 				go func(geth container.Ethereum) {
 					c := geth.NewClient()
 					lastBlockTime := int64(0)
-					for i := 1; i <= targetBlockHeight; i++ {
+					// The reason to verify block period from block#2 is that
+					// the block period from block#1 to block#2 might take long time due to
+					// encounter several round changes at the beginning of the consensus progress.
+					for i := 2; i <= targetBlockHeight; i++ {
 						header, err := c.HeaderByNumber(context.Background(), big.NewInt(int64(i)))
 						if err != nil {
 							errc <- err
