@@ -93,7 +93,7 @@ func sigHash(header *types.Header) (hash common.Hash) {
 	return hash
 }
 
-func getProposer(header *types.Header) common.Address {
+func GetProposer(header *types.Header) common.Address {
 	if header == nil {
 		return common.Address{}
 	}
