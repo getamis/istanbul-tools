@@ -19,6 +19,7 @@ package genesis
 import (
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"math/big"
 	"path/filepath"
 	"time"
@@ -59,6 +60,19 @@ func New(options ...Option) *core.Genesis {
 	}
 
 	return genesis
+}
+
+func NewFile(options ...Option) string {
+	dir, err := generateRandomDir()
+	if err != nil {
+		log.Fatalf("Failed to create random directory, err: %v", err)
+	}
+	genesis := New(options...)
+	if err := Save(dir, genesis); err != nil {
+		log.Fatalf("Failed to save genesis to '%s', err: %v", dir, err)
+	}
+
+	return filepath.Join(dir, FileName)
 }
 
 func Save(dataDir string, genesis *core.Genesis) error {
