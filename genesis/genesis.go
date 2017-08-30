@@ -19,19 +19,14 @@ package genesis
 import (
 	"encoding/json"
 	"io/ioutil"
-	"log"
 	"math/big"
 	"path/filepath"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/consensus/istanbul"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
-
-	"github.com/getamis/istanbul-tools/cmd/istanbul/extradata"
 )
 
 const (
@@ -40,13 +35,8 @@ const (
 	InitDifficulty = 1
 )
 
-func New(addrs []common.Address) *core.Genesis {
-	extraData, err := extradata.Encode("0x00", addrs)
-	if err != nil {
-		log.Fatalf("Failed to generate genesis, err:%s", err)
-	}
-
-	return &core.Genesis{
+func New(options ...Option) *core.Genesis {
+	genesis := &core.Genesis{
 		Timestamp:  uint64(time.Now().Unix()),
 		GasLimit:   InitGasLimit,
 		Difficulty: big.NewInt(InitDifficulty),
@@ -61,9 +51,14 @@ func New(addrs []common.Address) *core.Genesis {
 				Epoch:          istanbul.DefaultConfig.Epoch,
 			},
 		},
-		Mixhash:   types.IstanbulDigest,
-		ExtraData: hexutil.MustDecode(extraData),
+		Mixhash: types.IstanbulDigest,
 	}
+
+	for _, opt := range options {
+		opt(genesis)
+	}
+
+	return genesis
 }
 
 func Save(dataDir string, genesis *core.Genesis) error {

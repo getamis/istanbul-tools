@@ -278,7 +278,11 @@ func (bc *blockchain) setupGenesis(addrs []common.Address) {
 		if err != nil {
 			log.Fatal("Failed to create setup dir", err)
 		}
-		err = genesis.Save(setupDir, genesis.New(addrs))
+		err = genesis.Save(setupDir,
+			genesis.New(
+				genesis.Validators(addrs...),
+			),
+		)
 		if err != nil {
 			log.Fatal("Failed to save genesis", err)
 		}
