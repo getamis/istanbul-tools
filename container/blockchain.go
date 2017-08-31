@@ -68,6 +68,7 @@ func NewDefaultBlockchain(numOfValidators int) (bc *blockchain) {
 		NoDiscover(),
 		Etherbase("1a9afb711302c5f83b5902843d1c007a1a137632"),
 		Mine(),
+		SyncMode("full"),
 		Logging(false),
 	)
 }
@@ -83,6 +84,7 @@ func NewDefaultBlockchainWithFaulty(numOfNormal int, numOfFaulty int) (bc *block
 		NoDiscover(),
 		Etherbase("1a9afb711302c5f83b5902843d1c007a1a137632"),
 		Mine(),
+		SyncMode("full"),
 		Logging(false)}
 	normalOpts := make([]Option, len(commonOpts), len(commonOpts)+2)
 	copy(normalOpts, commonOpts[:])
