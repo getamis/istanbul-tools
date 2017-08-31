@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package extra
 
 import (
 	"strings"
@@ -23,22 +23,22 @@ import (
 )
 
 var (
-	ConfigFlag = cli.StringFlag{
+	configFlag = cli.StringFlag{
 		Name:  "config",
 		Usage: "TOML configuration file",
 	}
 
-	ExtraDataFlag = cli.StringFlag{
+	extraDataFlag = cli.StringFlag{
 		Name:  "extradata",
 		Usage: "Hex string for RLP encoded Istanbul extraData",
 	}
 
-	ValidatorsFlag = cli.StringFlag{
+	validatorsFlag = cli.StringFlag{
 		Name:  "validators",
 		Usage: "Validators for RLP encoded Istanbul extraData",
 	}
 
-	VanityFlag = cli.StringFlag{
+	vanityFlag = cli.StringFlag{
 		Name:  "vanity",
 		Usage: "Vanity for RLP encoded Istanbul extraData",
 		Value: "0x00",
