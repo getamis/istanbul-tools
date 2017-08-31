@@ -245,3 +245,10 @@ func FaultyMode(mode int) Option {
 		eth.flags = append(eth.flags, fmt.Sprintf("%d", mode))
 	}
 }
+
+func SyncMode(mode string) Option {
+	return func(eth *ethereum) {
+		eth.flags = append(eth.flags, "--"+utils.SyncModeFlag.Name)
+		eth.flags = append(eth.flags, mode)
+	}
+}
