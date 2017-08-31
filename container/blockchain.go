@@ -274,15 +274,9 @@ func (bc *blockchain) connectAll(strong bool) error {
 
 func (bc *blockchain) setupGenesis(addrs []common.Address) {
 	if bc.genesisFile == "" {
-		setupDir, err := generateRandomDir()
-		if err != nil {
-			log.Fatal("Failed to create setup dir", err)
-		}
-		err = genesis.Save(setupDir, genesis.New(addrs))
-		if err != nil {
-			log.Fatal("Failed to save genesis", err)
-		}
-		bc.genesisFile = filepath.Join(setupDir, genesis.FileName)
+		bc.genesisFile = genesis.NewFile(
+			genesis.Validators(addrs...),
+		)
 	}
 }
 
