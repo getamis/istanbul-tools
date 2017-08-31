@@ -43,6 +43,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/p2p/discover"
 
+	istutils "github.com/getamis/istanbul-tools/cmd/utils"
 	"github.com/getamis/istanbul-tools/genesis"
 	"github.com/getamis/istanbul-tools/istclient"
 )
@@ -146,7 +147,7 @@ type ethereum struct {
 }
 
 func (eth *ethereum) Init(genesisFile string) error {
-	if err := saveNodeKey(eth.key, eth.dataDir); err != nil {
+	if err := istutils.SaveNodeKey(eth.key, eth.dataDir); err != nil {
 		log.Fatal("Failed to save nodekey", err)
 		return err
 	}
