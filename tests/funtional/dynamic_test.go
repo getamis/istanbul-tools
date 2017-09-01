@@ -38,7 +38,7 @@ var _ = Describe("Dynamic validators addition/removal testing", func() {
 	)
 
 	BeforeEach(func() {
-		blockchain = container.NewDefaultBlockchain(numberOfValidators)
+		blockchain = container.NewDefaultBlockchain(dockerNetwork, numberOfValidators)
 		Expect(blockchain.Start(true)).To(BeNil())
 	})
 

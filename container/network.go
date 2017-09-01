@@ -18,47 +18,122 @@ package container
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net"
+	"sync"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 )
 
-type networkManager struct {
-	client *client.Client
-	field1 uint8
-	field2 uint8
+const (
+	FirstOctet  = 172
+	SecondOctet = 19
+	NetworkName = "testnet"
+)
+
+type DockerNetwork struct {
+	client  *client.Client
+	id      string
+	name    string
+	ipv4Net *net.IPNet
+
+	mutex   sync.Mutex
+	ipIndex net.IP
 }
 
-func NewNetworkManager(c *client.Client, field1 uint8, field2 uint8) *networkManager {
-	n := &networkManager{
-		client: c,
-		field1: field1,
-		field2: field2,
+func NewDockerNetwork() (*DockerNetwork, error) {
+	// IP xxx.xxx.0.1 is reserved for docker network gateway
+	ipv4Addr, ipv4Net, err := net.ParseCIDR(fmt.Sprintf("%d.%d.0.1/16", FirstOctet, SecondOctet))
+	if err != nil {
+		return nil, err
 	}
 
-	return n
+	c, err := client.NewEnvClient()
+	if err != nil {
+		return nil, err
+	}
+
+	network := &DockerNetwork{
+		client:  c,
+		name:    NetworkName,
+		ipv4Net: ipv4Net,
+		ipIndex: ipv4Addr,
+	}
+
+	if err := network.create(); err != nil {
+		return nil, err
+	}
+
+	return network, nil
 }
 
-// CreateNetwork returns network id
-func (n *networkManager) CreateNetwork(name string) (string, error) {
+// create creates a docker network with given subnet
+func (n *DockerNetwork) create() error {
 	ipamConfig := network.IPAMConfig{
-		Subnet: fmt.Sprintf("%d.%d.0.0/16", n.field1, n.field2),
+		Subnet: n.ipv4Net.String(),
 	}
 	ipam := &network.IPAM{
 		Config: []network.IPAMConfig{ipamConfig},
 	}
-	r, e := n.client.NetworkCreate(context.Background(), name, types.NetworkCreate{
+
+	r, err := n.client.NetworkCreate(context.Background(), n.name, types.NetworkCreate{
 		IPAM: ipam,
 	})
-	if e != nil {
-		return "", e
-	} else {
-		return r.ID, nil
+	if err != nil {
+		return err
 	}
+	n.id = r.ID
+	return nil
 }
 
-func (n *networkManager) RemoveNetwork(id string) error {
-	return n.client.NetworkRemove(context.Background(), id)
+func (n *DockerNetwork) ID() string {
+	return n.id
+}
+
+func (n *DockerNetwork) Name() string {
+	return n.name
+}
+
+func (n *DockerNetwork) Remove() error {
+	return n.client.NetworkRemove(context.Background(), n.id)
+}
+
+func (n *DockerNetwork) GetFreeIPAddrs(num int) ([]net.IP, error) {
+	n.mutex.Lock()
+	defer n.mutex.Unlock()
+
+	ips := make([]net.IP, 0)
+	for i := 0; i < num; i++ {
+		ip := dupIP(n.ipIndex)
+		for j := len(ip) - 1; j >= 0; j-- {
+			ip[j]++
+			if ip[j] > 0 {
+				break
+			}
+		}
+
+		if !n.ipv4Net.Contains(ip) {
+			break
+		}
+		ips = append(ips, ip)
+		n.ipIndex = ip
+	}
+
+	if len(ips) != num {
+		return nil, errors.New("Insufficient IP address.")
+	}
+	return ips, nil
+}
+
+func dupIP(ip net.IP) net.IP {
+	// To save space, try and only use 4 bytes
+	if x := ip.To4(); x != nil {
+		ip = x
+	}
+	dup := make(net.IP, len(ip))
+	copy(dup, ip)
+	return dup
 }
