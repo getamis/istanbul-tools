@@ -14,31 +14,22 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package extra
 
 import (
-	"fmt"
-	"os"
-
-	"github.com/urfave/cli"
-
-	"github.com/getamis/istanbul-tools/cmd/istanbul/extra"
-	"github.com/getamis/istanbul-tools/cmd/utils"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/core/types"
 )
 
-func main() {
-	app := utils.NewApp()
-	app.Usage = "the istanbul-tools command line interface"
-
-	app.HideVersion = true // we have a command to print the version
-	app.Copyright = "Copyright 2017 The Amis Authors"
-
-	app.Commands = []cli.Command{
-		extra.ExtraCommand,
+func Decode(extraData string) ([]byte, *types.IstanbulExtra, error) {
+	extra, err := hexutil.Decode(extraData)
+	if err != nil {
+		return nil, nil, err
 	}
 
-	if err := app.Run(os.Args); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+	istanbulExtra, err := types.ExtractIstanbulExtra(&types.Header{Extra: extra})
+	if err != nil {
+		return nil, nil, err
 	}
+	return extra[:types.IstanbulExtraVanity], istanbulExtra, nil
 }

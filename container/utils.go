@@ -29,8 +29,9 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/crypto/sha3"
 	"github.com/ethereum/go-ethereum/rlp"
-	"github.com/getamis/istanbul-tools/cmd/istanbul/extradata"
 	uuid "github.com/satori/go.uuid"
+
+	"github.com/getamis/istanbul-tools/cmd/istanbul/extra"
 )
 
 const (
@@ -98,7 +99,7 @@ func GetProposer(header *types.Header) common.Address {
 		return common.Address{}
 	}
 
-	_, istanbulExtra, err := extradata.Decode(common.ToHex(header.Extra))
+	_, istanbulExtra, err := extra.Decode(common.ToHex(header.Extra))
 	if err != nil {
 		return common.Address{}
 	}
