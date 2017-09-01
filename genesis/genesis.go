@@ -30,6 +30,8 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
+
+	"github.com/getamis/istanbul-tools/common"
 )
 
 const (
@@ -74,7 +76,7 @@ func NewFileAt(dir string, isQuorum bool, options ...Option) string {
 }
 
 func NewFile(isQuorum bool, options ...Option) string {
-	dir, err := generateRandomDir()
+	dir, err := common.GenerateRandomDir()
 	if err != nil {
 		log.Fatalf("Failed to create random directory, err: %v", err)
 	}

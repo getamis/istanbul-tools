@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-package utils
+package common
 
 import (
 	"crypto/ecdsa"
@@ -52,7 +52,7 @@ func GenerateRandomDir() (string, error) {
 
 func GenerateKeys(num int) (keys []*ecdsa.PrivateKey, nodekeys []string, addrs []common.Address) {
 	for i := 0; i < num; i++ {
-		nodekey := RandomHex()
+		nodekey := RandomHex()[2:]
 		nodekeys = append(nodekeys, nodekey)
 
 		key, err := crypto.HexToECDSA(nodekey)
@@ -67,21 +67,6 @@ func GenerateKeys(num int) (keys []*ecdsa.PrivateKey, nodekeys []string, addrs [
 
 	return keys, nodekeys, addrs
 }
-
-// func GenerateKeys(num int) (keys []*ecdsa.PrivateKey, addrs []common.Address) {
-// 	for i := 0; i < num; i++ {
-// 		key, err := crypto.GenerateKey()
-// 		if err != nil {
-// 			log.Fatalf("couldn't generate key: " + err.Error())
-// 		}
-// 		keys = append(keys, key)
-
-// 		addr := crypto.PubkeyToAddress(key.PublicKey)
-// 		addrs = append(addrs, addr)
-// 	}
-
-// 	return keys, addrs
-// }
 
 func SaveNodeKey(key *ecdsa.PrivateKey, dataDir string) error {
 	keyDir := filepath.Join(dataDir, clientIdentifier)
