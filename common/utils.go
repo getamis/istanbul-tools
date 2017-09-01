@@ -19,13 +19,17 @@ package common
 import (
 	"crypto/ecdsa"
 	"crypto/rand"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"net"
 	"os"
 	"path/filepath"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/getamis/go-ethereum/p2p/discover"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -34,6 +38,14 @@ const (
 	clientIdentifier = "geth"
 	nodekeyFileName  = "nodekey"
 )
+
+func GenerateIPs(num int) (ips []string) {
+	for i := 0; i < num; i++ {
+		ips = append(ips, fmt.Sprintf("10.1.1.%d", i+2))
+	}
+
+	return ips
+}
 
 func GenerateRandomDir() (string, error) {
 	err := os.MkdirAll(filepath.Join(defaultLocalDir), 0700)
@@ -81,6 +93,44 @@ func SaveNodeKey(key *ecdsa.PrivateKey, dataDir string) error {
 		return err
 	}
 	return nil
+}
+
+func GenerateStaticNodesAt(dir string, nodekeys []string, ipAddrs []string) (filename string) {
+	var nodes []string
+
+	for i, nodekey := range nodekeys {
+		key, err := crypto.HexToECDSA(nodekey)
+		if err != nil {
+			log.Printf("Failed to create key, err: %v\n", err)
+			return ""
+		}
+		node := discover.NewNode(
+			discover.PubkeyID(&key.PublicKey),
+			net.ParseIP(ipAddrs[i]),
+			0,
+			uint16(30303))
+
+		nodes = append(nodes, node.String())
+	}
+
+	filename = filepath.Join(dir, "static-nodes.json")
+	bytes, _ := json.Marshal(nodes)
+	if err := ioutil.WriteFile(filename, bytes, 0644); err != nil {
+		log.Printf("Failed to write '%s', err: %v\n", filename, err)
+		return ""
+	}
+
+	return filename
+}
+
+func GenerateStaticNodes(nodekeys []string, ipAddrs []string) (filename string) {
+	dir, err := GenerateRandomDir()
+	if err != nil {
+		log.Printf("Failed to generate directory, err: %v\n", err)
+		return ""
+	}
+
+	return GenerateStaticNodesAt(dir, nodekeys, ipAddrs)
 }
 
 func RandomHex() string {
