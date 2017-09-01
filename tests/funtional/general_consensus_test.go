@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-package tests
+package functional
 
 import (
 	"context"
@@ -30,6 +30,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/getamis/istanbul-tools/container"
 	"github.com/getamis/istanbul-tools/genesis"
+	"github.com/getamis/istanbul-tools/tests"
 )
 
 var _ = Describe("TFS-01: General consensus", func() {
@@ -113,7 +114,7 @@ var _ = Describe("TFS-01: General consensus", func() {
 
 	It("TFS-01-03: Peer connection", func(done Done) {
 		expectedPeerCount := len(blockchain.Validators()) - 1
-		waitFor(blockchain.Validators(), func(v container.Ethereum, wg *sync.WaitGroup) {
+		tests.WaitFor(blockchain.Validators(), func(v container.Ethereum, wg *sync.WaitGroup) {
 			Expect(v.WaitForPeersConnected(expectedPeerCount)).To(BeNil())
 			wg.Done()
 		})
@@ -128,7 +129,7 @@ var _ = Describe("TFS-01: General consensus", func() {
 		)
 
 		By("Wait for consensus progress", func() {
-			waitFor(blockchain.Validators(), func(geth container.Ethereum, wg *sync.WaitGroup) {
+			tests.WaitFor(blockchain.Validators(), func(geth container.Ethereum, wg *sync.WaitGroup) {
 				Expect(geth.WaitForBlockHeight(targetBlockHeight)).To(BeNil())
 				wg.Done()
 			})
@@ -179,7 +180,7 @@ var _ = Describe("TFS-01: General consensus", func() {
 		)
 
 		By("Wait for consensus progress", func() {
-			waitFor(blockchain.Validators(), func(geth container.Ethereum, wg *sync.WaitGroup) {
+			tests.WaitFor(blockchain.Validators(), func(geth container.Ethereum, wg *sync.WaitGroup) {
 				Expect(geth.WaitForBlockHeight(targetBlockHeight)).To(BeNil())
 				wg.Done()
 			})

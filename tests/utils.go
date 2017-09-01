@@ -22,7 +22,7 @@ import (
 	"github.com/getamis/istanbul-tools/container"
 )
 
-func waitFor(geths []container.Ethereum, waitFn func(eth container.Ethereum, wg *sync.WaitGroup)) {
+func WaitFor(geths []container.Ethereum, waitFn func(eth container.Ethereum, wg *sync.WaitGroup)) {
 	wg := new(sync.WaitGroup)
 	for _, g := range geths {
 		wg.Add(1)

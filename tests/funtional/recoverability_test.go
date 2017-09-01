@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-package tests
+package functional
 
 import (
 	"sync"
@@ -24,6 +24,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/getamis/istanbul-tools/container"
+	"github.com/getamis/istanbul-tools/tests"
 )
 
 var _ = Describe("TFS-03: Recoverability testing", func() {
@@ -46,7 +47,7 @@ var _ = Describe("TFS-03: Recoverability testing", func() {
 
 	It("TFS-04-01: Add validators in a network with < 2F+1 validators to > 2F+1", func(done Done) {
 		By("The consensus should work at the beginning", func() {
-			waitFor(blockchain.Validators(), func(geth container.Ethereum, wg *sync.WaitGroup) {
+			tests.WaitFor(blockchain.Validators(), func(geth container.Ethereum, wg *sync.WaitGroup) {
 				Expect(geth.WaitForBlocks(5)).To(BeNil())
 				wg.Done()
 			})
@@ -55,14 +56,14 @@ var _ = Describe("TFS-03: Recoverability testing", func() {
 		numOfValidatorsToBeStopped := 2
 
 		By("Stop several validators until there are less than 2F+1 validators", func() {
-			waitFor(blockchain.Validators()[:numOfValidatorsToBeStopped], func(geth container.Ethereum, wg *sync.WaitGroup) {
+			tests.WaitFor(blockchain.Validators()[:numOfValidatorsToBeStopped], func(geth container.Ethereum, wg *sync.WaitGroup) {
 				Expect(geth.StopMining()).To(BeNil())
 				wg.Done()
 			})
 		})
 
 		By("The consensus should not work after resuming", func() {
-			waitFor(blockchain.Validators(), func(geth container.Ethereum, wg *sync.WaitGroup) {
+			tests.WaitFor(blockchain.Validators(), func(geth container.Ethereum, wg *sync.WaitGroup) {
 				// container.ErrNoBlock should be returned if we didn't see any block in 10 seconds
 				Expect(geth.WaitForBlocks(1, 10*time.Second)).To(BeEquivalentTo(container.ErrNoBlock))
 				wg.Done()
@@ -70,14 +71,14 @@ var _ = Describe("TFS-03: Recoverability testing", func() {
 		})
 
 		By("Resume the stopped validators", func() {
-			waitFor(blockchain.Validators()[:numOfValidatorsToBeStopped], func(geth container.Ethereum, wg *sync.WaitGroup) {
+			tests.WaitFor(blockchain.Validators()[:numOfValidatorsToBeStopped], func(geth container.Ethereum, wg *sync.WaitGroup) {
 				Expect(geth.StartMining()).To(BeNil())
 				wg.Done()
 			})
 		})
 
 		By("The consensus should work after resuming", func() {
-			waitFor(blockchain.Validators(), func(geth container.Ethereum, wg *sync.WaitGroup) {
+			tests.WaitFor(blockchain.Validators(), func(geth container.Ethereum, wg *sync.WaitGroup) {
 				Expect(geth.WaitForBlocks(5)).To(BeNil())
 				wg.Done()
 			})
