@@ -33,6 +33,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 	"github.com/ethereum/go-ethereum/cmd/utils"
@@ -119,6 +120,7 @@ type ethereum struct {
 	ok          bool
 	flags       []string
 	dataDir     string
+	ip          string
 	port        string
 	rpcPort     string
 	wsPort      string
@@ -126,8 +128,9 @@ type ethereum struct {
 	containerID string
 	node        *discover.Node
 
-	imageRepository string
-	imageTag        string
+	imageRepository   string
+	imageTag          string
+	dockerNetworkName string
 
 	key     *ecdsa.PrivateKey
 	logging bool
@@ -224,6 +227,19 @@ func (eth *ethereum) Start() error {
 		binds = append(binds, eth.dataDir+":"+utils.DataDirFlag.Value.Value)
 	}
 
+	var networkingConfig *network.NetworkingConfig
+	if eth.ip != "" && eth.dockerNetworkName != "" {
+		endpointsConfig := make(map[string]*network.EndpointSettings)
+		endpointsConfig[eth.dockerNetworkName] = &network.EndpointSettings{
+			IPAMConfig: &network.EndpointIPAMConfig{
+				IPv4Address: eth.ip,
+			},
+		}
+		networkingConfig = &network.NetworkingConfig{
+			EndpointsConfig: endpointsConfig,
+		}
+	}
+
 	resp, err := eth.client.ContainerCreate(context.Background(),
 		&container.Config{
 			Hostname:     "geth-" + eth.hostName,
@@ -234,7 +250,7 @@ func (eth *ethereum) Start() error {
 		&container.HostConfig{
 			Binds:        binds,
 			PortBindings: portBindings,
-		}, nil, "")
+		}, networkingConfig, "")
 	if err != nil {
 		log.Printf("Failed to create container, err: %v", err)
 		return err
@@ -244,7 +260,7 @@ func (eth *ethereum) Start() error {
 
 	err = eth.client.ContainerStart(context.Background(), eth.containerID, types.ContainerStartOptions{})
 	if err != nil {
-		log.Printf("Failed to start container, err: %v", err)
+		log.Printf("Failed to start container, err: %v, ip:%v", err, eth.ip)
 		return err
 	}
 
@@ -268,16 +284,20 @@ func (eth *ethereum) Start() error {
 		return errors.New("Failed to start geth")
 	}
 
-	containerJSON, err := eth.client.ContainerInspect(context.Background(), eth.containerID)
-	if err != nil {
-		log.Print("Failed to inspect container,", err)
-		return err
+	containerIP := eth.ip
+	if containerIP == "" {
+		containerJSON, err := eth.client.ContainerInspect(context.Background(), eth.containerID)
+		if err != nil {
+			log.Print("Failed to inspect container,", err)
+			return err
+		}
+		containerIP = containerJSON.NetworkSettings.IPAddress
 	}
 
 	if eth.key != nil {
 		eth.node = discover.NewNode(
 			discover.PubkeyID(&eth.key.PublicKey),
-			net.ParseIP(containerJSON.NetworkSettings.IPAddress),
+			net.ParseIP(containerIP),
 			0,
 			uint16(utils.ListenPortFlag.Value))
 	}

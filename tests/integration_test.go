@@ -21,6 +21,8 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"github.com/getamis/istanbul-tools/container"
 )
 
 // Example
@@ -71,7 +73,20 @@ import (
 // })
 //
 
+var dockerNetwork *container.DockerNetwork
+
 func TestIstanbul(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Istanbul Test Suite")
 }
+
+var _ = BeforeSuite(func() {
+	var err error
+	dockerNetwork, err = container.NewDockerNetwork()
+	Expect(err).To(BeNil())
+})
+
+var _ = AfterSuite(func() {
+	err := dockerNetwork.Remove()
+	Expect(err).To(BeNil())
+})

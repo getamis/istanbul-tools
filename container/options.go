@@ -19,6 +19,7 @@ package container
 import (
 	"crypto/ecdsa"
 	"fmt"
+	"net"
 
 	"github.com/ethereum/go-ethereum/cmd/utils"
 )
@@ -37,6 +38,12 @@ func ImageTag(tag string) Option {
 	}
 }
 
+func DockerNetworkName(dockerNetworkName string) Option {
+	return func(eth *ethereum) {
+		eth.dockerNetworkName = dockerNetworkName
+	}
+}
+
 func HostName(hostName string) Option {
 	return func(eth *ethereum) {
 		eth.hostName = hostName
@@ -46,6 +53,12 @@ func HostName(hostName string) Option {
 func HostDataDir(path string) Option {
 	return func(eth *ethereum) {
 		eth.dataDir = path
+	}
+}
+
+func HostIP(ip net.IP) Option {
+	return func(eth *ethereum) {
+		eth.ip = ip.String()
 	}
 }
 

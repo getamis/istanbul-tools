@@ -23,6 +23,7 @@ import (
 
 func TestEthereumBlockchain(t *testing.T) {
 	chain := NewBlockchain(
+		nil,
 		4,
 		ImageRepository("quay.io/amis/geth"),
 		ImageTag("istanbul_develop"),

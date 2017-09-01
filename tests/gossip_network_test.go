@@ -35,7 +35,7 @@ var _ = Describe("TFS-07: Gossip Network", func() {
 	)
 
 	BeforeEach(func() {
-		blockchain = container.NewDefaultBlockchain(numberOfValidators)
+		blockchain = container.NewDefaultBlockchain(dockerNetwork, numberOfValidators)
 		Expect(blockchain.Start(false)).To(BeNil())
 	})
 

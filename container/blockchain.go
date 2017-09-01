@@ -20,6 +20,7 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"log"
+	"net"
 	"os"
 	"path/filepath"
 	"time"
@@ -42,7 +43,7 @@ type Blockchain interface {
 	CreateNodes(int, ...Option) ([]Ethereum, error)
 }
 
-func NewBlockchain(numOfValidators int, options ...Option) (bc *blockchain) {
+func NewBlockchain(network *DockerNetwork, numOfValidators int, options ...Option) (bc *blockchain) {
 	bc = &blockchain{opts: options}
 
 	var err error
@@ -51,12 +52,25 @@ func NewBlockchain(numOfValidators int, options ...Option) (bc *blockchain) {
 		log.Fatalf("Cannot connect to Docker daemon, err: %v", err)
 	}
 
+	if network == nil {
+		bc.defaultNetwork, err = NewDockerNetwork()
+		if err != nil {
+			log.Fatalf("Cannot create Docker network, err: %v", err)
+		}
+		network = bc.defaultNetwork
+	}
+
+	bc.dockerNetworkName = network.Name()
+	bc.getFreeIPAddrs = network.GetFreeIPAddrs
+	bc.opts = append(bc.opts, DockerNetworkName(bc.dockerNetworkName))
+
 	bc.addValidators(numOfValidators)
 	return bc
 }
 
-func NewDefaultBlockchain(numOfValidators int) (bc *blockchain) {
-	return NewBlockchain(numOfValidators,
+func NewDefaultBlockchain(network *DockerNetwork, numOfValidators int) (bc *blockchain) {
+	return NewBlockchain(network,
+		numOfValidators,
 		ImageRepository("quay.io/amis/geth"),
 		ImageTag("istanbul_develop"),
 		DataDir("/data"),
@@ -72,7 +86,7 @@ func NewDefaultBlockchain(numOfValidators int) (bc *blockchain) {
 	)
 }
 
-func NewDefaultBlockchainWithFaulty(numOfNormal int, numOfFaulty int) (bc *blockchain) {
+func NewDefaultBlockchainWithFaulty(network *DockerNetwork, numOfNormal int, numOfFaulty int) (bc *blockchain) {
 	commonOpts := [...]Option{
 		DataDir("/data"),
 		WebSocket(),
@@ -99,24 +113,48 @@ func NewDefaultBlockchainWithFaulty(numOfNormal int, numOfFaulty int) (bc *block
 		log.Fatalf("Cannot connect to Docker daemon, err: %v", err)
 	}
 
-	keys, addrs := generateKeys(numOfNormal + numOfFaulty)
+	if network == nil {
+		bc.defaultNetwork, err = NewDockerNetwork()
+		if err != nil {
+			log.Fatalf("Cannot create Docker network, err: %v", err)
+		}
+		network = bc.defaultNetwork
+	}
+
+	bc.dockerNetworkName = network.Name()
+	bc.getFreeIPAddrs = network.GetFreeIPAddrs
+
+	normalOpts = append(normalOpts, DockerNetworkName(bc.dockerNetworkName))
+	faultyOpts = append(faultyOpts, DockerNetworkName(bc.dockerNetworkName))
+
+	totalNodes := numOfNormal + numOfFaulty
+
+	ips, err := bc.getFreeIPAddrs(totalNodes)
+	if err != nil {
+		log.Fatalf("Failed to get free ip addresses, err: %v", err)
+	}
+
+	keys, addrs := generateKeys(totalNodes)
 	bc.setupGenesis(addrs)
 	// Create normal validators
 	bc.opts = normalOpts
-	bc.setupValidators(keys[:numOfNormal], bc.opts...)
+	bc.setupValidators(ips[:numOfNormal], keys[:numOfNormal], bc.opts...)
 	// Create faulty validators
 	bc.opts = faultyOpts
-	bc.setupValidators(keys[numOfNormal:], bc.opts...)
+	bc.setupValidators(ips[numOfNormal:], keys[numOfNormal:], bc.opts...)
 	return bc
 }
 
 // ----------------------------------------------------------------------------
 
 type blockchain struct {
-	dockerClient *client.Client
-	genesisFile  string
-	validators   []Ethereum
-	opts         []Option
+	dockerClient      *client.Client
+	defaultNetwork    *DockerNetwork
+	dockerNetworkName string
+	getFreeIPAddrs    func(int) ([]net.IP, error)
+	genesisFile       string
+	validators        []Ethereum
+	opts              []Option
 }
 
 func (bc *blockchain) AddValidators(numOfValidators int) ([]Ethereum, error) {
@@ -200,7 +238,16 @@ func (bc *blockchain) Start(strong bool) error {
 }
 
 func (bc *blockchain) Stop(force bool) error {
-	return bc.stop(bc.validators, force)
+	if err := bc.stop(bc.validators, force); err != nil {
+		return err
+	}
+
+	if bc.defaultNetwork != nil {
+		err := bc.defaultNetwork.Remove()
+		bc.defaultNetwork = nil
+		return err
+	}
+	return nil
 }
 
 func (bc *blockchain) Finalize() {
@@ -212,6 +259,11 @@ func (bc *blockchain) Validators() []Ethereum {
 }
 
 func (bc *blockchain) CreateNodes(num int, options ...Option) (nodes []Ethereum, err error) {
+	ips, err := bc.getFreeIPAddrs(num)
+	if err != nil {
+		return nil, err
+	}
+
 	for i := 0; i < num; i++ {
 		var opts []Option
 		opts = append(opts, options...)
@@ -224,6 +276,8 @@ func (bc *blockchain) CreateNodes(num int, options ...Option) (nodes []Ethereum,
 		}
 		opts = append(opts, HostDataDir(dataDir))
 		opts = append(opts, HostWebSocketPort(freeport.GetPort()))
+		opts = append(opts, HostIP(ips[i]))
+		opts = append(opts, DockerNetworkName(bc.dockerNetworkName))
 
 		geth := NewEthereum(
 			bc.dockerClient,
@@ -245,9 +299,13 @@ func (bc *blockchain) CreateNodes(num int, options ...Option) (nodes []Ethereum,
 // ----------------------------------------------------------------------------
 
 func (bc *blockchain) addValidators(numOfValidators int) error {
+	ips, err := bc.getFreeIPAddrs(numOfValidators)
+	if err != nil {
+		return err
+	}
 	keys, addrs := generateKeys(numOfValidators)
 	bc.setupGenesis(addrs)
-	bc.setupValidators(keys, bc.opts...)
+	bc.setupValidators(ips, keys, bc.opts...)
 
 	return nil
 }
@@ -286,7 +344,7 @@ func (bc *blockchain) setupGenesis(addrs []common.Address) {
 	}
 }
 
-func (bc *blockchain) setupValidators(keys []*ecdsa.PrivateKey, options ...Option) {
+func (bc *blockchain) setupValidators(ips []net.IP, keys []*ecdsa.PrivateKey, options ...Option) {
 	for i := 0; i < len(keys); i++ {
 		var opts []Option
 		opts = append(opts, options...)
@@ -299,6 +357,7 @@ func (bc *blockchain) setupValidators(keys []*ecdsa.PrivateKey, options ...Optio
 		opts = append(opts, HostDataDir(dataDir))
 		opts = append(opts, HostWebSocketPort(freeport.GetPort()))
 		opts = append(opts, Key(keys[i]))
+		opts = append(opts, HostIP(ips[i]))
 
 		geth := NewEthereum(
 			bc.dockerClient,
