@@ -36,7 +36,7 @@ var _ = Describe("TFS-04: Non-Byzantine Faulty", func() {
 	)
 
 	BeforeEach(func() {
-		blockchain = container.NewDefaultBlockchain(numberOfValidators)
+		blockchain = container.NewDefaultBlockchain(dockerNetwork, numberOfValidators)
 		Expect(blockchain.Start(true)).To(BeNil())
 	})
 
