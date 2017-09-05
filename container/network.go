@@ -45,29 +45,32 @@ type DockerNetwork struct {
 }
 
 func NewDockerNetwork() (*DockerNetwork, error) {
-	// IP xxx.xxx.0.1 is reserved for docker network gateway
-	ipv4Addr, ipv4Net, err := net.ParseCIDR(fmt.Sprintf("%d.%d.0.1/16", FirstOctet, SecondOctet))
-	if err != nil {
-		return nil, err
-	}
-
 	c, err := client.NewEnvClient()
 	if err != nil {
 		return nil, err
 	}
 
-	network := &DockerNetwork{
-		client:  c,
-		name:    NetworkName,
-		ipv4Net: ipv4Net,
-		ipIndex: ipv4Addr,
+	for i := SecondOctet; i < 256; i++ {
+		// IP xxx.xxx.0.1 is reserved for docker network gateway
+		ipv4Addr, ipv4Net, err := net.ParseCIDR(fmt.Sprintf("%d.%d.0.1/16", FirstOctet, i))
+		networkName := fmt.Sprintf("%s_%d_%d", NetworkName, FirstOctet, i)
+		if err != nil {
+			return nil, err
+		}
+		network := &DockerNetwork{
+			client:  c,
+			name:    networkName,
+			ipv4Net: ipv4Net,
+			ipIndex: ipv4Addr,
+		}
+		if err = network.create(); err != nil {
+			fmt.Printf("Failed to create network and retry, err:%v\n", err)
+		} else {
+			return network, nil
+		}
 	}
 
-	if err := network.create(); err != nil {
-		return nil, err
-	}
-
-	return network, nil
+	return nil, err
 }
 
 // create creates a docker network with given subnet
