@@ -8,7 +8,7 @@ matrix:
       sudo: required
       go: 1.7.6
       script:
-        - go test -parallel 4 $(glide novendor | grep -v "\.\/tests\/\.\.\.") && cd tests && ginkgo
+        - travis_wait go test -parallel 2 $(glide novendor) --timeout 30m
 
     # These are the latest Go versions.
     - os: linux
@@ -16,7 +16,7 @@ matrix:
       sudo: required
       go: 1.8.3
       script:
-        - go test -parallel 4 $(glide novendor | grep -v "\.\/tests\/\.\.\.") && cd tests && ginkgo
+        - travis_wait go test -parallel 2 $(glide novendor) --timeout 30m
 
 services:
   - docker
@@ -26,7 +26,7 @@ install:
   - go get github.com/onsi/ginkgo/ginkgo
 
 script:
-  - go test $(glide novendor)
+  - travis_wait go test -parallel 2 $(glide novendor)
 
 notifications:
     slack: maicoin:p2HicxEGvZveE900zgacSYwL

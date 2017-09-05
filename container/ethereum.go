@@ -251,7 +251,7 @@ func (eth *ethereum) Start() error {
 	for i := 0; i < healthCheckRetryCount; i++ {
 		cli := eth.NewClient()
 		if cli == nil {
-			time.Sleep(healthCheckRetryDelay)
+			<-time.After(healthCheckRetryDelay)
 			continue
 		}
 		_, err = cli.BlockByNumber(context.Background(), big.NewInt(0))

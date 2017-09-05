@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-package tests
+package functional
 
 import (
 	"context"
@@ -25,6 +25,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/getamis/istanbul-tools/container"
+	"github.com/getamis/istanbul-tools/tests"
 )
 
 var _ = Describe("Block synchronization testing", func() {
@@ -45,7 +46,7 @@ var _ = Describe("Block synchronization testing", func() {
 		blockchain.Finalize()
 	})
 
-	Describe("TFS-06: block synchronization testing", func() {
+	Describe("TFS-06: Block synchronization testing", func() {
 		const numberOfNodes = 2
 		var nodes []container.Ethereum
 
@@ -77,17 +78,19 @@ var _ = Describe("Block synchronization testing", func() {
 		})
 
 		It("TFS-06-01: Node connection", func(done Done) {
-			By("Connect all nodes to the validators")
-			for _, n := range nodes {
-				for _, v := range blockchain.Validators() {
-					Expect(n.AddPeer(v.NodeAddress())).To(BeNil())
+			By("Connect all nodes to the validators", func() {
+				for _, n := range nodes {
+					for _, v := range blockchain.Validators() {
+						Expect(n.AddPeer(v.NodeAddress())).To(BeNil())
+					}
 				}
-			}
+			})
 
-			By("Wait for p2p connection")
-			waitFor(nodes, func(node container.Ethereum, wg *sync.WaitGroup) {
-				Expect(node.WaitForPeersConnected(numberOfValidators)).To(BeNil())
-				wg.Done()
+			By("Wait for p2p connection", func() {
+				tests.WaitFor(nodes, func(node container.Ethereum, wg *sync.WaitGroup) {
+					Expect(node.WaitForPeersConnected(numberOfValidators)).To(BeNil())
+					wg.Done()
+				})
 			})
 
 			close(done)
@@ -97,7 +100,7 @@ var _ = Describe("Block synchronization testing", func() {
 			const targetBlockHeight = 10
 
 			By("Wait for blocks", func() {
-				waitFor(blockchain.Validators(), func(geth container.Ethereum, wg *sync.WaitGroup) {
+				tests.WaitFor(blockchain.Validators(), func(geth container.Ethereum, wg *sync.WaitGroup) {
 					Expect(geth.WaitForBlocks(targetBlockHeight)).To(BeNil())
 					wg.Done()
 				})
@@ -122,14 +125,14 @@ var _ = Describe("Block synchronization testing", func() {
 			})
 
 			By("Wait for p2p connection", func() {
-				waitFor(nodes, func(node container.Ethereum, wg *sync.WaitGroup) {
+				tests.WaitFor(nodes, func(node container.Ethereum, wg *sync.WaitGroup) {
 					Expect(node.WaitForPeersConnected(numberOfValidators)).To(BeNil())
 					wg.Done()
 				})
 			})
 
 			By("Wait for block synchronization between nodes and validators", func() {
-				waitFor(nodes, func(geth container.Ethereum, wg *sync.WaitGroup) {
+				tests.WaitFor(nodes, func(geth container.Ethereum, wg *sync.WaitGroup) {
 					Expect(geth.WaitForBlockHeight(targetBlockHeight)).To(BeNil())
 					wg.Done()
 				})

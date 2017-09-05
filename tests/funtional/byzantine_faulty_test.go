@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-package tests
+package functional
 
 import (
 	"sync"
@@ -24,6 +24,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/getamis/istanbul-tools/container"
+	"github.com/getamis/istanbul-tools/tests"
 )
 
 var _ = Describe("TFS-05: Byzantine Faulty", func() {
@@ -49,7 +50,7 @@ var _ = Describe("TFS-05: Byzantine Faulty", func() {
 		It("Should generate blocks", func(done Done) {
 
 			By("Wait for p2p connection", func() {
-				waitFor(blockchain.Validators(), func(geth container.Ethereum, wg *sync.WaitGroup) {
+				tests.WaitFor(blockchain.Validators(), func(geth container.Ethereum, wg *sync.WaitGroup) {
 					Expect(geth.WaitForPeersConnected(numberOfNormal + numberOfFaulty - 1)).To(BeNil())
 					wg.Done()
 				})
@@ -57,7 +58,7 @@ var _ = Describe("TFS-05: Byzantine Faulty", func() {
 
 			By("Wait for blocks", func() {
 				const targetBlockHeight = 3
-				waitFor(blockchain.Validators()[:1], func(geth container.Ethereum, wg *sync.WaitGroup) {
+				tests.WaitFor(blockchain.Validators()[:1], func(geth container.Ethereum, wg *sync.WaitGroup) {
 					Expect(geth.WaitForBlocks(targetBlockHeight)).To(BeNil())
 					wg.Done()
 				})
@@ -87,7 +88,7 @@ var _ = Describe("TFS-05: Byzantine Faulty", func() {
 
 		It("Should not generate blocks", func(done Done) {
 			By("Wait for p2p connection", func() {
-				waitFor(blockchain.Validators(), func(geth container.Ethereum, wg *sync.WaitGroup) {
+				tests.WaitFor(blockchain.Validators(), func(geth container.Ethereum, wg *sync.WaitGroup) {
 					Expect(geth.WaitForPeersConnected(numberOfNormal + numberOfFaulty - 1)).To(BeNil())
 					wg.Done()
 				})
@@ -95,7 +96,7 @@ var _ = Describe("TFS-05: Byzantine Faulty", func() {
 
 			By("Wait for blocks", func() {
 				// Only check normal validators
-				waitFor(blockchain.Validators()[:2], func(geth container.Ethereum, wg *sync.WaitGroup) {
+				tests.WaitFor(blockchain.Validators()[:2], func(geth container.Ethereum, wg *sync.WaitGroup) {
 					Expect(geth.WaitForNoBlocks(0, time.Second*30)).To(BeNil())
 					wg.Done()
 				})
