@@ -48,7 +48,7 @@ import (
 )
 
 const (
-	healthCheckRetryCount = 5
+	healthCheckRetryCount = 10
 	healthCheckRetryDelay = 2 * time.Second
 )
 
@@ -82,6 +82,9 @@ type Ethereum interface {
 
 	StartMining() error
 	StopMining() error
+
+	DockerEnv() []string
+	DockerBinds() []string
 }
 
 func NewEthereum(c *client.Client, options ...Option) *ethereum {
@@ -127,6 +130,11 @@ type ethereum struct {
 	hostName    string
 	containerID string
 	node        *discover.Node
+
+	//Quorum only
+	isQuorum    bool
+	dockerEnv   []string
+	dockerBinds []string
 
 	imageRepository   string
 	imageTag          string
@@ -223,6 +231,7 @@ func (eth *ethereum) Start() error {
 	}
 
 	binds := []string{}
+	binds = append(binds, eth.dockerBinds...)
 	if eth.dataDir != "" {
 		binds = append(binds, eth.dataDir+":"+utils.DataDirFlag.Value.Value)
 	}
@@ -246,6 +255,7 @@ func (eth *ethereum) Start() error {
 			Image:        eth.Image(),
 			Cmd:          eth.flags,
 			ExposedPorts: exposedPorts,
+			Env:          eth.DockerEnv(),
 		},
 		&container.HostConfig{
 			Binds:        binds,
@@ -308,6 +318,7 @@ func (eth *ethereum) Start() error {
 func (eth *ethereum) Stop() error {
 	err := eth.client.ContainerStop(context.Background(), eth.containerID, nil)
 	if err != nil {
+		fmt.Printf("error on stop container:%v", err)
 		return err
 	}
 
@@ -355,6 +366,7 @@ func (eth *ethereum) NewClient() *ethclient.Client {
 	}
 	client, err := ethclient.Dial(scheme + eth.Host() + ":" + port)
 	if err != nil {
+		log.Printf("Failed to dial eth client, err: %v\n", err)
 		return nil
 	}
 	return client
@@ -609,6 +621,14 @@ func (eth *ethereum) StopMining() error {
 	defer client.Close()
 
 	return client.StopMining(context.Background())
+}
+
+func (eth *ethereum) DockerEnv() []string {
+	return eth.dockerEnv
+}
+
+func (eth *ethereum) DockerBinds() []string {
+	return eth.dockerBinds
 }
 
 // ----------------------------------------------------------------------------
