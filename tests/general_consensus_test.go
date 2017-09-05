@@ -50,7 +50,7 @@ var _ = Describe("TFS-01: General consensus", func() {
 		blockchain.Finalize()
 	})
 
-	It("TFS-01-01, TFS-01-02: Blockchain initialization and run", func() {
+	FIt("TFS-01-01, TFS-01-02: Blockchain initialization and run", func() {
 		errc := make(chan error, len(blockchain.Validators()))
 		valSet := make(map[common.Address]bool, numberOfValidators)
 		for _, geth := range blockchain.Validators() {
