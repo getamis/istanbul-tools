@@ -82,7 +82,7 @@ func TestIstanbul(t *testing.T) {
 
 var _ = BeforeSuite(func() {
 	var err error
-	dockerNetwork, err = container.GetDefaultNetwork()
+	dockerNetwork, err = container.NewDockerNetwork()
 	Expect(err).To(BeNil())
 })
 

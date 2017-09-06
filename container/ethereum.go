@@ -258,6 +258,17 @@ func (eth *ethereum) Start() error {
 
 	eth.containerID = resp.ID
 
+	epsetting := &network.EndpointSettings{
+		IPAMConfig: &network.EndpointIPAMConfig{
+			IPv4Address: eth.ip,
+		},
+	}
+	err = eth.client.NetworkConnect(context.Background(), eth.dockerNetworkName, eth.containerID, epsetting)
+	if err != nil {
+		log.Printf("Failed to connect container to network, err: %v, ip: %v", err, eth.ip)
+		return err
+	}
+
 	err = eth.client.ContainerStart(context.Background(), eth.containerID, types.ContainerStartOptions{})
 	if err != nil {
 		log.Printf("Failed to start container, err: %v, ip:%v", err, eth.ip)
