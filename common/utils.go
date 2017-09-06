@@ -27,6 +27,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/getamis/go-ethereum/p2p/discover"
@@ -50,7 +51,7 @@ func GenerateIPs(num int) (ips []string) {
 func GenerateRandomDir() (string, error) {
 	err := os.MkdirAll(filepath.Join(defaultLocalDir), 0700)
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
 
 	instanceDir := filepath.Join(defaultLocalDir, fmt.Sprintf("%s-%s", clientIdentifier, uuid.NewV4().String()))
@@ -60,6 +61,27 @@ func GenerateRandomDir() (string, error) {
 	}
 
 	return instanceDir, nil
+}
+
+func GeneratePasswordFile(dir string, filename string, password string) {
+	path := filepath.Join(dir, filename)
+	err := ioutil.WriteFile(path, []byte(password), 0644)
+	if err != nil {
+		log.Fatalf("Failed to generate password file, err:%v", err)
+	}
+}
+
+func CopyKeystore(dir string, accounts []accounts.Account) {
+	keystorePath := filepath.Join(dir, "keystore")
+	err := os.MkdirAll(keystorePath, 0744)
+	if err != nil {
+		log.Fatalf("Failed to copy keystore, err:%v", err)
+	}
+	for _, a := range accounts {
+		src := a.URL.Path
+		dst := filepath.Join(keystorePath, filepath.Base(src))
+		copyFile(src, dst)
+	}
 }
 
 func GenerateKeys(num int) (keys []*ecdsa.PrivateKey, nodekeys []string, addrs []common.Address) {
@@ -146,4 +168,15 @@ func RandomBytes(len int) ([]byte, error) {
 	}
 
 	return b, nil
+}
+
+func copyFile(src string, dst string) {
+	data, err := ioutil.ReadFile(src)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = ioutil.WriteFile(dst, data, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
 }

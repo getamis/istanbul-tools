@@ -20,7 +20,9 @@ import (
 	"crypto/ecdsa"
 	"fmt"
 	"net"
+	"path/filepath"
 
+	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/cmd/utils"
 )
 
@@ -288,5 +290,26 @@ func SyncMode(mode string) Option {
 func NoUSB() Option {
 	return func(eth *ethereum) {
 		eth.flags = append(eth.flags, "--"+utils.NoUSBFlag.Name)
+	}
+}
+
+func Accounts(accounts []accounts.Account) Option {
+	return func(eth *ethereum) {
+		eth.accounts = accounts
+	}
+}
+
+func Unlock(index int) Option {
+	return func(eth *ethereum) {
+		eth.flags = append(eth.flags, "--"+utils.UnlockedAccountFlag.Name)
+		eth.flags = append(eth.flags, fmt.Sprintf("%d", index))
+	}
+}
+
+func Password(password string) Option {
+	return func(eth *ethereum) {
+		eth.password = password
+		eth.flags = append(eth.flags, "--"+utils.PasswordFileFlag.Name)
+		eth.flags = append(eth.flags, filepath.Join(utils.DataDirFlag.Value.Value, password))
 	}
 }

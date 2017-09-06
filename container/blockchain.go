@@ -20,18 +20,29 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"math/big"
 	"net"
 	"os"
 	"path/filepath"
 	"time"
 
 	"github.com/docker/docker/client"
+	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/phayes/freeport"
 
 	istcommon "github.com/getamis/istanbul-tools/common"
 	"github.com/getamis/istanbul-tools/genesis"
+)
+
+const (
+	allocBalance     = "900000000000000000000000000000000000000000000"
+	veryLightScryptN = 2
+	veryLightScryptP = 1
+	defaultPassword  = ""
 )
 
 type Blockchain interface {
@@ -66,6 +77,9 @@ func NewBlockchain(network *DockerNetwork, numOfValidators int, options ...Optio
 	bc.getFreeIPAddrs = network.GetFreeIPAddrs
 	bc.opts = append(bc.opts, DockerNetworkName(bc.dockerNetworkName))
 
+	//Create accounts
+	bc.generateAccounts(numOfValidators)
+
 	bc.addValidators(numOfValidators)
 	return bc
 }
@@ -85,6 +99,8 @@ func NewDefaultBlockchain(network *DockerNetwork, numOfValidators int) (bc *bloc
 		Etherbase("1a9afb711302c5f83b5902843d1c007a1a137632"),
 		Mine(),
 		SyncMode("full"),
+		Unlock(0),
+		Password("password.txt"),
 		Logging(false),
 	)
 }
@@ -101,6 +117,8 @@ func NewDefaultBlockchainWithFaulty(network *DockerNetwork, numOfNormal int, num
 		Etherbase("1a9afb711302c5f83b5902843d1c007a1a137632"),
 		Mine(),
 		SyncMode("full"),
+		Unlock(0),
+		Password("password.txt"),
 		Logging(false)}
 	normalOpts := make([]Option, len(commonOpts), len(commonOpts)+2)
 	copy(normalOpts, commonOpts[:])
@@ -138,6 +156,9 @@ func NewDefaultBlockchainWithFaulty(network *DockerNetwork, numOfNormal int, num
 		log.Fatalf("Failed to get free ip addresses, err: %v", err)
 	}
 
+	//Create accounts
+	bc.generateAccounts(totalNodes)
+
 	keys, _, addrs := istcommon.GenerateKeys(totalNodes)
 	bc.setupGenesis(addrs)
 	// Create normal validators
@@ -172,6 +193,9 @@ func NewQuorumBlockchain(network *DockerNetwork, ctn ConstellationNetwork, optio
 	bc.getFreeIPAddrs = network.GetFreeIPAddrs
 	bc.opts = append(bc.opts, DockerNetworkName(bc.dockerNetworkName))
 
+	//Create accounts
+	bc.generateAccounts(ctn.NumOfConstellations())
+
 	bc.addValidators(ctn.NumOfConstellations())
 	return bc
 }
@@ -190,6 +214,9 @@ func NewDefaultQuorumBlockchain(network *DockerNetwork, ctn ConstellationNetwork
 		NoDiscover(),
 		Etherbase("1a9afb711302c5f83b5902843d1c007a1a137632"),
 		Mine(),
+		SyncMode("full"),
+		Unlock(0),
+		Password("password.txt"),
 		Logging(false),
 	)
 }
@@ -206,6 +233,8 @@ type blockchain struct {
 	validators           []Ethereum
 	opts                 []Option
 	constellationNetwork ConstellationNetwork
+	accounts             []accounts.Account
+	keystorePath         string
 }
 
 func (bc *blockchain) AddValidators(numOfValidators int) ([]Ethereum, error) {
@@ -381,10 +410,31 @@ func (bc *blockchain) connectAll(strong bool) error {
 	return nil
 }
 
+func (bc *blockchain) generateAccounts(num int) {
+	// Create keystore object
+	d, err := ioutil.TempDir("", "istanbul-keystore")
+	if err != nil {
+		log.Fatalf("Failed to create temp folder for keystore", err)
+	}
+	ks := keystore.NewKeyStore(d, veryLightScryptN, veryLightScryptP)
+	bc.keystorePath = d
+
+	// Create accounts
+	for i := 0; i < num; i++ {
+		a, e := ks.NewAccount(defaultPassword)
+		if e != nil {
+			log.Fatalf("Failed to create account", err)
+		}
+		bc.accounts = append(bc.accounts, a)
+	}
+}
+
 func (bc *blockchain) setupGenesis(addrs []common.Address) {
+	balance, _ := new(big.Int).SetString(allocBalance, 10)
 	if bc.genesisFile == "" {
 		bc.genesisFile = genesis.NewFile(bc.isQuorum,
 			genesis.Validators(addrs...),
+			genesis.Alloc(bc.accounts, balance),
 		)
 	}
 }
@@ -403,6 +453,9 @@ func (bc *blockchain) setupValidators(ips []net.IP, keys []*ecdsa.PrivateKey, op
 		opts = append(opts, HostWebSocketPort(freeport.GetPort()))
 		opts = append(opts, Key(keys[i]))
 		opts = append(opts, HostIP(ips[i]))
+		accounts := bc.accounts[i : i+1]
+		opts = append(opts, Accounts(accounts))
+
 		// Add PRIVATE_CONFIG for quorum
 		if bc.isQuorum {
 			ct := bc.constellationNetwork.GetConstellation(i)
@@ -415,6 +468,10 @@ func (bc *blockchain) setupValidators(ips []net.IP, keys []*ecdsa.PrivateKey, op
 			bc.dockerClient,
 			opts...,
 		)
+
+		// Copy keystore to datadir
+		istcommon.GeneratePasswordFile(dataDir, geth.password, defaultPassword)
+		istcommon.CopyKeystore(dataDir, accounts)
 
 		err = geth.Init(bc.genesisFile)
 		if err != nil {
