@@ -49,7 +49,7 @@ import (
 )
 
 const (
-	healthCheckRetryCount = 20
+	healthCheckRetryCount = 30
 	healthCheckRetryDelay = 2 * time.Second
 )
 
@@ -187,10 +187,8 @@ func (eth *ethereum) Init(genesisFile string) error {
 		return err
 	}
 
-	resC, errC := eth.dockerClient.ContainerWait(context.Background(), id, container.WaitConditionNotRunning)
-	select {
-	case <-resC:
-	case <-errC:
+	_, err = eth.dockerClient.ContainerWait(context.Background(), id)
+	if err != nil {
 		log.Printf("Failed to wait container, err: %v", err)
 		return err
 	}
@@ -337,8 +335,8 @@ func (eth *ethereum) Stop() error {
 func (eth *ethereum) Wait(t time.Duration) error {
 	ctx, cancel := context.WithTimeout(context.Background(), t)
 	defer cancel()
-	_, errCh := eth.dockerClient.ContainerWait(ctx, eth.containerID, "")
-	return <-errCh
+	_, err := eth.dockerClient.ContainerWait(ctx, eth.containerID)
+	return err
 }
 
 func (eth *ethereum) Running() bool {
