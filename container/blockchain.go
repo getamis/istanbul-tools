@@ -19,6 +19,7 @@ package container
 import (
 	"context"
 	"crypto/ecdsa"
+	"fmt"
 	"log"
 	"net"
 	"os"
@@ -147,16 +148,63 @@ func NewDefaultBlockchainWithFaulty(network *DockerNetwork, numOfNormal int, num
 	return bc
 }
 
+func NewQuorumBlockchain(network *DockerNetwork, ctn ConstellationNetwork, options ...Option) (bc *blockchain) {
+	bc = &blockchain{opts: options, isQuorum: true, constellationNetwork: ctn}
+	bc.opts = append(bc.opts, IsQuorum(true))
+	bc.opts = append(bc.opts, NoUSB())
+
+	var err error
+	bc.dockerClient, err = client.NewEnvClient()
+	if err != nil {
+		log.Fatalf("Cannot connect to Docker daemon, err: %v", err)
+	}
+
+	if network == nil {
+		bc.defaultNetwork, err = NewDockerNetwork()
+		if err != nil {
+			log.Fatalf("Cannot create Docker network, err: %v", err)
+		}
+		network = bc.defaultNetwork
+	}
+
+	bc.dockerNetworkName = network.Name()
+	bc.getFreeIPAddrs = network.GetFreeIPAddrs
+	bc.opts = append(bc.opts, DockerNetworkName(bc.dockerNetworkName))
+
+	bc.addValidators(ctn.NumOfConstellations())
+	return bc
+}
+
+func NewDefaultQuorumBlockchain(network *DockerNetwork, ctn ConstellationNetwork) (bc *blockchain) {
+	return NewQuorumBlockchain(network,
+		ctn,
+		ImageRepository("quay.io/amis/quorum"),
+		ImageTag("latest"),
+		DataDir("/data"),
+		WebSocket(),
+		WebSocketAddress("0.0.0.0"),
+		WebSocketAPI("admin,eth,net,web3,personal,miner,istanbul"),
+		WebSocketOrigin("*"),
+		NAT("any"),
+		NoDiscover(),
+		Etherbase("1a9afb711302c5f83b5902843d1c007a1a137632"),
+		Mine(),
+		Logging(false),
+	)
+}
+
 // ----------------------------------------------------------------------------
 
 type blockchain struct {
-	dockerClient      *client.Client
-	defaultNetwork    *DockerNetwork
-	dockerNetworkName string
-	getFreeIPAddrs    func(int) ([]net.IP, error)
-	genesisFile       string
-	validators        []Ethereum
-	opts              []Option
+	dockerClient         *client.Client
+	defaultNetwork       *DockerNetwork
+	dockerNetworkName    string
+	getFreeIPAddrs       func(int) ([]net.IP, error)
+	genesisFile          string
+	isQuorum             bool
+	validators           []Ethereum
+	opts                 []Option
+	constellationNetwork ConstellationNetwork
 }
 
 func (bc *blockchain) AddValidators(numOfValidators int) ([]Ethereum, error) {
@@ -334,7 +382,7 @@ func (bc *blockchain) connectAll(strong bool) error {
 
 func (bc *blockchain) setupGenesis(addrs []common.Address) {
 	if bc.genesisFile == "" {
-		bc.genesisFile = genesis.NewFile(
+		bc.genesisFile = genesis.NewFile(bc.isQuorum,
 			genesis.Validators(addrs...),
 		)
 	}
@@ -354,6 +402,13 @@ func (bc *blockchain) setupValidators(ips []net.IP, keys []*ecdsa.PrivateKey, op
 		opts = append(opts, HostWebSocketPort(freeport.GetPort()))
 		opts = append(opts, Key(keys[i]))
 		opts = append(opts, HostIP(ips[i]))
+		// Add PRIVATE_CONFIG for quorum
+		if bc.isQuorum {
+			ct := bc.constellationNetwork.GetConstellation(i)
+			env := fmt.Sprintf("PRIVATE_CONFIG=%s", ct.ConfigPath())
+			opts = append(opts, DockerEnv([]string{env}))
+			opts = append(opts, DockerBinds(ct.Binds()))
+		}
 
 		geth := NewEthereum(
 			bc.dockerClient,
@@ -385,4 +440,130 @@ func (bc *blockchain) stop(validators []Ethereum, force bool) error {
 		}
 	}
 	return nil
+}
+
+// Constellation functions ----------------------------------------------------------------------------
+type ConstellationNetwork interface {
+	Start() error
+	Stop() error
+	Finalize()
+	NumOfConstellations() int
+	GetConstellation(int) Constellation
+}
+
+func NewConstellationNetwork(network *DockerNetwork, numOfValidators int, options ...ConstellationOption) (ctn *constellationNetwork) {
+	ctn = &constellationNetwork{opts: options}
+
+	var err error
+	ctn.dockerClient, err = client.NewEnvClient()
+	if err != nil {
+		log.Fatalf("Cannot connect to Docker daemon, err: %v", err)
+	}
+
+	if network == nil {
+		log.Fatalf("Network is required")
+	}
+
+	ctn.dockerNetworkName = network.Name()
+	ctn.getFreeIPAddrs = network.GetFreeIPAddrs
+	ctn.opts = append(ctn.opts, CTDockerNetworkName(ctn.dockerNetworkName))
+
+	ctn.setupConstellations(numOfValidators)
+	return ctn
+}
+
+func NewDefaultConstellationNetwork(network *DockerNetwork, numOfValidators int) (ctn *constellationNetwork) {
+	return NewConstellationNetwork(network, numOfValidators,
+		CTImageRepository("quay.io/amis/constellation"),
+		CTImageTag("latest"),
+		CTWorkDir("/ctdata"),
+		CTLogging(true),
+		CTKeyName("node"),
+		CTSocketFilename("node.ipc"),
+		CTVerbosity(1),
+	)
+}
+
+func (ctn *constellationNetwork) setupConstellations(numOfValidators int) {
+	// Create constellations
+	ips, ports := ctn.getFreeHosts(numOfValidators)
+	for i := 0; i < numOfValidators; i++ {
+		opts := append(ctn.opts, CTHost(ips[i], ports[i]))
+		othernodes := ctn.getOtherNodes(ips, ports, i)
+		opts = append(opts, CTOtherNodes(othernodes))
+		ct := NewConstellation(ctn.dockerClient, opts...)
+		// Generate keys
+		ct.GenerateKey()
+		ctn.constellations = append(ctn.constellations, ct)
+	}
+}
+
+func (ctn *constellationNetwork) Start() error {
+	// Run nodes
+	for i, ct := range ctn.constellations {
+		err := ct.Start()
+		if err != nil {
+			log.Fatalf("Failed to start constellation %v, err:%v\n", i, err)
+			return err
+		}
+	}
+	return nil
+}
+
+func (ctn *constellationNetwork) Stop() error {
+	// Stop nodes
+	for i, ct := range ctn.constellations {
+		err := ct.Stop()
+		if err != nil {
+			log.Fatalf("Failed to stop constellation %v, err:%v\n", i, err)
+			return err
+		}
+	}
+	return nil
+}
+
+func (ctn *constellationNetwork) Finalize() {
+	// Clean up local working directory
+	for _, ct := range ctn.constellations {
+		os.RemoveAll(ct.WorkDir())
+	}
+}
+
+func (ctn *constellationNetwork) NumOfConstellations() int {
+	return len(ctn.constellations)
+}
+
+func (ctn *constellationNetwork) GetConstellation(idx int) Constellation {
+	return ctn.constellations[idx]
+}
+
+func (ctn *constellationNetwork) getFreeHosts(num int) ([]net.IP, []int) {
+	ips, err := ctn.getFreeIPAddrs(num)
+	if err != nil {
+		log.Fatalf("Cannot get free ip, err: %v", err)
+	}
+	var ports []int
+	for i := 0; i < num; i++ {
+		ports = append(ports, freeport.GetPort())
+	}
+	return ips, ports
+}
+
+func (ctn *constellationNetwork) getOtherNodes(ips []net.IP, ports []int, idx int) []string {
+	var result []string
+	for i, ip := range ips {
+		if i == idx {
+			continue
+		}
+		result = append(result, fmt.Sprintf("http://%s:%d/", ip, ports[i]))
+	}
+	return result
+}
+
+type constellationNetwork struct {
+	dockerClient      *client.Client
+	dockerNetworkName string
+	getFreeIPAddrs    func(int) ([]net.IP, error)
+	opts              []ConstellationOption
+	constellations    []Constellation
 }

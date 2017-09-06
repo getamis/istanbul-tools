@@ -86,6 +86,24 @@ func Logging(enabled bool) Option {
 	}
 }
 
+func IsQuorum(isQuorum bool) Option {
+	return func(eth *ethereum) {
+		eth.isQuorum = isQuorum
+	}
+}
+
+func DockerEnv(env []string) Option {
+	return func(eth *ethereum) {
+		eth.dockerEnv = env
+	}
+}
+
+func DockerBinds(binds []string) Option {
+	return func(eth *ethereum) {
+		eth.dockerBinds = binds
+	}
+}
+
 // ----------------------------------------------------------------------------
 
 func Key(key *ecdsa.PrivateKey) Option {
@@ -263,5 +281,12 @@ func SyncMode(mode string) Option {
 	return func(eth *ethereum) {
 		eth.flags = append(eth.flags, "--"+utils.SyncModeFlag.Name)
 		eth.flags = append(eth.flags, mode)
+
+	}
+}
+
+func NoUSB() Option {
+	return func(eth *ethereum) {
+		eth.flags = append(eth.flags, "--"+utils.NoUSBFlag.Name)
 	}
 }

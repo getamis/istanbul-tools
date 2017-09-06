@@ -18,10 +18,12 @@ package genesis
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"math/big"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/consensus/istanbul"
@@ -62,20 +64,20 @@ func New(options ...Option) *core.Genesis {
 	return genesis
 }
 
-func NewFile(options ...Option) string {
+func NewFile(isQuorum bool, options ...Option) string {
 	dir, err := generateRandomDir()
 	if err != nil {
 		log.Fatalf("Failed to create random directory, err: %v", err)
 	}
 	genesis := New(options...)
-	if err := Save(dir, genesis); err != nil {
+	if err := Save(dir, genesis, isQuorum); err != nil {
 		log.Fatalf("Failed to save genesis to '%s', err: %v", dir, err)
 	}
 
 	return filepath.Join(dir, FileName)
 }
 
-func Save(dataDir string, genesis *core.Genesis) error {
+func Save(dataDir string, genesis *core.Genesis, isQuorum bool) error {
 	filePath := filepath.Join(dataDir, FileName)
 
 	raw, err := json.Marshal(genesis)
@@ -83,5 +85,12 @@ func Save(dataDir string, genesis *core.Genesis) error {
 		return err
 	}
 
+	//Quorum hack: add isQuorum field
+	if isQuorum {
+		jsonStr := string(raw)
+		idx := strings.Index(jsonStr, ",\"istanbul\"")
+		jsonStr = fmt.Sprintf("%s,\"isQuorum\":true%s", jsonStr[:idx], jsonStr[idx:])
+		raw = []byte(jsonStr)
+	}
 	return ioutil.WriteFile(filePath, raw, 0600)
 }
