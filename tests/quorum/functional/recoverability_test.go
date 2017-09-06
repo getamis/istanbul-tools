@@ -50,7 +50,7 @@ var _ = Describe("QFS-03: Recoverability testing", func() {
 		constellationNetwork.Finalize()
 	})
 
-	It("QFS-04-01: Add validators in a network with < 2F+1 validators to > 2F+1", func(done Done) {
+	It("QFS-03-01: Add validators in a network with < 2F+1 validators to > 2F+1", func(done Done) {
 		By("The consensus should work at the beginning", func() {
 			tests.WaitFor(blockchain.Validators(), func(geth container.Ethereum, wg *sync.WaitGroup) {
 				Expect(geth.WaitForBlocks(5)).To(BeNil())

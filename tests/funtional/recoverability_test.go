@@ -45,7 +45,7 @@ var _ = Describe("TFS-03: Recoverability testing", func() {
 		blockchain.Finalize()
 	})
 
-	It("TFS-04-01: Add validators in a network with < 2F+1 validators to > 2F+1", func(done Done) {
+	It("TFS-03-01: Add validators in a network with < 2F+1 validators to > 2F+1", func(done Done) {
 		By("The consensus should work at the beginning", func() {
 			tests.WaitFor(blockchain.Validators(), func(geth container.Ethereum, wg *sync.WaitGroup) {
 				Expect(geth.WaitForBlocks(5)).To(BeNil())
