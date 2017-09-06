@@ -27,25 +27,30 @@ import (
 	"github.com/getamis/istanbul-tools/tests"
 )
 
-var _ = Describe("TFS-03: Recoverability testing", func() {
+var _ = Describe("QFS-03: Recoverability testing", func() {
 	const (
 		numberOfValidators = 4
 	)
 	var (
-		blockchain container.Blockchain
+		constellationNetwork container.ConstellationNetwork
+		blockchain           container.Blockchain
 	)
 
 	BeforeEach(func() {
-		blockchain = container.NewDefaultBlockchain(dockerNetwork, numberOfValidators)
+		constellationNetwork = container.NewDefaultConstellationNetwork(dockerNetwork, numberOfValidators)
+		Expect(constellationNetwork.Start()).To(BeNil())
+		blockchain = container.NewDefaultQuorumBlockchain(dockerNetwork, constellationNetwork)
 		Expect(blockchain.Start(true)).To(BeNil())
 	})
 
 	AfterEach(func() {
-		blockchain.Stop(true) // This will return container not found error since we stop one
+		blockchain.Stop(true)
 		blockchain.Finalize()
+		constellationNetwork.Stop()
+		constellationNetwork.Finalize()
 	})
 
-	It("TFS-03-01: Add validators in a network with < 2F+1 validators to > 2F+1", func(done Done) {
+	It("QFS-03-01: Add validators in a network with < 2F+1 validators to > 2F+1", func(done Done) {
 		By("The consensus should work at the beginning", func() {
 			tests.WaitFor(blockchain.Validators(), func(geth container.Ethereum, wg *sync.WaitGroup) {
 				Expect(geth.WaitForBlocks(5)).To(BeNil())
