@@ -163,10 +163,10 @@ func NewDefaultBlockchainWithFaulty(network *DockerNetwork, numOfNormal int, num
 	bc.setupGenesis(addrs)
 	// Create normal validators
 	bc.opts = normalOpts
-	bc.setupValidators(ips[:numOfNormal], keys[:numOfNormal], bc.opts...)
+	bc.setupValidators(ips[:numOfNormal], keys[:numOfNormal], 0, bc.opts...)
 	// Create faulty validators
 	bc.opts = faultyOpts
-	bc.setupValidators(ips[numOfNormal:], keys[numOfNormal:], bc.opts...)
+	bc.setupValidators(ips[numOfNormal:], keys[numOfNormal:], numOfNormal, bc.opts...)
 	return bc
 }
 
@@ -385,7 +385,7 @@ func (bc *blockchain) addValidators(numOfValidators int) error {
 	}
 	keys, _, addrs := istcommon.GenerateKeys(numOfValidators)
 	bc.setupGenesis(addrs)
-	bc.setupValidators(ips, keys, bc.opts...)
+	bc.setupValidators(ips, keys, 0, bc.opts...)
 
 	return nil
 }
@@ -439,7 +439,8 @@ func (bc *blockchain) setupGenesis(addrs []common.Address) {
 	}
 }
 
-func (bc *blockchain) setupValidators(ips []net.IP, keys []*ecdsa.PrivateKey, options ...Option) {
+// Offset: offset is for account index offset
+func (bc *blockchain) setupValidators(ips []net.IP, keys []*ecdsa.PrivateKey, offset int, options ...Option) {
 	for i := 0; i < len(keys); i++ {
 		var opts []Option
 		opts = append(opts, options...)
@@ -453,7 +454,7 @@ func (bc *blockchain) setupValidators(ips []net.IP, keys []*ecdsa.PrivateKey, op
 		opts = append(opts, HostWebSocketPort(freeport.GetPort()))
 		opts = append(opts, Key(keys[i]))
 		opts = append(opts, HostIP(ips[i]))
-		accounts := bc.accounts[i : i+1]
+		accounts := bc.accounts[i+offset : i+offset+1]
 		opts = append(opts, Accounts(accounts))
 
 		// Add PRIVATE_CONFIG for quorum
