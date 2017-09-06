@@ -48,7 +48,7 @@ import (
 )
 
 const (
-	healthCheckRetryCount = 10
+	healthCheckRetryCount = 20
 	healthCheckRetryDelay = 2 * time.Second
 )
 
