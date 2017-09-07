@@ -232,17 +232,19 @@ func NewDefaultQuorumBlockchainWithFaulty(network *DockerNetwork, ctn Constellat
 		NoDiscover(),
 		Etherbase("1a9afb711302c5f83b5902843d1c007a1a137632"),
 		Mine(),
+		SyncMode("full"),
+		Unlock(0),
+		Password("password.txt"),
 		Logging(false),
 		IsQuorum(true),
-		NoUSB(),
-		SyncMode("full")}
+	}
 	normalOpts := make([]Option, len(commonOpts), len(commonOpts)+2)
 	copy(normalOpts, commonOpts[:])
-	normalOpts = append(normalOpts, ImageRepository("quay.io/amis/quorum"), ImageTag("latest"))
+	normalOpts = append(normalOpts, ImageRepository("quay.io/amis/quorum"), ImageTag("feature_istanbul"))
 	faultyOpts := make([]Option, len(commonOpts), len(commonOpts)+3)
 	copy(faultyOpts, commonOpts[:])
 	// FIXME: Needs a faulty quorum
-	faultyOpts = append(faultyOpts, ImageRepository("quay.io/amis/geth_faulty"), ImageTag("latest"), FaultyMode(1))
+	faultyOpts = append(faultyOpts, ImageRepository("quay.io/amis/quorum_faulty"), ImageTag("latest"), FaultyMode(1))
 
 	// New env client
 	bc = &blockchain{isQuorum: true, constellationNetwork: ctn}
@@ -273,14 +275,17 @@ func NewDefaultQuorumBlockchainWithFaulty(network *DockerNetwork, ctn Constellat
 		log.Fatalf("Failed to get free ip addresses, err: %v", err)
 	}
 
-	keys, addrs := generateKeys(totalNodes)
+	//Create accounts
+	bc.generateAccounts(totalNodes)
+
+	keys, _, addrs := istcommon.GenerateKeys(totalNodes)
 	bc.setupGenesis(addrs)
 	// Create normal validators
 	bc.opts = normalOpts
-	bc.setupValidators(ips[:numOfNormal], keys[:numOfNormal], bc.opts...)
+	bc.setupValidators(ips[:numOfNormal], keys[:numOfNormal], 0, bc.opts...)
 	// Create faulty validators
 	bc.opts = faultyOpts
-	bc.setupValidators(ips[numOfNormal:], keys[numOfNormal:], bc.opts...)
+	bc.setupValidators(ips[numOfNormal:], keys[numOfNormal:], numOfNormal, bc.opts...)
 	return bc
 }
 
