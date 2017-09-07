@@ -477,7 +477,7 @@ func NewDefaultConstellationNetwork(network *DockerNetwork, numOfValidators int)
 		CTImageRepository("quay.io/amis/constellation"),
 		CTImageTag("latest"),
 		CTWorkDir("/ctdata"),
-		CTLogging(true),
+		CTLogging(false),
 		CTKeyName("node"),
 		CTSocketFilename("node.ipc"),
 		CTVerbosity(1),
