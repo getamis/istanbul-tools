@@ -290,9 +290,7 @@ func (ct *constellation) Start() error {
 	if ct.ip != "" && ct.dockerNetworkName != "" {
 		endpointsConfig := make(map[string]*network.EndpointSettings)
 		endpointsConfig[ct.dockerNetworkName] = &network.EndpointSettings{
-			IPAMConfig: &network.EndpointIPAMConfig{
-				IPv4Address: ct.ip,
-			},
+			IPAddress: ct.ip,
 		}
 		networkingConfig = &network.NetworkingConfig{
 			EndpointsConfig: endpointsConfig,

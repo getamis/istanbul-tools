@@ -242,9 +242,7 @@ func (eth *ethereum) Start() error {
 	if eth.ip != "" && eth.dockerNetworkName != "" {
 		endpointsConfig := make(map[string]*network.EndpointSettings)
 		endpointsConfig[eth.dockerNetworkName] = &network.EndpointSettings{
-			IPAMConfig: &network.EndpointIPAMConfig{
-				IPv4Address: eth.ip,
-			},
+			IPAddress: eth.ip,
 		}
 		networkingConfig = &network.NetworkingConfig{
 			EndpointsConfig: endpointsConfig,
