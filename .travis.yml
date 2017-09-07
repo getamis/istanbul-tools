@@ -1,22 +1,14 @@
 language: go
 go_import_path: github.com/getamis/istanbul-tools
 sudo: required
-matrix:
-  include:
-    - os: linux
-      dist: trusty
-      sudo: required
-      go: 1.7.6
-      script:
-        - travis_wait 120 go test -v $(glide novendor | grep -v "\.\/tests\/\.\.\.") --timeout 120m && cd tests && travis_wait 120 ginkgo -r --progress
-
-    # These are the latest Go versions.
-    - os: linux
-      dist: trusty
-      sudo: required
-      go: 1.8.3
-      script:
-        - travis_wait 120 go test -v $(glide novendor | grep -v "\.\/tests\/\.\.\.") --timeout 120m && cd tests && travis_wait 120 ginkgo -r --progress
+os: linux
+dist: trusty
+go:
+  - 1.7.6
+  - 1.8.3
+env:
+  - TEST=tests/functional
+  - TEST=tests/quorum
 
 services:
   - docker
@@ -26,7 +18,7 @@ install:
   - go get github.com/onsi/ginkgo/ginkgo
 
 script:
-  - travis_wait 120 go test -v $(glide novendor | grep -v "\.\/tests\/\.\.\.") --timeout 120m && cd tests && travis_wait 120 ginkgo -r --progress
+  - travis_wait 120 go test -v $(glide novendor | grep -v "\.\/tests\/\.\.\.") --timeout 120m && cd ${TRAVIS_BUILD_DIR}/${TEST} && travis_wait 120 ginkgo -r --progress
 
 notifications:
     slack: maicoin:p2HicxEGvZveE900zgacSYwL
