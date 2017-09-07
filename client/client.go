@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-package istclient
+package client
 
 import (
 	"context"
@@ -27,10 +27,12 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/p2p"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/getamis/go-ethereum/ethclient"
 )
 
 type Client struct {
-	c *rpc.Client
+	c         *rpc.Client
+	ethClient *ethclient.Client
 }
 
 func Dial(rawurl string) (*Client, error) {
@@ -38,7 +40,10 @@ func Dial(rawurl string) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Client{c}, nil
+	return &Client{
+		c:         c,
+		ethClient: ethclient.NewClient(c),
+	}, nil
 }
 
 func (c *Client) Close() {

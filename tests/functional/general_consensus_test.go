@@ -87,7 +87,7 @@ var _ = Describe("TFS-01: General consensus", func() {
 				}
 
 				// 2. Check validator set
-				istClient := geth.NewIstanbulClient()
+				istClient := geth.NewClient()
 				vals, err := istClient.GetValidators(context.Background(), big.NewInt(0))
 				if err != nil {
 					errc <- err
@@ -191,7 +191,7 @@ var _ = Describe("TFS-01: General consensus", func() {
 			for _, geth := range blockchain.Validators() {
 				go func(geth container.Ethereum) {
 					c := geth.NewClient()
-					istClient := geth.NewIstanbulClient()
+					istClient := geth.NewClient()
 
 					// get initial validator set
 					vals, err := istClient.GetValidators(context.Background(), big.NewInt(0))

@@ -52,7 +52,7 @@ var _ = Describe("TFS-02: Dynamic validators addition/removal testing", func() {
 
 		By("Ensure the number of validators is correct", func() {
 			for _, v := range blockchain.Validators() {
-				client := v.NewIstanbulClient()
+				client := v.NewClient()
 				validators, err := client.GetValidators(context.Background(), nil)
 				Expect(err).Should(BeNil())
 				Expect(len(validators)).Should(BeNumerically("==", numberOfValidators))
@@ -73,7 +73,7 @@ var _ = Describe("TFS-02: Dynamic validators addition/removal testing", func() {
 
 		By("Ensure the number of validators is correct", func() {
 			for _, v := range blockchain.Validators() {
-				client := v.NewIstanbulClient()
+				client := v.NewClient()
 				validators, err := client.GetValidators(context.Background(), nil)
 				Expect(err).Should(BeNil())
 				Expect(len(validators)).Should(BeNumerically("==", numberOfValidators+testValidators))
@@ -98,7 +98,7 @@ var _ = Describe("TFS-02: Dynamic validators addition/removal testing", func() {
 
 		By("Ensure that numbers of validator is equal to $numberOfValidators", func() {
 			for _, v := range blockchain.Validators() {
-				client := v.NewIstanbulClient()
+				client := v.NewClient()
 				validators, err := client.GetValidators(context.Background(), nil)
 				Expect(err).Should(BeNil())
 				Expect(len(validators)).Should(BeNumerically("==", numberOfValidators))
@@ -116,7 +116,7 @@ var _ = Describe("TFS-02: Dynamic validators addition/removal testing", func() {
 
 		By("Check if the number of validators is correct", func() {
 			for _, v := range blockchain.Validators() {
-				client := v.NewIstanbulClient()
+				client := v.NewClient()
 				validators, err := client.GetValidators(context.Background(), nil)
 				Expect(err).Should(BeNil())
 				Expect(len(validators)).Should(BeNumerically("==", numberOfValidators+numOfCandidates))
@@ -136,7 +136,7 @@ var _ = Describe("TFS-02: Dynamic validators addition/removal testing", func() {
 
 		By("Check if the number of validators is correct", func() {
 			for _, v := range blockchain.Validators() {
-				client := v.NewIstanbulClient()
+				client := v.NewClient()
 				validators, err := client.GetValidators(context.Background(), nil)
 				Expect(err).Should(BeNil())
 				Expect(len(validators)).Should(BeNumerically("==", numberOfValidators))
@@ -160,14 +160,14 @@ var _ = Describe("TFS-02: Dynamic validators addition/removal testing", func() {
 			// stop validators [3]
 			stopCandidates := blockchain.Validators()[numberOfValidators-1:]
 			for _, candidates := range stopCandidates {
-				c := candidates.NewIstanbulClient()
+				c := candidates.NewClient()
 				Expect(c.StopMining(context.Background())).Should(BeNil())
 			}
 		})
 
 		By("Verify number of validators", func() {
 			for _, v := range blockchain.Validators() {
-				client := v.NewIstanbulClient()
+				client := v.NewClient()
 				validators, err := client.GetValidators(context.Background(), nil)
 				Expect(err).Should(BeNil())
 				Expect(len(validators)).Should(BeNumerically("==", numberOfValidators))
@@ -194,14 +194,14 @@ var _ = Describe("TFS-02: Dynamic validators addition/removal testing", func() {
 			stopCandidates := blockchain.Validators()[numberOfValidators-2:]
 			// stop validators [3,4]
 			for _, candidates := range stopCandidates {
-				c := candidates.NewIstanbulClient()
+				c := candidates.NewClient()
 				Expect(c.StopMining(context.Background())).Should(BeNil())
 			}
 		})
 
 		By("Verify number of validators", func() {
 			for _, v := range blockchain.Validators() {
-				client := v.NewIstanbulClient()
+				client := v.NewClient()
 				validators, err := client.GetValidators(context.Background(), nil)
 				Expect(err).Should(BeNil())
 				Expect(len(validators)).Should(BeNumerically("==", numberOfValidators))

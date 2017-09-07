@@ -34,18 +34,17 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/network"
-	"github.com/docker/docker/client"
+	docker "github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 	"github.com/ethereum/go-ethereum/cmd/utils"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/p2p/discover"
 
+	"github.com/getamis/istanbul-tools/client"
 	istcommon "github.com/getamis/istanbul-tools/common"
 	"github.com/getamis/istanbul-tools/genesis"
-	"github.com/getamis/istanbul-tools/istclient"
 )
 
 const (
@@ -68,8 +67,7 @@ type Ethereum interface {
 
 	ContainerID() string
 	Host() string
-	NewClient() *ethclient.Client
-	NewIstanbulClient() *istclient.Client
+	NewClient() *client.Client
 	ConsensusMonitor(err chan<- error, quit chan struct{})
 
 	WaitForProposed(expectedAddress common.Address, t time.Duration) error
@@ -88,9 +86,9 @@ type Ethereum interface {
 	DockerBinds() []string
 }
 
-func NewEthereum(c *client.Client, options ...Option) *ethereum {
+func NewEthereum(c *docker.Client, options ...Option) *ethereum {
 	eth := &ethereum{
-		client: c,
+		dockerClient: c,
 	}
 
 	for _, opt := range options {
@@ -105,7 +103,7 @@ func NewEthereum(c *client.Client, options ...Option) *ethereum {
 	})
 
 	if len(images) == 0 || err != nil {
-		out, err := eth.client.ImagePull(context.Background(), eth.Image(), types.ImagePullOptions{})
+		out, err := eth.dockerClient.ImagePull(context.Background(), eth.Image(), types.ImagePullOptions{})
 		if err != nil {
 			log.Printf("Cannot pull %s, err: %v", eth.Image(), err)
 			return nil
@@ -141,9 +139,9 @@ type ethereum struct {
 	imageTag          string
 	dockerNetworkName string
 
-	key     *ecdsa.PrivateKey
-	logging bool
-	client  *client.Client
+	key          *ecdsa.PrivateKey
+	logging      bool
+	dockerClient *docker.Client
 }
 
 func (eth *ethereum) Init(genesisFile string) error {
@@ -159,7 +157,7 @@ func (eth *ethereum) Init(genesisFile string) error {
 		binds = append(binds, eth.dataDir+":"+utils.DataDirFlag.Value.Value)
 	}
 
-	resp, err := eth.client.ContainerCreate(context.Background(),
+	resp, err := eth.dockerClient.ContainerCreate(context.Background(),
 		&container.Config{
 			Image: eth.Image(),
 			Cmd: []string{
@@ -179,12 +177,12 @@ func (eth *ethereum) Init(genesisFile string) error {
 
 	id := resp.ID
 
-	if err := eth.client.ContainerStart(context.Background(), id, types.ContainerStartOptions{}); err != nil {
+	if err := eth.dockerClient.ContainerStart(context.Background(), id, types.ContainerStartOptions{}); err != nil {
 		log.Printf("Failed to start container, err: %v", err)
 		return err
 	}
 
-	resC, errC := eth.client.ContainerWait(context.Background(), id, container.WaitConditionNotRunning)
+	resC, errC := eth.dockerClient.ContainerWait(context.Background(), id, container.WaitConditionNotRunning)
 	select {
 	case <-resC:
 	case <-errC:
@@ -196,7 +194,7 @@ func (eth *ethereum) Init(genesisFile string) error {
 		eth.showLog(context.Background())
 	}
 
-	return eth.client.ContainerRemove(context.Background(), id, types.ContainerRemoveOptions{Force: true})
+	return eth.dockerClient.ContainerRemove(context.Background(), id, types.ContainerRemoveOptions{Force: true})
 }
 
 func (eth *ethereum) Start() error {
@@ -250,7 +248,7 @@ func (eth *ethereum) Start() error {
 		}
 	}
 
-	resp, err := eth.client.ContainerCreate(context.Background(),
+	resp, err := eth.dockerClient.ContainerCreate(context.Background(),
 		&container.Config{
 			Hostname:     "geth-" + eth.hostName,
 			Image:        eth.Image(),
@@ -269,7 +267,7 @@ func (eth *ethereum) Start() error {
 
 	eth.containerID = resp.ID
 
-	err = eth.client.ContainerStart(context.Background(), eth.containerID, types.ContainerStartOptions{})
+	err = eth.dockerClient.ContainerStart(context.Background(), eth.containerID, types.ContainerStartOptions{})
 	if err != nil {
 		log.Printf("Failed to start container, err: %v, ip:%v", err, eth.ip)
 		return err
@@ -297,7 +295,7 @@ func (eth *ethereum) Start() error {
 
 	containerIP := eth.ip
 	if containerIP == "" {
-		containerJSON, err := eth.client.ContainerInspect(context.Background(), eth.containerID)
+		containerJSON, err := eth.dockerClient.ContainerInspect(context.Background(), eth.containerID)
 		if err != nil {
 			log.Print("Failed to inspect container,", err)
 			return err
@@ -317,7 +315,7 @@ func (eth *ethereum) Start() error {
 }
 
 func (eth *ethereum) Stop() error {
-	err := eth.client.ContainerStop(context.Background(), eth.containerID, nil)
+	err := eth.dockerClient.ContainerStop(context.Background(), eth.containerID, nil)
 	if err != nil {
 		fmt.Printf("error on stop container:%v", err)
 		return err
@@ -325,7 +323,7 @@ func (eth *ethereum) Stop() error {
 
 	defer os.RemoveAll(eth.dataDir)
 
-	return eth.client.ContainerRemove(context.Background(), eth.containerID,
+	return eth.dockerClient.ContainerRemove(context.Background(), eth.containerID,
 		types.ContainerRemoveOptions{
 			Force: true,
 		})
@@ -334,12 +332,12 @@ func (eth *ethereum) Stop() error {
 func (eth *ethereum) Wait(t time.Duration) error {
 	ctx, cancel := context.WithTimeout(context.Background(), t)
 	defer cancel()
-	_, errCh := eth.client.ContainerWait(ctx, eth.containerID, "")
+	_, errCh := eth.dockerClient.ContainerWait(ctx, eth.containerID, "")
 	return <-errCh
 }
 
 func (eth *ethereum) Running() bool {
-	containers, err := eth.client.ContainerList(context.Background(), types.ContainerListOptions{})
+	containers, err := eth.dockerClient.ContainerList(context.Background(), types.ContainerListOptions{})
 	if err != nil {
 		log.Printf("Failed to list containers, err: %v", err)
 		return false
@@ -354,7 +352,7 @@ func (eth *ethereum) Running() bool {
 	return false
 }
 
-func (eth *ethereum) NewClient() *ethclient.Client {
+func (eth *ethereum) NewClient() *client.Client {
 	var scheme, port string
 
 	if eth.rpcPort != "" {
@@ -365,26 +363,7 @@ func (eth *ethereum) NewClient() *ethclient.Client {
 		scheme = "ws://"
 		port = eth.wsPort
 	}
-	client, err := ethclient.Dial(scheme + eth.Host() + ":" + port)
-	if err != nil {
-		log.Printf("Failed to dial eth client, err: %v\n", err)
-		return nil
-	}
-	return client
-}
-
-func (eth *ethereum) NewIstanbulClient() *istclient.Client {
-	var scheme, port string
-
-	if eth.rpcPort != "" {
-		scheme = "http://"
-		port = eth.rpcPort
-	}
-	if eth.wsPort != "" {
-		scheme = "ws://"
-		port = eth.wsPort
-	}
-	client, err := istclient.Dial(scheme + eth.Host() + ":" + port)
+	client, err := client.Dial(scheme + eth.Host() + ":" + port)
 	if err != nil {
 		return nil
 	}
@@ -477,7 +456,7 @@ func (eth *ethereum) WaitForProposed(expectedAddress common.Address, timeout tim
 }
 
 func (eth *ethereum) WaitForPeersConnected(expectedPeercount int) error {
-	client := eth.NewIstanbulClient()
+	client := eth.NewClient()
 	if client == nil {
 		return errors.New("failed to retrieve client")
 	}
@@ -503,7 +482,7 @@ func (eth *ethereum) WaitForPeersConnected(expectedPeercount int) error {
 func (eth *ethereum) WaitForBlocks(num int, waitingTime ...time.Duration) error {
 	var first *big.Int
 
-	client := eth.NewIstanbulClient()
+	client := eth.NewClient()
 	if client == nil {
 		return errors.New("failed to retrieve client")
 	}
@@ -542,7 +521,7 @@ func (eth *ethereum) WaitForBlocks(num int, waitingTime ...time.Duration) error 
 }
 
 func (eth *ethereum) WaitForBlockHeight(num int) error {
-	client := eth.NewIstanbulClient()
+	client := eth.NewClient()
 	if client == nil {
 		return errors.New("failed to retrieve client")
 	}
@@ -566,7 +545,7 @@ func (eth *ethereum) WaitForBlockHeight(num int) error {
 func (eth *ethereum) WaitForNoBlocks(num int, duration time.Duration) error {
 	var first *big.Int
 
-	client := eth.NewIstanbulClient()
+	client := eth.NewClient()
 	if client == nil {
 		return errors.New("failed to retrieve client")
 	}
@@ -595,7 +574,7 @@ func (eth *ethereum) WaitForNoBlocks(num int, duration time.Duration) error {
 }
 
 func (eth *ethereum) AddPeer(address string) error {
-	client := eth.NewIstanbulClient()
+	client := eth.NewClient()
 	if client == nil {
 		return errors.New("failed to retrieve client")
 	}
@@ -605,7 +584,7 @@ func (eth *ethereum) AddPeer(address string) error {
 }
 
 func (eth *ethereum) StartMining() error {
-	client := eth.NewIstanbulClient()
+	client := eth.NewClient()
 	if client == nil {
 		return errors.New("failed to retrieve client")
 	}
@@ -615,7 +594,7 @@ func (eth *ethereum) StartMining() error {
 }
 
 func (eth *ethereum) StopMining() error {
-	client := eth.NewIstanbulClient()
+	client := eth.NewClient()
 	if client == nil {
 		return errors.New("failed to retrieve client")
 	}
@@ -635,7 +614,7 @@ func (eth *ethereum) DockerBinds() []string {
 // ----------------------------------------------------------------------------
 
 func (eth *ethereum) showLog(context context.Context) {
-	if readCloser, err := eth.client.ContainerLogs(context, eth.containerID,
+	if readCloser, err := eth.dockerClient.ContainerLogs(context, eth.containerID,
 		types.ContainerLogsOptions{ShowStderr: true, Follow: true}); err == nil {
 		defer readCloser.Close()
 		_, err = io.Copy(os.Stdout, readCloser)
