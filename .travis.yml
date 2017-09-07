@@ -7,8 +7,9 @@ go:
   - 1.7.6
   - 1.8.3
 env:
-  - TEST=tests/functional
-  - TEST=tests/quorum
+  - TEST=unit
+  - TEST=istanbul
+  - TEST=quorum
 
 services:
   - docker
@@ -18,7 +19,16 @@ install:
   - go get github.com/onsi/ginkgo/ginkgo
 
 script:
-  - travis_wait 120 go test -v $(glide novendor | grep -v "\.\/tests\/\.\.\.") --timeout 120m && cd ${TRAVIS_BUILD_DIR}/${TEST} && travis_wait 120 ginkgo -r --progress
+  - 'if [ ${TEST} = "unit" ]; then
+         travis_wait 30 go test -v $(glide novendor | grep -v "\.\/tests\/\.\.\.") --timeout 30m;
+     elif [ ${TEST} = "istanbul" ]; then
+         cd ${TRAVIS_BUILD_DIR}/tests/functional && travis_wait 120 ginkgo -r --progress;
+     elif [ ${TEST} = "quorum" ]; then
+         cd ${TRAVIS_BUILD_DIR}/tests/quorum && travis_wait 120 ginkgo -r --progress;
+     else
+         echo "Invalid env"
+         exit 2;
+     fi'
 
 notifications:
     slack: maicoin:p2HicxEGvZveE900zgacSYwL
