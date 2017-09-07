@@ -1,6 +1,5 @@
 language: go
 go_import_path: github.com/getamis/istanbul-tools
-sudo: required
 os: linux
 dist: trusty
 go:
@@ -12,6 +11,11 @@ env:
 
 services:
   - docker
+
+before_install:
+  - docker pull quay.io/amis/constellation:latest
+  - docker pull quay.io/amis/geth:istanbul_develop
+  - docker pull quay.io/amis/quorum:latest
 
 install:
   - go get github.com/Masterminds/glide
