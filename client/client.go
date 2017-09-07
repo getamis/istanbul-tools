@@ -116,6 +116,48 @@ func (ic *Client) StopMining(ctx context.Context) error {
 
 // ----------------------------------------------------------------------------
 
+func (ic *Client) SendTransaction(ctx context.Context, from, to common.Address, value *big.Int) (txHash string, err error) {
+	var hex hexutil.Bytes
+	arg := map[string]interface{}{
+		"from":  from,
+		"to":    to,
+		"value": (*hexutil.Big)(value),
+	}
+	if err = ic.c.CallContext(ctx, &hex, "eth_sendTransaction", arg); err == nil {
+		txHash = hex.String()
+	}
+	return
+}
+
+func (ic *Client) CreateContract(ctx context.Context, from common.Address, bytecode string, gas *big.Int) (txHash string, err error) {
+	var hex hexutil.Bytes
+	arg := map[string]interface{}{
+		"from": from,
+		"gas":  (*hexutil.Big)(gas),
+		"data": bytecode,
+	}
+	if err = ic.c.CallContext(ctx, &hex, "eth_sendTransaction", arg); err == nil {
+		txHash = hex.String()
+	}
+	return
+}
+
+func (ic *Client) CreatePrivateContract(ctx context.Context, from common.Address, bytecode string, gas *big.Int, privateFor []string) (txHash string, err error) {
+	var hex hexutil.Bytes
+	arg := map[string]interface{}{
+		"from":       from,
+		"gas":        (*hexutil.Big)(gas),
+		"data":       bytecode,
+		"privateFor": privateFor,
+	}
+	if err = ic.c.CallContext(ctx, &hex, "eth_sendTransaction", arg); err == nil {
+		txHash = hex.String()
+	}
+	return
+}
+
+// ----------------------------------------------------------------------------
+
 func (ic *Client) ProposeValidator(ctx context.Context, address common.Address, auth bool) error {
 	var r []byte
 	// TODO: Result needs to be verified with other method

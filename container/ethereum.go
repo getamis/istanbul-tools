@@ -83,6 +83,8 @@ type Ethereum interface {
 	StartMining() error
 	StopMining() error
 
+	Accounts() []accounts.Account
+
 	DockerEnv() []string
 	DockerBinds() []string
 }
@@ -604,6 +606,10 @@ func (eth *ethereum) StopMining() error {
 	defer client.Close()
 
 	return client.StopMining(context.Background())
+}
+
+func (eth *ethereum) Accounts() []accounts.Account {
+	return eth.accounts
 }
 
 func (eth *ethereum) DockerEnv() []string {
