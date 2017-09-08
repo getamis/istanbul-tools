@@ -7,7 +7,6 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 
@@ -19,6 +18,7 @@ import (
 	"github.com/btcsuite/btcd/mempool"
 	"github.com/btcsuite/btcd/mining"
 	"github.com/btcsuite/btcd/mining/cpuminer"
+	"github.com/btcsuite/btcd/netsync"
 	"github.com/btcsuite/btcd/peer"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btclog"
@@ -31,7 +31,7 @@ type logWriter struct{}
 
 func (logWriter) Write(p []byte) (n int, err error) {
 	os.Stdout.Write(p)
-	logRotatorPipe.Write(p)
+	logRotator.Write(p)
 	return len(p), nil
 }
 
@@ -53,15 +53,10 @@ var (
 	// application shutdown.
 	logRotator *rotator.Rotator
 
-	// logRotatorPipe is the write-end pipe for writing to the log rotator.  It
-	// is written to by the Write method of the logWriter type.
-	logRotatorPipe *io.PipeWriter
-
 	adxrLog = backendLog.Logger("ADXR")
 	amgrLog = backendLog.Logger("AMGR")
 	cmgrLog = backendLog.Logger("CMGR")
 	bcdbLog = backendLog.Logger("BCDB")
-	bmgrLog = backendLog.Logger("BMGR")
 	btcdLog = backendLog.Logger("BTCD")
 	chanLog = backendLog.Logger("CHAN")
 	discLog = backendLog.Logger("DISC")
@@ -71,6 +66,7 @@ var (
 	rpcsLog = backendLog.Logger("RPCS")
 	scrpLog = backendLog.Logger("SCRP")
 	srvrLog = backendLog.Logger("SRVR")
+	syncLog = backendLog.Logger("SYNC")
 	txmpLog = backendLog.Logger("TXMP")
 )
 
@@ -85,6 +81,7 @@ func init() {
 	cpuminer.UseLogger(minrLog)
 	peer.UseLogger(peerLog)
 	txscript.UseLogger(scrpLog)
+	netsync.UseLogger(syncLog)
 	mempool.UseLogger(txmpLog)
 }
 
@@ -94,7 +91,6 @@ var subsystemLoggers = map[string]btclog.Logger{
 	"AMGR": amgrLog,
 	"CMGR": cmgrLog,
 	"BCDB": bcdbLog,
-	"BMGR": bmgrLog,
 	"BTCD": btcdLog,
 	"CHAN": chanLog,
 	"DISC": discLog,
@@ -104,6 +100,7 @@ var subsystemLoggers = map[string]btclog.Logger{
 	"RPCS": rpcsLog,
 	"SCRP": scrpLog,
 	"SRVR": srvrLog,
+	"SYNC": syncLog,
 	"TXMP": txmpLog,
 }
 
@@ -117,17 +114,13 @@ func initLogRotator(logFile string) {
 		fmt.Fprintf(os.Stderr, "failed to create log directory: %v\n", err)
 		os.Exit(1)
 	}
-	pr, pw := io.Pipe()
-	r, err := rotator.New(pr, logFile, 10*1024, false, 3)
+	r, err := rotator.New(logFile, 10*1024, false, 3)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to create file rotator: %v\n", err)
 		os.Exit(1)
 	}
 
-	go r.Run()
-
 	logRotator = r
-	logRotatorPipe = pw
 }
 
 // setLogLevel sets the logging level for provided subsystem.  Invalid

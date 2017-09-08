@@ -42,7 +42,6 @@ func NodeFromGRPC(n swarmapi.Node) types.Node {
 		if n.Description.Resources != nil {
 			node.Description.Resources.NanoCPUs = n.Description.Resources.NanoCPUs
 			node.Description.Resources.MemoryBytes = n.Description.Resources.MemoryBytes
-			node.Description.Resources.GenericResources = GenericResourcesFromGRPC(n.Description.Resources.Generic)
 		}
 		if n.Description.Engine != nil {
 			node.Description.Engine.EngineVersion = n.Description.Engine.EngineVersion
@@ -50,11 +49,6 @@ func NodeFromGRPC(n swarmapi.Node) types.Node {
 			for _, plugin := range n.Description.Engine.Plugins {
 				node.Description.Engine.Plugins = append(node.Description.Engine.Plugins, types.PluginDescription{Type: plugin.Type, Name: plugin.Name})
 			}
-		}
-		if n.Description.TLSInfo != nil {
-			node.Description.TLSInfo.TrustRoot = string(n.Description.TLSInfo.TrustRoot)
-			node.Description.TLSInfo.CertIssuerPublicKey = n.Description.TLSInfo.CertIssuerPublicKey
-			node.Description.TLSInfo.CertIssuerSubject = n.Description.TLSInfo.CertIssuerSubject
 		}
 	}
 

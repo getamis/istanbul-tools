@@ -29,7 +29,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/event"
 )
 
 type testerVote struct {
@@ -341,13 +340,12 @@ func TestVoting(t *testing.T) {
 		db, _ := ethdb.NewMemDatabase()
 		genesis.Commit(db)
 
-		eventMux := new(event.TypeMux)
 		config := istanbul.DefaultConfig
 		if tt.epoch != 0 {
 			config.Epoch = tt.epoch
 		}
-		engine := New(config, eventMux, accounts.accounts[tt.validators[0]], db).(*backend)
-		chain, err := core.NewBlockChain(db, genesis.Config, engine, eventMux, vm.Config{})
+		engine := New(config, accounts.accounts[tt.validators[0]], db).(*backend)
+		chain, err := core.NewBlockChain(db, genesis.Config, engine, vm.Config{})
 
 		// Assemble a chain of headers from the cast votes
 		headers := make([]*types.Header, len(tt.votes))

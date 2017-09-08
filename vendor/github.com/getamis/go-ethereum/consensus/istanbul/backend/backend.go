@@ -26,24 +26,23 @@ import (
 	"github.com/ethereum/go-ethereum/consensus/istanbul"
 	istanbulCore "github.com/ethereum/go-ethereum/consensus/istanbul/core"
 	"github.com/ethereum/go-ethereum/consensus/istanbul/validator"
+	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/miner"
 	lru "github.com/hashicorp/golang-lru"
 )
 
 // New creates an Ethereum backend for Istanbul core engine.
-func New(config *istanbul.Config, eventMux *event.TypeMux, privateKey *ecdsa.PrivateKey, db ethdb.Database) consensus.Istanbul {
+func New(config *istanbul.Config, privateKey *ecdsa.PrivateKey, db ethdb.Database) consensus.Istanbul {
 	// Allocate the snapshot caches and create the engine
 	recents, _ := lru.NewARC(inmemorySnapshots)
 	recentMessages, _ := lru.NewARC(inmemoryPeers)
 	knownMessages, _ := lru.NewARC(inmemoryMessages)
 	backend := &backend{
 		config:           config,
-		eventMux:         eventMux,
 		istanbulEventMux: new(event.TypeMux),
 		privateKey:       privateKey,
 		address:          crypto.PubkeyToAddress(privateKey.PublicKey),
@@ -64,7 +63,6 @@ func New(config *istanbul.Config, eventMux *event.TypeMux, privateKey *ecdsa.Pri
 
 type backend struct {
 	config           *istanbul.Config
-	eventMux         *event.TypeMux
 	istanbulEventMux *event.TypeMux
 	privateKey       *ecdsa.PrivateKey
 	address          common.Address
@@ -89,7 +87,6 @@ type backend struct {
 	recents *lru.ARCCache
 
 	// event subscription for ChainHeadEvent event
-	eventSub    *event.TypeMuxSubscription
 	broadcaster consensus.Broadcaster
 
 	recentMessages *lru.ARCCache // the cache of peer's messages
@@ -187,21 +184,13 @@ func (sb *backend) Commit(proposal istanbul.Proposal, seals [][]byte) error {
 		return nil
 	}
 	// if I'm not a proposer, insert the block directly and broadcast NewCommittedEvent
-	if _, err := sb.inserter(types.Blocks{block}); err != nil {
+	if _, err := sb.inserter(types.Blocks{block}); err != nil && err != core.ErrKnownBlock {
 		return err
 	}
 
 	if sb.broadcaster != nil {
 		go sb.broadcaster.BroadcastBlock(block, false)
 	}
-	return nil
-}
-
-// NextRound will broadcast NewBlockEvent to trigger next seal()
-func (sb *backend) NextRound() error {
-	header := sb.chain.CurrentHeader()
-	sb.logger.Debug("NextRound", "address", sb.Address(), "current_hash", header.Hash(), "current_number", header.Number)
-	go sb.eventMux.Post(miner.NewBlockEvent{})
 	return nil
 }
 

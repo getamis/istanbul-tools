@@ -6,8 +6,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-
-	mounttypes "github.com/docker/docker/api/types/mount"
 )
 
 // read-write modes
@@ -20,7 +18,14 @@ var roModes = map[string]bool{
 	"ro": true,
 }
 
-var platformRawValidationOpts = []func(*validateOpts){}
+var platformRawValidationOpts = []func(*validateOpts){
+	// filepath.IsAbs is weird on Windows:
+	//	`c:` is not considered an absolute path
+	//	`c:\` is considered an absolute path
+	// In any case, the regex matching below ensures absolute paths
+	// TODO: consider this a bug with filepath.IsAbs (?)
+	func(o *validateOpts) { o.skipAbsolutePathCheck = true },
+}
 
 const (
 	// Spec should be in the format [source:]destination[:mode]
@@ -44,13 +49,11 @@ const (
 	RXHostDir = `[a-z]:\\(?:[^\\/:*?"<>|\r\n]+\\?)*`
 	// RXName is the second option of a source
 	RXName = `[^\\/:*?"<>|\r\n]+`
-	// RXPipe is a named path pipe (starts with `\\.\pipe\`, possibly with / instead of \)
-	RXPipe = `[/\\]{2}.[/\\]pipe[/\\][^:*?"<>|\r\n]+`
 	// RXReservedNames are reserved names not possible on Windows
 	RXReservedNames = `(con)|(prn)|(nul)|(aux)|(com[1-9])|(lpt[1-9])`
 
 	// RXSource is the combined possibilities for a source
-	RXSource = `((?P<source>((` + RXHostDir + `)|(` + RXName + `)|(` + RXPipe + `))):)?`
+	RXSource = `((?P<source>((` + RXHostDir + `)|(` + RXName + `))):)?`
 
 	// Source. Can be either a host directory, a name, or omitted:
 	//  HostDir:
@@ -66,10 +69,8 @@ const (
 	//    -  And then followed by a colon which is not in the capture group
 	//    -  And can be optional
 
-	// RXDestinationDir is the file path option for the mount destination
-	RXDestinationDir = `([a-z]):((?:\\[^\\/:*?"<>\r\n]+)*\\?)`
 	// RXDestination is the regex expression for the mount destination
-	RXDestination = `(?P<destination>(` + RXDestinationDir + `)|(` + RXPipe + `))`
+	RXDestination = `(?P<destination>([a-z]):((?:\\[^\\/:*?"<>\r\n]+)*\\?))`
 	// Destination (aka container path):
 	//    -  Variation on hostdir but can be a drive followed by colon as well
 	//    -  If a path, must be absolute. Can include spaces
@@ -139,15 +140,6 @@ func splitRawSpec(raw string) ([]string, error) {
 	return split, nil
 }
 
-func detectMountType(p string) mounttypes.Type {
-	if strings.HasPrefix(filepath.FromSlash(p), `\\.\pipe\`) {
-		return mounttypes.TypeNamedPipe
-	} else if filepath.IsAbs(p) {
-		return mounttypes.TypeBind
-	}
-	return mounttypes.TypeVolume
-}
-
 // IsVolumeNameValid checks a volume name in a platform specific manner.
 func IsVolumeNameValid(name string) (bool, error) {
 	nameExp := regexp.MustCompile(`^` + RXName + `$`)
@@ -194,19 +186,8 @@ func convertSlash(p string) string {
 	return filepath.FromSlash(p)
 }
 
-// isAbsPath returns whether a path is absolute for the purposes of mounting into a container
-// (absolute paths, drive letter paths such as X:, and paths starting with `\\.\` to support named pipes).
-func isAbsPath(p string) bool {
-	return filepath.IsAbs(p) ||
-		strings.HasPrefix(p, `\\.\`) ||
-		(len(p) == 2 && p[1] == ':' && ((p[0] >= 'a' && p[0] <= 'z') || (p[0] >= 'A' && p[0] <= 'Z')))
-}
-
-// Do not clean plain drive letters or paths starting with `\\.\`.
-var cleanRegexp = regexp.MustCompile(`^([a-z]:|[/\\]{2}\.[/\\].*)$`)
-
 func clean(p string) string {
-	if match := cleanRegexp.MatchString(p); match {
+	if match, _ := regexp.MatchString("^[a-z]:$", p); match {
 		return p
 	}
 	return filepath.Clean(p)

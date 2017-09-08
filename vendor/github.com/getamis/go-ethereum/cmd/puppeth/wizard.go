@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/big"
+	"net"
 	"os"
 	"path/filepath"
 	"sort"
@@ -160,6 +161,7 @@ func (w *wizard) readDefaultInt(def int) int {
 	}
 }
 
+/*
 // readFloat reads a single line from stdin, trimming if from spaces, enforcing it
 // to parse into a float.
 func (w *wizard) readFloat() float64 {
@@ -180,6 +182,7 @@ func (w *wizard) readFloat() float64 {
 		return val
 	}
 }
+*/
 
 // readDefaultFloat reads a single line from stdin, trimming if from spaces, enforcing
 // it to parse into a float. If an empty line is entered, the default value is returned.
@@ -273,5 +276,28 @@ func (w *wizard) readJSON() string {
 			continue
 		}
 		return string(blob)
+	}
+}
+
+// readIPAddress reads a single line from stdin, trimming if from spaces and
+// converts it to a network IP address.
+func (w *wizard) readIPAddress() net.IP {
+	for {
+		// Read the IP address from the user
+		fmt.Printf("> ")
+		text, err := w.in.ReadString('\n')
+		if err != nil {
+			log.Crit("Failed to read user input", "err", err)
+		}
+		if text = strings.TrimSpace(text); text == "" {
+			return nil
+		}
+		// Make sure it looks ok and return it if so
+		ip := net.ParseIP(text)
+		if ip == nil {
+			log.Error("Invalid IP address, please retry")
+			continue
+		}
+		return ip
 	}
 }

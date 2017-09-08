@@ -16,8 +16,8 @@ import (
 // ProcessBlock before calling this function with it.
 //
 // The flags modify the behavior of this function as follows:
-//  - BFDryRun: The memory chain index will not be pruned and no accept
-//    notification will be sent since the block is not being accepted.
+//  - BFDryRun: The block index will not be updated and no accept notification
+//    will be sent since the block is not being accepted.
 //
 // The flags are also passed to checkBlockContext and connectBestChain.  See
 // their documentation for how the flags modify their behavior.
@@ -26,17 +26,10 @@ import (
 func (b *BlockChain) maybeAcceptBlock(block *btcutil.Block, flags BehaviorFlags) (bool, error) {
 	dryRun := flags&BFDryRun == BFDryRun
 
-	// Get a block node for the block previous to this one.  Will be nil
-	// if this is the genesis block.
-	prevNode, err := b.index.PrevNodeFromBlock(block)
-	if err != nil {
-		log.Errorf("PrevNodeFromBlock: %v", err)
-		return false, err
-	}
-
 	// The height of this block is one more than the referenced previous
 	// block.
 	blockHeight := int32(0)
+	prevNode := b.index.LookupNode(&block.MsgBlock().Header.PrevBlock)
 	if prevNode != nil {
 		blockHeight = prevNode.height + 1
 	}
@@ -44,7 +37,7 @@ func (b *BlockChain) maybeAcceptBlock(block *btcutil.Block, flags BehaviorFlags)
 
 	// The block must pass all of the validation rules which depend on the
 	// position of the block within the block chain.
-	err = b.checkBlockContext(block, prevNode, flags)
+	err := b.checkBlockContext(block, prevNode, flags)
 	if err != nil {
 		return false, err
 	}
@@ -68,11 +61,19 @@ func (b *BlockChain) maybeAcceptBlock(block *btcutil.Block, flags BehaviorFlags)
 	// Create a new block node for the block and add it to the in-memory
 	// block chain (could be either a side chain or the main chain).
 	blockHeader := &block.MsgBlock().Header
-	newNode := newBlockNode(blockHeader, block.Hash(), blockHeight)
+	newNode := newBlockNode(blockHeader, blockHeight)
 	if prevNode != nil {
 		newNode.parent = prevNode
 		newNode.height = blockHeight
 		newNode.workSum.Add(prevNode.workSum, newNode.workSum)
+	}
+	b.index.AddNode(newNode)
+
+	// Undo changes to the block index when running in dry run mode.
+	if dryRun {
+		defer func() {
+			b.index.RemoveNode(newNode)
+		}()
 	}
 
 	// Connect the passed block to the chain while respecting proper chain

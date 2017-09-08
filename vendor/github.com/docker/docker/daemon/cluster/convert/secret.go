@@ -13,7 +13,6 @@ func SecretFromGRPC(s *swarmapi.Secret) swarmtypes.Secret {
 		Spec: swarmtypes.SecretSpec{
 			Annotations: annotationsFromGRPC(s.Spec.Annotations),
 			Data:        s.Spec.Data,
-			Driver:      driverFromGRPC(s.Spec.Driver),
 		},
 	}
 
@@ -32,8 +31,7 @@ func SecretSpecToGRPC(s swarmtypes.SecretSpec) swarmapi.SecretSpec {
 			Name:   s.Name,
 			Labels: s.Labels,
 		},
-		Data:   s.Data,
-		Driver: driverToGRPC(s.Driver),
+		Data: s.Data,
 	}
 }
 

@@ -33,7 +33,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
 )
@@ -43,13 +42,12 @@ import (
 // other fake events to process Istanbul.
 func newBlockChain(n int) (*core.BlockChain, *backend) {
 	genesis, nodeKeys := getGenesisAndKeys(n)
-	eventMux := new(event.TypeMux)
 	memDB, _ := ethdb.NewMemDatabase()
 	config := istanbul.DefaultConfig
 	// Use the first key as private key
-	b, _ := New(config, eventMux, nodeKeys[0], memDB).(*backend)
+	b, _ := New(config, nodeKeys[0], memDB).(*backend)
 	genesis.MustCommit(memDB)
-	blockchain, err := core.NewBlockChain(memDB, genesis.Config, b, eventMux, vm.Config{})
+	blockchain, err := core.NewBlockChain(memDB, genesis.Config, b, vm.Config{})
 	if err != nil {
 		panic(err)
 	}
@@ -182,37 +180,6 @@ func TestSealStopChannel(t *testing.T) {
 	}
 	if finalBlock != nil {
 		t.Errorf("block mismatch: have %v, want nil", finalBlock)
-	}
-}
-
-func TestSealRoundChange(t *testing.T) {
-	chain, engine := newBlockChain(4)
-	block := makeBlockWithoutSeal(chain, engine, chain.Genesis())
-	eventSub := engine.EventMux().Subscribe(istanbul.RequestEvent{})
-	eventLoop := func() {
-		select {
-		case ev := <-eventSub.Chan():
-			_, ok := ev.Data.(istanbul.RequestEvent)
-			if !ok {
-				t.Errorf("unexpected event comes: %v", reflect.TypeOf(ev.Data))
-			}
-			engine.NextRound()
-		}
-		eventSub.Unsubscribe()
-	}
-	go eventLoop()
-
-	seal := func() {
-		engine.Seal(chain, block, nil)
-		t.Error("seal should not be completed")
-	}
-	go seal()
-
-	const timeoutDura = 2 * time.Second
-	timeout := time.NewTimer(timeoutDura)
-	select {
-	case <-timeout.C:
-		// wait 2 seconds to ensure we cannot get any blocks from Istanbul
 	}
 }
 

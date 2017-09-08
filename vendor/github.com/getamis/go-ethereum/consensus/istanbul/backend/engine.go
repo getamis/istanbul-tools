@@ -29,7 +29,6 @@ import (
 	"github.com/ethereum/go-ethereum/consensus/istanbul"
 	istanbulCore "github.com/ethereum/go-ethereum/consensus/istanbul/core"
 	"github.com/ethereum/go-ethereum/consensus/istanbul/validator"
-	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto/sha3"
@@ -43,7 +42,7 @@ const (
 	checkpointInterval = 1024 // Number of blocks after which to save the vote snapshot to the database
 	inmemorySnapshots  = 128  // Number of recent vote snapshots to keep in memory
 	inmemoryPeers      = 40
-	inmemoryMessages   = 100
+	inmemoryMessages   = 1024
 )
 
 var (
@@ -521,10 +520,6 @@ func (sb *backend) Start(chain consensus.ChainReader, inserter func(types.Blocks
 		return err
 	}
 
-	// subscribe for chain head event
-	sb.eventSub = sb.eventMux.Subscribe(core.ChainHeadEvent{})
-	go sb.eventLoop()
-
 	sb.coreStarted = true
 	return nil
 }
@@ -540,7 +535,6 @@ func (sb *backend) Stop() error {
 		return err
 	}
 	sb.coreStarted = false
-	sb.eventSub.Unsubscribe()
 	return nil
 }
 

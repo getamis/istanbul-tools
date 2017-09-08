@@ -13,6 +13,7 @@ import (
 
 	"encoding/json"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/docker/distribution/reference"
 	"github.com/docker/docker/distribution/metadata"
 	"github.com/docker/docker/image"
@@ -21,7 +22,6 @@ import (
 	"github.com/docker/docker/pkg/ioutils"
 	refstore "github.com/docker/docker/reference"
 	"github.com/opencontainers/go-digest"
-	"github.com/sirupsen/logrus"
 )
 
 type graphIDRegistrar interface {
