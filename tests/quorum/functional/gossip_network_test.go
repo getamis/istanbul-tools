@@ -53,7 +53,7 @@ var _ = Describe("QFS-07: Gossip Network", func() {
 	It("QFS-07-01: Gossip Network", func(done Done) {
 		By("Check peer count", func() {
 			for _, geth := range blockchain.Validators() {
-				c := geth.NewIstanbulClient()
+				c := geth.NewClient()
 				peers, e := c.AdminPeers(context.Background())
 				Expect(e).To(BeNil())
 				Ω(len(peers)).Should(BeNumerically("<=", 2))

@@ -35,7 +35,7 @@ func (eth *ethereum) ContainerID() string {
 
 func (eth *ethereum) Host() string {
 	var host string
-	daemonHost := eth.client.DaemonHost()
+	daemonHost := eth.dockerClient.DaemonHost()
 	url, err := url.Parse(daemonHost)
 	if err != nil {
 		log.Printf("Failed to parse daemon host, err: %v", err)

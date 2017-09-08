@@ -113,7 +113,7 @@ var _ = Describe("Block synchronization testing", func() {
 
 			By("Stop consensus", func() {
 				for _, v := range blockchain.Validators() {
-					client := v.NewIstanbulClient()
+					client := v.NewClient()
 					Expect(client).NotTo(BeNil())
 					err := client.StopMining(context.Background())
 					Expect(err).To(BeNil())

@@ -220,7 +220,7 @@ func (bc *blockchain) AddValidators(numOfValidators int) ([]Ethereum, error) {
 
 	// propose new validators as validator in consensus
 	for _, v := range bc.validators[:lastLen] {
-		istClient := v.NewIstanbulClient()
+		istClient := v.NewClient()
 		for _, newV := range newValidators {
 			if err := istClient.ProposeValidator(context.Background(), newV.Address(), true); err != nil {
 				return nil, err
@@ -259,7 +259,7 @@ func (bc *blockchain) RemoveValidators(candidates []Ethereum, processingTime tim
 	var newValidators []Ethereum
 
 	for _, v := range bc.validators {
-		istClient := v.NewIstanbulClient()
+		istClient := v.NewClient()
 		isFound := false
 		for _, c := range candidates {
 			if err := istClient.ProposeValidator(context.Background(), c.Address(), false); err != nil {
