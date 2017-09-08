@@ -30,6 +30,8 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
+
+	"github.com/getamis/istanbul-tools/common"
 )
 
 const (
@@ -64,17 +66,21 @@ func New(options ...Option) *core.Genesis {
 	return genesis
 }
 
-func NewFile(isQuorum bool, options ...Option) string {
-	dir, err := generateRandomDir()
-	if err != nil {
-		log.Fatalf("Failed to create random directory, err: %v", err)
-	}
+func NewFileAt(dir string, isQuorum bool, options ...Option) string {
 	genesis := New(options...)
 	if err := Save(dir, genesis, isQuorum); err != nil {
 		log.Fatalf("Failed to save genesis to '%s', err: %v", dir, err)
 	}
 
 	return filepath.Join(dir, FileName)
+}
+
+func NewFile(isQuorum bool, options ...Option) string {
+	dir, err := common.GenerateRandomDir()
+	if err != nil {
+		log.Fatalf("Failed to create random directory, err: %v", err)
+	}
+	return NewFileAt(dir, isQuorum, options...)
 }
 
 func Save(dataDir string, genesis *core.Genesis, isQuorum bool) error {

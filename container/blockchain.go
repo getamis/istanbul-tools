@@ -30,6 +30,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/phayes/freeport"
 
+	istcommon "github.com/getamis/istanbul-tools/common"
 	"github.com/getamis/istanbul-tools/genesis"
 )
 
@@ -137,7 +138,7 @@ func NewDefaultBlockchainWithFaulty(network *DockerNetwork, numOfNormal int, num
 		log.Fatalf("Failed to get free ip addresses, err: %v", err)
 	}
 
-	keys, addrs := generateKeys(totalNodes)
+	keys, _, addrs := istcommon.GenerateKeys(totalNodes)
 	bc.setupGenesis(addrs)
 	// Create normal validators
 	bc.opts = normalOpts
@@ -319,7 +320,7 @@ func (bc *blockchain) CreateNodes(num int, options ...Option) (nodes []Ethereum,
 		opts = append(opts, options...)
 
 		// Host data directory
-		dataDir, err := generateRandomDir()
+		dataDir, err := istcommon.GenerateRandomDir()
 		if err != nil {
 			log.Println("Failed to create data dir", err)
 			return nil, err
@@ -353,7 +354,7 @@ func (bc *blockchain) addValidators(numOfValidators int) error {
 	if err != nil {
 		return err
 	}
-	keys, addrs := generateKeys(numOfValidators)
+	keys, _, addrs := istcommon.GenerateKeys(numOfValidators)
 	bc.setupGenesis(addrs)
 	bc.setupValidators(ips, keys, bc.opts...)
 
@@ -394,7 +395,7 @@ func (bc *blockchain) setupValidators(ips []net.IP, keys []*ecdsa.PrivateKey, op
 		opts = append(opts, options...)
 
 		// Host data directory
-		dataDir, err := generateRandomDir()
+		dataDir, err := istcommon.GenerateRandomDir()
 		if err != nil {
 			log.Fatal("Failed to create data dir", err)
 		}

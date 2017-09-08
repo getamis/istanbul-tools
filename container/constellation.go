@@ -33,6 +33,8 @@ import (
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
+
+	istcommon "github.com/getamis/istanbul-tools/common"
 )
 
 //TODO: refactor this with ethereum options?
@@ -192,7 +194,7 @@ func (ct *constellation) Image() string {
 
 func (ct *constellation) GenerateKey() (localWorkDir string, err error) {
 	// Generate empty password file
-	ct.localWorkDir, err = generateRandomDir()
+	ct.localWorkDir, err = istcommon.GenerateRandomDir()
 	if err != nil {
 		log.Printf("Failed to generate working dir, err: :%v\n", err)
 		return "", err

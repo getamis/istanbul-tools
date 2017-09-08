@@ -177,7 +177,7 @@ spec:
           - --maxpeers
           - "100"
           - --verbosity
-          - "4"
+          - "{{ .Values.ethereum.verbosity }}"
           - --syncmode
           - "full"
         ports:
@@ -232,6 +232,10 @@ spec:
         - name: nodekey
           mountPath: "{{ .Values.ethereum.nodekey.mountPath }}"
       volumes:
+      {{- if .Values.testing.enabled }}
+      - name: data
+        emptyDir: {}
+      {{- end }}
       - name: genesis
         configMap:
           name: {{ .Values.genesis.config }}
@@ -244,6 +248,8 @@ spec:
       - name: static-nodes
         configMap:
           name: {{ .Values.ethereum.staticNodes.config }}
+{{- if .Values.testing.enabled }}
+{{- else }}
   volumeClaimTemplates:
   - metadata:
       name: data
@@ -253,3 +259,4 @@ spec:
       resources:
         requests:
           storage: {{ .Values.volumes.chaindir.size }}
+{{- end }}

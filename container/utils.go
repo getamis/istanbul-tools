@@ -17,73 +17,14 @@
 package container
 
 import (
-	"crypto/ecdsa"
-	"fmt"
-	"log"
-	"os"
-	"path/filepath"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/consensus/istanbul"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/crypto/sha3"
 	"github.com/ethereum/go-ethereum/rlp"
-	uuid "github.com/satori/go.uuid"
 
 	"github.com/getamis/istanbul-tools/cmd/istanbul/extra"
 )
-
-const (
-	defaultLocalDir  = "/tmp/gdata"
-	clientIdentifier = "geth"
-	nodekeyFileName  = "nodekey"
-)
-
-func generateRandomDir() (string, error) {
-	err := os.MkdirAll(filepath.Join(defaultLocalDir), 0700)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	instanceDir := filepath.Join(defaultLocalDir, fmt.Sprintf("%s-%s", clientIdentifier, uuid.NewV4().String()))
-	if err := os.MkdirAll(instanceDir, 0700); err != nil {
-		log.Println(fmt.Sprintf("Failed to create instance dir: %v", err))
-		return "", err
-	}
-
-	return instanceDir, nil
-}
-
-func generateKeys(num int) (keys []*ecdsa.PrivateKey, addrs []common.Address) {
-	for i := 0; i < num; i++ {
-		key, err := crypto.GenerateKey()
-		if err != nil {
-			log.Fatalf("couldn't generate key: " + err.Error())
-		}
-		keys = append(keys, key)
-
-		addr := crypto.PubkeyToAddress(key.PublicKey)
-		addrs = append(addrs, addr)
-	}
-
-	return keys, addrs
-}
-
-func saveNodeKey(key *ecdsa.PrivateKey, dataDir string) error {
-	keyDir := filepath.Join(dataDir, clientIdentifier)
-	if err := os.MkdirAll(keyDir, 0700); err != nil {
-		log.Println(fmt.Sprintf("Failed to create key dir: %v", err))
-		return err
-	}
-
-	keyfile := filepath.Join(keyDir, nodekeyFileName)
-	if err := crypto.SaveECDSA(keyfile, key); err != nil {
-		log.Println(fmt.Sprintf("Failed to persist node key: %v", err))
-		return err
-	}
-	return nil
-}
 
 func sigHash(header *types.Header) (hash common.Hash) {
 	hasher := sha3.NewKeccak256()
