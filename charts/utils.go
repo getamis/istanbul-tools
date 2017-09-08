@@ -49,9 +49,11 @@ func installRelease(name string, args []string, path string, debug bool) error {
 	if debug {
 		cmd.Args = append(cmd.Args, "--dry-run")
 		cmd.Args = append(cmd.Args, "--debug")
+	} else {
+		cmd.Args = append(cmd.Args, "--wait")
+		cmd.Args = append(cmd.Args, "--timeout")
+		cmd.Args = append(cmd.Args, "600")
 	}
-
-	cmd.Args = append(cmd.Args, "--wait")
 
 	if debug {
 		fmt.Println(cmd.Args)
