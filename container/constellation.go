@@ -130,6 +130,8 @@ type Constellation interface {
 	ConfigPath() string
 	// Binds() returns volume binding paths
 	Binds() []string
+	// PublicKeys() return public keys
+	PublicKeys() []string
 }
 
 func NewConstellation(c *client.Client, options ...ConstellationOption) *constellation {
@@ -363,6 +365,15 @@ func (ct *constellation) Binds() []string {
 	return []string{ct.localWorkDir + ":" + ct.workDir}
 }
 
+func (ct *constellation) PublicKeys() []string {
+	keyPath := ct.localKeyPath("pub")
+	keyBytes, err := ioutil.ReadFile(keyPath)
+	if err != nil {
+		log.Fatalf("Unable to read key file")
+	}
+	return []string{string(keyBytes)}
+}
+
 /**
  * Constellation internal functions
  **/
@@ -384,6 +395,10 @@ func (ct *constellation) keyPath(extension string) string {
 	} else {
 		return filepath.Join(ct.workDir, fmt.Sprintf("%s.%s", ct.keyName, extension))
 	}
+}
+
+func (ct *constellation) localKeyPath(extension string) string {
+	return filepath.Join(ct.localWorkDir, fmt.Sprintf("%s.%s", ct.keyName, extension))
 }
 
 func (ct *constellation) localConfigPath() string {

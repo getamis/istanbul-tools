@@ -33,6 +33,7 @@ func TestEthereumBlockchain(t *testing.T) {
 		WebSocketAPI("admin,eth,net,web3,personal"),
 		WebSocketOrigin("*"),
 		NoDiscover(),
+		Password("password.txt"),
 		Logging(true),
 	)
 	defer chain.Finalize()

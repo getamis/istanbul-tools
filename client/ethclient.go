@@ -191,10 +191,10 @@ func (c *Client) EstimateGas(ctx context.Context, msg ethereum.CallMsg) (*big.In
 	return c.ethClient.EstimateGas(ctx, msg)
 }
 
-// SendTransaction injects a signed transaction into the pending pool for execution.
+// SendRawTransaction injects a signed transaction into the pending pool for execution.
 //
 // If the transaction was a contract creation use the TransactionReceipt method to get the
 // contract address after the transaction has been mined.
-func (c *Client) SendTransaction(ctx context.Context, tx *types.Transaction) error {
+func (c *Client) SendRawTransaction(ctx context.Context, tx *types.Transaction) error {
 	return c.ethClient.SendTransaction(ctx, tx)
 }

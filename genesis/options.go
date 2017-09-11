@@ -18,7 +18,9 @@ package genesis
 
 import (
 	"log"
+	"math/big"
 
+	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core"
@@ -41,5 +43,15 @@ func Validators(addrs ...common.Address) Option {
 func GasLimit(limit uint64) Option {
 	return func(genesis *core.Genesis) {
 		genesis.GasLimit = limit
+	}
+}
+
+func Alloc(accounts []accounts.Account, balance *big.Int) Option {
+	return func(genesis *core.Genesis) {
+		alloc := make(map[common.Address]core.GenesisAccount)
+		for _, a := range accounts {
+			alloc[a.Address] = core.GenesisAccount{Balance: balance}
+		}
+		genesis.Alloc = alloc
 	}
 }

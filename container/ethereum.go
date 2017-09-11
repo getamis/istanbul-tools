@@ -36,6 +36,7 @@ import (
 	"github.com/docker/docker/api/types/network"
 	docker "github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
+	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/cmd/utils"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
@@ -81,6 +82,8 @@ type Ethereum interface {
 
 	StartMining() error
 	StopMining() error
+
+	Accounts() []accounts.Account
 
 	DockerEnv() []string
 	DockerBinds() []string
@@ -129,6 +132,8 @@ type ethereum struct {
 	hostName    string
 	containerID string
 	node        *discover.Node
+	accounts    []accounts.Account
+	password    string
 
 	//Quorum only
 	isQuorum    bool
@@ -601,6 +606,10 @@ func (eth *ethereum) StopMining() error {
 	defer client.Close()
 
 	return client.StopMining(context.Background())
+}
+
+func (eth *ethereum) Accounts() []accounts.Account {
+	return eth.accounts
 }
 
 func (eth *ethereum) DockerEnv() []string {
