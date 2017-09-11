@@ -18,12 +18,12 @@ package charts
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/getamis/istanbul-tools/common"
+	"github.com/getamis/istanbul-tools/log"
 )
 
 type StaticNodesChart struct {
@@ -38,11 +38,11 @@ func NewStaticNodesChart(nodekeys []string, ipAddrs []string) *StaticNodesChart 
 	staticNodesPath := filepath.Join(chartPath, ".static-nodes")
 	err := os.MkdirAll(staticNodesPath, 0700)
 	if err != nil {
-		log.Fatal(err)
+		log.Error("Failed to create dir", "dir", staticNodesPath, "err", err)
 	}
 
 	if len(nodekeys) != len(ipAddrs) {
-		log.Println("The number of nodekeys and the number of IP address should be equal")
+		log.Error("The number of nodekeys and the number of IP address should be equal", "nodekeys", len(nodekeys), "ips", len(ipAddrs))
 		return nil
 	}
 

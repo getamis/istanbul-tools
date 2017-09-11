@@ -19,12 +19,12 @@ package k8s
 import (
 	"errors"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/getamis/istanbul-tools/charts"
 	istcommon "github.com/getamis/istanbul-tools/common"
 	"github.com/getamis/istanbul-tools/container"
+	"github.com/getamis/istanbul-tools/log"
 )
 
 func NewBlockchain(numOfValidators int, gaslimit uint64, options ...Option) (bc *blockchain) {
@@ -37,11 +37,11 @@ func NewBlockchain(numOfValidators int, gaslimit uint64, options ...Option) (bc 
 	}
 
 	if err := bc.genesis.Install(false); err != nil {
-		log.Println(err)
+		log.Error("Failed to install genesis chart", "err", err)
 		return nil
 	}
 	if err := bc.staticNodes.Install(false); err != nil {
-		log.Println(err)
+		log.Error("Failed to install static nodes chart", "err", err)
 		bc.genesis.Uninstall()
 		return nil
 	}
@@ -79,11 +79,11 @@ func (bc *blockchain) EnsureConsensusWorking(geths []container.Ethereum, t time.
 }
 
 func (bc *blockchain) AddValidators(numOfValidators int) ([]container.Ethereum, error) {
-	return nil, errors.New("Unsupported")
+	return nil, errors.New("unsupported")
 }
 
 func (bc *blockchain) RemoveValidators(candidates []container.Ethereum, processingTime time.Duration) error {
-	return errors.New("Unsupported")
+	return errors.New("unsupported")
 }
 
 func (bc *blockchain) Start(strong bool) error {
@@ -108,7 +108,7 @@ func (bc *blockchain) Validators() []container.Ethereum {
 }
 
 func (bc *blockchain) CreateNodes(num int, options ...Option) (nodes []container.Ethereum, err error) {
-	return nil, errors.New("Unsupported")
+	return nil, errors.New("unsupported")
 }
 
 // ----------------------------------------------------------------------------
