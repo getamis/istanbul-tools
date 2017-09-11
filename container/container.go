@@ -17,12 +17,13 @@
 package container
 
 import (
-	"log"
 	"net"
 	"net/url"
 	"os"
 
 	"github.com/docker/docker/client"
+
+	"github.com/getamis/istanbul-tools/log"
 )
 
 func (eth *ethereum) Image() string {
@@ -44,7 +45,7 @@ func (eth *ethereum) Host() string {
 	}
 	url, err := url.Parse(daemonHost)
 	if err != nil {
-		log.Printf("Failed to parse daemon host, err: %v", err)
+		log.Error("Failed to parse daemon host", "host", daemonHost, "err", err)
 		return host
 	}
 
@@ -53,7 +54,8 @@ func (eth *ethereum) Host() string {
 	} else {
 		host, _, err = net.SplitHostPort(url.Host)
 		if err != nil {
-			log.Printf("Failed to split host and port, err: %v", err)
+			log.Error("Failed to split host and port", "url", url.Host, "err", err)
+			return ""
 		}
 	}
 

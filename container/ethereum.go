@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"math/big"
 	"net"
 	"os"
@@ -46,6 +45,7 @@ import (
 	"github.com/getamis/istanbul-tools/client"
 	istcommon "github.com/getamis/istanbul-tools/common"
 	"github.com/getamis/istanbul-tools/genesis"
+	"github.com/getamis/istanbul-tools/log"
 )
 
 const (
@@ -108,7 +108,7 @@ func NewEthereum(c *docker.Client, options ...Option) *ethereum {
 	if len(images) == 0 || err != nil {
 		out, err := eth.dockerClient.ImagePull(context.Background(), eth.Image(), types.ImagePullOptions{})
 		if err != nil {
-			log.Printf("Cannot pull %s, err: %v", eth.Image(), err)
+			log.Error("Failed to pull image", "image", eth.Image(), "err", err)
 			return nil
 		}
 		if eth.logging {
@@ -151,7 +151,6 @@ type ethereum struct {
 
 func (eth *ethereum) Init(genesisFile string) error {
 	if err := istcommon.SaveNodeKey(eth.key, eth.dataDir); err != nil {
-		log.Fatal("Failed to save nodekey", err)
 		return err
 	}
 
@@ -176,20 +175,20 @@ func (eth *ethereum) Init(genesisFile string) error {
 			Binds: binds,
 		}, nil, "")
 	if err != nil {
-		log.Printf("Failed to create container, err: %v", err)
+		log.Error("Failed to create container", "err", err)
 		return err
 	}
 
 	id := resp.ID
 
 	if err := eth.dockerClient.ContainerStart(context.Background(), id, types.ContainerStartOptions{}); err != nil {
-		log.Printf("Failed to start container, err: %v", err)
+		log.Error("Failed to start container", "err", err)
 		return err
 	}
 
 	_, err = eth.dockerClient.ContainerWait(context.Background(), id)
 	if err != nil {
-		log.Printf("Failed to wait container, err: %v", err)
+		log.Error("Failed to wait container", "err", err)
 		return err
 	}
 
@@ -264,7 +263,7 @@ func (eth *ethereum) Start() error {
 			PortBindings: portBindings,
 		}, networkingConfig, "")
 	if err != nil {
-		log.Printf("Failed to create container, err: %v", err)
+		log.Error("Failed to create container", "err", err)
 		return err
 	}
 
@@ -272,7 +271,7 @@ func (eth *ethereum) Start() error {
 
 	err = eth.dockerClient.ContainerStart(context.Background(), eth.containerID, types.ContainerStartOptions{})
 	if err != nil {
-		log.Printf("Failed to start container, err: %v, ip:%v", err, eth.ip)
+		log.Error("Failed to start container", "ip", eth.ip, "err", err)
 		return err
 	}
 
@@ -300,7 +299,7 @@ func (eth *ethereum) Start() error {
 	if containerIP == "" {
 		containerJSON, err := eth.dockerClient.ContainerInspect(context.Background(), eth.containerID)
 		if err != nil {
-			log.Print("Failed to inspect container,", err)
+			log.Error("Failed to inspect container", "err", err)
 			return err
 		}
 		containerIP = containerJSON.NetworkSettings.IPAddress
@@ -320,7 +319,7 @@ func (eth *ethereum) Start() error {
 func (eth *ethereum) Stop() error {
 	err := eth.dockerClient.ContainerStop(context.Background(), eth.containerID, nil)
 	if err != nil {
-		fmt.Printf("error on stop container:%v", err)
+		log.Error("Failed to stop container", "err", err)
 		return err
 	}
 
@@ -342,7 +341,7 @@ func (eth *ethereum) Wait(t time.Duration) error {
 func (eth *ethereum) Running() bool {
 	containers, err := eth.dockerClient.ContainerList(context.Background(), types.ContainerListOptions{})
 	if err != nil {
-		log.Printf("Failed to list containers, err: %v", err)
+		log.Error("Failed to list containers", "err", err)
 		return false
 	}
 
@@ -395,7 +394,7 @@ func (eth *ethereum) ConsensusMonitor(errCh chan<- error, quit chan struct{}) {
 
 	sub, err := cli.SubscribeNewHead(ctx, subCh)
 	if err != nil {
-		log.Fatal(fmt.Sprintf("subscribe error:%v", err))
+		log.Error("Failed to subscribe new head", "err", err)
 		errCh <- err
 		return
 	}
@@ -406,7 +405,7 @@ func (eth *ethereum) ConsensusMonitor(errCh chan<- error, quit chan struct{}) {
 	for {
 		select {
 		case err := <-sub.Err():
-			log.Printf("Connection lost: %v", err)
+			log.Error("Connection lost", "err", err)
 			errCh <- err
 			return
 		case <-timer.C: // FIXME: this event may be missed
@@ -626,7 +625,8 @@ func (eth *ethereum) showLog(context context.Context) {
 		defer readCloser.Close()
 		_, err = io.Copy(os.Stdout, readCloser)
 		if err != nil && err != io.EOF {
-			log.Fatal(err)
+			log.Error("Failed to print container log", "err", err)
+			return
 		}
 	}
 }
