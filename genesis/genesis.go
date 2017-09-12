@@ -31,7 +31,6 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 
 	"github.com/getamis/istanbul-tools/common"
-	"github.com/getamis/istanbul-tools/log"
 )
 
 const (

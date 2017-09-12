@@ -37,23 +37,3 @@ func init() {
 func New(ctx ...interface{}) log15.Logger {
 	return defaultLogger.New(ctx...)
 }
-
-func Info(msg string, ctx ...interface{}) {
-	defaultLogger.Info(msg, ctx...)
-}
-
-func Debug(msg string, ctx ...interface{}) {
-	defaultLogger.Debug(msg, ctx...)
-}
-
-func Warn(msg string, ctx ...interface{}) {
-	defaultLogger.Warn(msg, ctx)
-}
-
-func Error(msg string, ctx ...interface{}) {
-	defaultLogger.Error(msg, ctx...)
-}
-
-func Fatal(msg string, ctx ...interface{}) {
-	defaultLogger.Crit(msg, ctx...)
-}

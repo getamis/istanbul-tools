@@ -35,7 +35,6 @@ import (
 
 	istcommon "github.com/getamis/istanbul-tools/common"
 	"github.com/getamis/istanbul-tools/genesis"
-	"github.com/getamis/istanbul-tools/log"
 )
 
 const (

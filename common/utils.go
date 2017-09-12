@@ -31,8 +31,6 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/p2p/discover"
 	uuid "github.com/satori/go.uuid"
-
-	"github.com/getamis/istanbul-tools/log"
 )
 
 const (

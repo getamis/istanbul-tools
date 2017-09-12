@@ -20,7 +20,6 @@ import (
 	"github.com/getamis/istanbul-tools/charts"
 	"github.com/getamis/istanbul-tools/common"
 	"github.com/getamis/istanbul-tools/genesis"
-	"github.com/getamis/istanbul-tools/log"
 )
 
 func ExampleK8SEthereum() {

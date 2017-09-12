@@ -22,8 +22,6 @@ import (
 	"os"
 
 	"github.com/docker/docker/client"
-
-	"github.com/getamis/istanbul-tools/log"
 )
 
 func (eth *ethereum) Image() string {

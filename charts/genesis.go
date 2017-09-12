@@ -25,7 +25,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/getamis/istanbul-tools/genesis"
-	"github.com/getamis/istanbul-tools/log"
 )
 
 type GenesisChart struct {
