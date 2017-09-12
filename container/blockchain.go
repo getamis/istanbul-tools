@@ -44,6 +44,10 @@ const (
 	defaultPassword  = ""
 )
 
+type NodeIncubator interface {
+	CreateNodes(int, ...Option) ([]Ethereum, error)
+}
+
 type Blockchain interface {
 	AddValidators(numOfValidators int) ([]Ethereum, error)
 	RemoveValidators(candidates []Ethereum, t time.Duration) error
@@ -52,7 +56,6 @@ type Blockchain interface {
 	Stop(bool) error
 	Validators() []Ethereum
 	Finalize()
-	CreateNodes(int, ...Option) ([]Ethereum, error)
 }
 
 func NewBlockchain(network *DockerNetwork, numOfValidators int, options ...Option) (bc *blockchain) {
