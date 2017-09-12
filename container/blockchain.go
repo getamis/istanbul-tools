@@ -221,6 +221,74 @@ func NewDefaultQuorumBlockchain(network *DockerNetwork, ctn ConstellationNetwork
 	)
 }
 
+func NewDefaultQuorumBlockchainWithFaulty(network *DockerNetwork, ctn ConstellationNetwork, numOfNormal int, numOfFaulty int) (bc *blockchain) {
+	commonOpts := [...]Option{
+		DataDir("/data"),
+		WebSocket(),
+		WebSocketAddress("0.0.0.0"),
+		WebSocketAPI("admin,eth,net,web3,personal,miner,istanbul"),
+		WebSocketOrigin("*"),
+		NAT("any"),
+		NoDiscover(),
+		Etherbase("1a9afb711302c5f83b5902843d1c007a1a137632"),
+		Mine(),
+		SyncMode("full"),
+		Unlock(0),
+		Password("password.txt"),
+		Logging(false),
+		IsQuorum(true),
+	}
+	normalOpts := make([]Option, len(commonOpts), len(commonOpts)+2)
+	copy(normalOpts, commonOpts[:])
+	normalOpts = append(normalOpts, ImageRepository("quay.io/amis/quorum"), ImageTag("feature_istanbul"))
+	faultyOpts := make([]Option, len(commonOpts), len(commonOpts)+3)
+	copy(faultyOpts, commonOpts[:])
+	// FIXME: Needs a faulty quorum
+	faultyOpts = append(faultyOpts, ImageRepository("quay.io/amis/quorum_faulty"), ImageTag("latest"), FaultyMode(1))
+
+	// New env client
+	bc = &blockchain{isQuorum: true, constellationNetwork: ctn}
+	var err error
+	bc.dockerClient, err = client.NewEnvClient()
+	if err != nil {
+		log.Fatalf("Cannot connect to Docker daemon, err: %v", err)
+	}
+
+	if network == nil {
+		bc.defaultNetwork, err = NewDockerNetwork()
+		if err != nil {
+			log.Fatalf("Cannot create Docker network, err: %v", err)
+		}
+		network = bc.defaultNetwork
+	}
+
+	bc.dockerNetworkName = network.Name()
+	bc.getFreeIPAddrs = network.GetFreeIPAddrs
+
+	normalOpts = append(normalOpts, DockerNetworkName(bc.dockerNetworkName))
+	faultyOpts = append(faultyOpts, DockerNetworkName(bc.dockerNetworkName))
+
+	totalNodes := numOfNormal + numOfFaulty
+
+	ips, err := bc.getFreeIPAddrs(totalNodes)
+	if err != nil {
+		log.Fatalf("Failed to get free ip addresses, err: %v", err)
+	}
+
+	//Create accounts
+	bc.generateAccounts(totalNodes)
+
+	keys, _, addrs := istcommon.GenerateKeys(totalNodes)
+	bc.setupGenesis(addrs)
+	// Create normal validators
+	bc.opts = normalOpts
+	bc.setupValidators(ips[:numOfNormal], keys[:numOfNormal], 0, bc.opts...)
+	// Create faulty validators
+	bc.opts = faultyOpts
+	bc.setupValidators(ips[numOfNormal:], keys[numOfNormal:], numOfNormal, bc.opts...)
+	return bc
+}
+
 // ----------------------------------------------------------------------------
 
 type blockchain struct {
