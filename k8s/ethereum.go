@@ -126,6 +126,7 @@ func (eth *ethereum) WaitForProposed(expectedAddress common.Address, timeout tim
 	defer sub.Unsubscribe()
 
 	timer := time.NewTimer(timeout)
+	defer timer.Stop()
 	for {
 		select {
 		case err := <-sub.Err():
@@ -148,6 +149,7 @@ func (eth *ethereum) WaitForPeersConnected(expectedPeercount int) error {
 	defer client.Close()
 
 	ticker := time.NewTicker(time.Second * 1)
+	defer ticker.Stop()
 	for _ = range ticker.C {
 		infos, err := client.AdminPeers(context.Background())
 		if err != nil {
@@ -156,7 +158,6 @@ func (eth *ethereum) WaitForPeersConnected(expectedPeercount int) error {
 		if len(infos) < expectedPeercount {
 			continue
 		} else {
-			ticker.Stop()
 			break
 		}
 	}
@@ -182,10 +183,10 @@ func (eth *ethereum) WaitForBlocks(num int, waitingTime ...time.Duration) error 
 
 	timeout := time.After(t)
 	ticker := time.NewTicker(time.Millisecond * 500)
+	defer ticker.Stop()
 	for {
 		select {
 		case <-timeout:
-			ticker.Stop()
 			return ErrNoBlock
 		case <-ticker.C:
 			n, err := client.BlockNumber(context.Background())
@@ -198,7 +199,6 @@ func (eth *ethereum) WaitForBlocks(num int, waitingTime ...time.Duration) error 
 			}
 			// Check if new blocks are getting generated
 			if new(big.Int).Sub(n, first).Int64() >= int64(num) {
-				ticker.Stop()
 				return nil
 			}
 		}
@@ -213,13 +213,13 @@ func (eth *ethereum) WaitForBlockHeight(num int) error {
 	defer client.Close()
 
 	ticker := time.NewTicker(time.Millisecond * 500)
+	defer ticker.Stop()
 	for _ = range ticker.C {
 		n, err := client.BlockNumber(context.Background())
 		if err != nil {
 			return err
 		}
 		if n.Int64() >= int64(num) {
-			ticker.Stop()
 			break
 		}
 	}
@@ -236,12 +236,13 @@ func (eth *ethereum) WaitForNoBlocks(num int, duration time.Duration) error {
 	}
 
 	timeout := time.After(duration)
-	tick := time.Tick(time.Millisecond * 500)
+	ticker := time.NewTicker(time.Millisecond * 500)
+	defer ticker.Stop()
 	for {
 		select {
 		case <-timeout:
 			return nil
-		case <-tick:
+		case <-ticker.C:
 			n, err := client.BlockNumber(context.Background())
 			if err != nil {
 				return err
@@ -273,13 +274,13 @@ func (eth *ethereum) WaitForBalances(addrs []common.Address, duration ...time.Du
 
 	waitBalance := func(addr common.Address) error {
 		timeout := time.After(t)
-		tick := time.Tick(time.Millisecond * 500)
-
+		ticker := time.NewTicker(time.Millisecond * 500)
+		defer ticker.Stop()
 		for {
 			select {
 			case <-timeout:
 				return container.ErrTimeout
-			case <-tick:
+			case <-ticker.C:
 				n, err := client.BalanceAt(context.Background(), addr, nil)
 				if err != nil {
 					return err
