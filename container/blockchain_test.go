@@ -22,8 +22,14 @@ import (
 )
 
 func TestEthereumBlockchain(t *testing.T) {
+	dockerNetwork, err := NewDockerNetwork()
+	if err != nil {
+		t.Error(err)
+	}
+	defer dockerNetwork.Remove()
+
 	chain := NewBlockchain(
-		nil,
+		dockerNetwork,
 		4,
 		ImageRepository("quay.io/amis/geth"),
 		ImageTag("istanbul_develop"),
@@ -34,11 +40,11 @@ func TestEthereumBlockchain(t *testing.T) {
 		WebSocketOrigin("*"),
 		NoDiscover(),
 		Password("password.txt"),
-		Logging(true),
+		Logging(false),
 	)
 	defer chain.Finalize()
 
-	err := chain.Start(true)
+	err = chain.Start(true)
 	if err != nil {
 		t.Error(err)
 	}

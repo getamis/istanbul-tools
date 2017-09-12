@@ -48,7 +48,7 @@ func TestConstellationContainer(t *testing.T) {
 		CTHost(ip, port),
 		CTDockerNetworkName(dockerNetwork.Name()),
 		CTWorkDir("/data"),
-		CTLogging(true),
+		CTLogging(false),
 		CTKeyName("node"),
 		CTSocketFilename("node.ipc"),
 		CTVerbosity(3),

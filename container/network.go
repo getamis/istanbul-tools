@@ -22,16 +22,14 @@ import (
 	"fmt"
 	"net"
 	"sync"
+	"time"
 
 	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 )
 
 const (
-	FirstOctet  = 172
-	SecondOctet = 19
-	NetworkName = "testnet"
+	networkNamePrefix = "testnet"
 )
 
 type DockerNetwork struct {
@@ -39,6 +37,8 @@ type DockerNetwork struct {
 	id      string
 	name    string
 	ipv4Net *net.IPNet
+	gateway string
+	usedIPs map[string]bool
 
 	mutex   sync.Mutex
 	ipIndex net.IP
@@ -50,45 +50,64 @@ func NewDockerNetwork() (*DockerNetwork, error) {
 		return nil, err
 	}
 
-	for i := SecondOctet; i < 256; i++ {
-		// IP xxx.xxx.0.1 is reserved for docker network gateway
-		ipv4Addr, ipv4Net, err := net.ParseCIDR(fmt.Sprintf("%d.%d.0.1/16", FirstOctet, i))
-		networkName := fmt.Sprintf("%s_%d_%d", NetworkName, FirstOctet, i)
-		if err != nil {
-			return nil, err
-		}
-		network := &DockerNetwork{
-			client:  c,
-			name:    networkName,
-			ipv4Net: ipv4Net,
-			ipIndex: ipv4Addr,
-		}
-		if err = network.create(); err != nil {
-			fmt.Printf("Failed to create network and retry, err:%v\n", err)
-		} else {
-			return network, nil
-		}
+	network := &DockerNetwork{
+		client:  c,
+		usedIPs: make(map[string]bool, 0),
 	}
 
-	return nil, err
+	if err := network.create(); err != nil {
+		return nil, err
+	}
+
+	if err := network.init(); err != nil {
+		return nil, err
+	}
+
+	return network, nil
 }
 
-// create creates a docker network with given subnet
+// create creates a user-defined docker network
 func (n *DockerNetwork) create() error {
-	ipamConfig := network.IPAMConfig{
-		Subnet: n.ipv4Net.String(),
-	}
-	ipam := &network.IPAM{
-		Config: []network.IPAMConfig{ipamConfig},
-	}
-
-	r, err := n.client.NetworkCreate(context.Background(), n.name, types.NetworkCreate{
-		IPAM: ipam,
-	})
+	n.name = fmt.Sprintf("%s%d", networkNamePrefix, time.Now().Unix())
+	r, err := n.client.NetworkCreate(context.Background(), n.name, types.NetworkCreate{})
 	if err != nil {
 		return err
 	}
 	n.id = r.ID
+	return nil
+}
+
+func (n *DockerNetwork) init() error {
+	res, err := n.client.NetworkInspect(context.Background(), n.name, false)
+	if err != nil {
+		return err
+	}
+
+	if len(res.IPAM.Config) == 0 {
+		return errors.New("Invalid network config.")
+	}
+
+	n.ipIndex, n.ipv4Net, err = net.ParseCIDR(res.IPAM.Config[0].Subnet)
+	if err != nil {
+		return err
+	}
+
+	// get used IP addresses
+	if res.IPAM.Config[0].Gateway != "" {
+		n.gateway = res.IPAM.Config[0].Gateway
+	} else {
+		// xxx.xxx.0.1 is reserved for default Gateway IP
+		n.gateway = net.IPv4(n.ipv4Net.IP[0], n.ipv4Net.IP[1], 0, 1).String()
+	}
+	n.usedIPs[n.gateway] = true
+
+	for _, ep := range res.Containers {
+		ip, _, err := net.ParseCIDR(ep.IPv4Address)
+		if err != nil {
+			return err
+		}
+		n.usedIPs[ip.String()] = true
+	}
 	return nil
 }
 
@@ -100,6 +119,10 @@ func (n *DockerNetwork) Name() string {
 	return n.name
 }
 
+func (n *DockerNetwork) Subnet() string {
+	return n.ipv4Net.String()
+}
+
 func (n *DockerNetwork) Remove() error {
 	return n.client.NetworkRemove(context.Background(), n.id)
 }
@@ -109,7 +132,7 @@ func (n *DockerNetwork) GetFreeIPAddrs(num int) ([]net.IP, error) {
 	defer n.mutex.Unlock()
 
 	ips := make([]net.IP, 0)
-	for i := 0; i < num; i++ {
+	for len(ips) < num && n.ipv4Net.Contains(n.ipIndex) {
 		ip := dupIP(n.ipIndex)
 		for j := len(ip) - 1; j >= 0; j-- {
 			ip[j]++
@@ -117,12 +140,10 @@ func (n *DockerNetwork) GetFreeIPAddrs(num int) ([]net.IP, error) {
 				break
 			}
 		}
-
-		if !n.ipv4Net.Contains(ip) {
-			break
-		}
-		ips = append(ips, ip)
 		n.ipIndex = ip
+		if _, ok := n.usedIPs[ip.String()]; !ok {
+			ips = append(ips, ip)
+		}
 	}
 
 	if len(ips) != num {
