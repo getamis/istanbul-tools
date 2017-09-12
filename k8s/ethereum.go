@@ -28,6 +28,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/getamis/istanbul-tools/charts"
 	"github.com/getamis/istanbul-tools/client"
@@ -134,7 +135,7 @@ func (eth *ethereum) WaitForProposed(expectedAddress common.Address, timeout tim
 		case <-timer.C: // FIXME: this event may be missed
 			return errors.New("no result")
 		case head := <-subCh:
-			if GetProposer(head) == expectedAddress {
+			if container.GetProposer(head) == expectedAddress {
 				return nil
 			}
 		}
@@ -187,7 +188,7 @@ func (eth *ethereum) WaitForBlocks(num int, waitingTime ...time.Duration) error 
 	for {
 		select {
 		case <-timeout:
-			return ErrNoBlock
+			return container.ErrNoBlock
 		case <-ticker.C:
 			n, err := client.BlockNumber(context.Background())
 			if err != nil {

@@ -106,10 +106,6 @@ func (bc *blockchain) Validators() []container.Ethereum {
 	return bc.validators
 }
 
-func (bc *blockchain) CreateNodes(num int, options ...Option) (nodes []container.Ethereum, err error) {
-	return nil, errors.New("unsupported")
-}
-
 // ----------------------------------------------------------------------------
 
 func (bc *blockchain) setupValidators(num int, nodekeys []string, ips []string, options ...Option) {
