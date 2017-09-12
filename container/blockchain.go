@@ -204,7 +204,7 @@ func NewDefaultQuorumBlockchain(network *DockerNetwork, ctn ConstellationNetwork
 	return NewQuorumBlockchain(network,
 		ctn,
 		ImageRepository("quay.io/amis/quorum"),
-		ImageTag("latest"),
+		ImageTag("feature_istanbul"),
 		DataDir("/data"),
 		WebSocket(),
 		WebSocketAddress("0.0.0.0"),
