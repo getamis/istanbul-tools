@@ -20,7 +20,6 @@ import (
 	"context"
 	"math"
 	"math/big"
-	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
@@ -35,14 +34,16 @@ type Backend interface {
 	EventMux() *event.TypeMux
 	HeaderByNumber(ctx context.Context, blockNr rpc.BlockNumber) (*types.Header, error)
 	GetReceipts(ctx context.Context, blockHash common.Hash) (types.Receipts, error)
+	SubscribeTxPreEvent(chan<- core.TxPreEvent) event.Subscription
+	SubscribeChainEvent(ch chan<- core.ChainEvent) event.Subscription
+	SubscribeRemovedLogsEvent(ch chan<- core.RemovedLogsEvent) event.Subscription
+	SubscribeLogsEvent(ch chan<- []*types.Log) event.Subscription
 }
 
 // Filter can be used to retrieve and filter logs.
 type Filter struct {
 	backend   Backend
 	useMipMap bool
-
-	created time.Time
 
 	db         ethdb.Database
 	begin, end int64

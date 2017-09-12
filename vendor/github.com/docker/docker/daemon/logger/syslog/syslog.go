@@ -14,11 +14,11 @@ import (
 
 	syslog "github.com/RackSec/srslog"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/daemon/logger"
 	"github.com/docker/docker/daemon/logger/loggerutils"
 	"github.com/docker/docker/pkg/urlutil"
 	"github.com/docker/go-connections/tlsconfig"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -133,9 +133,8 @@ func New(info logger.Info) (logger.Logger, error) {
 
 func (s *syslogger) Log(msg *logger.Message) error {
 	line := string(msg.Line)
-	source := msg.Source
 	logger.PutMessage(msg)
-	if source == "stderr" {
+	if msg.Source == "stderr" {
 		return s.writer.Err(line)
 	}
 	return s.writer.Info(line)

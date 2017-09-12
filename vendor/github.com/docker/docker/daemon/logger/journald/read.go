@@ -155,19 +155,17 @@ import (
 	"time"
 	"unsafe"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/coreos/go-systemd/journal"
-	"github.com/docker/docker/api/types/backend"
 	"github.com/docker/docker/daemon/logger"
-	"github.com/sirupsen/logrus"
 )
 
 func (s *journald) Close() error {
-	s.mu.Lock()
-	s.closed = true
+	s.readers.mu.Lock()
 	for reader := range s.readers.readers {
 		reader.Close()
 	}
-	s.mu.Unlock()
+	s.readers.mu.Unlock()
 	return nil
 }
 
@@ -214,11 +212,14 @@ drain:
 				source = "stdout"
 			}
 			// Retrieve the values of any variables we're adding to the journal.
-			var attrs []backend.LogAttr
+			attrs := make(map[string]string)
 			C.sd_journal_restart_data(j)
 			for C.get_attribute_field(j, &data, &length) > C.int(0) {
 				kv := strings.SplitN(C.GoStringN(data, C.int(length)), "=", 2)
-				attrs = append(attrs, backend.LogAttr{Key: kv[0], Value: kv[1]})
+				attrs[kv[0]] = kv[1]
+			}
+			if len(attrs) == 0 {
+				attrs = nil
 			}
 			// Send the log message.
 			logWatcher.Msg <- &logger.Message{
@@ -244,16 +245,9 @@ drain:
 }
 
 func (s *journald) followJournal(logWatcher *logger.LogWatcher, config logger.ReadConfig, j *C.sd_journal, pfd [2]C.int, cursor *C.char) *C.char {
-	s.mu.Lock()
+	s.readers.mu.Lock()
 	s.readers.readers[logWatcher] = logWatcher
-	if s.closed {
-		// the journald Logger is closed, presumably because the container has been
-		// reset.  So we shouldn't follow, because we'll never be woken up.  But we
-		// should make one more drainJournal call to be sure we've got all the logs.
-		// Close pfd[1] so that one drainJournal happens, then cleanup, then return.
-		C.close(pfd[1])
-	}
-	s.mu.Unlock()
+	s.readers.mu.Unlock()
 
 	newCursor := make(chan *C.char)
 
@@ -280,21 +274,21 @@ func (s *journald) followJournal(logWatcher *logger.LogWatcher, config logger.Re
 
 		// Clean up.
 		C.close(pfd[0])
-		s.mu.Lock()
+		s.readers.mu.Lock()
 		delete(s.readers.readers, logWatcher)
-		s.mu.Unlock()
+		s.readers.mu.Unlock()
 		close(logWatcher.Msg)
 		newCursor <- cursor
 	}()
 
 	// Wait until we're told to stop.
 	select {
-	case cursor = <-newCursor:
 	case <-logWatcher.WatchClose():
 		// Notify the other goroutine that its work is done.
 		C.close(pfd[1])
-		cursor = <-newCursor
 	}
+
+	cursor = <-newCursor
 
 	return cursor
 }

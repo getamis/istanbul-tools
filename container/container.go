@@ -20,6 +20,9 @@ import (
 	"log"
 	"net"
 	"net/url"
+	"os"
+
+	"github.com/docker/docker/client"
 )
 
 func (eth *ethereum) Image() string {
@@ -35,7 +38,10 @@ func (eth *ethereum) ContainerID() string {
 
 func (eth *ethereum) Host() string {
 	var host string
-	daemonHost := eth.dockerClient.DaemonHost()
+	daemonHost := os.Getenv("DOCKER_HOST")
+	if daemonHost == "" {
+		daemonHost = client.DefaultDockerHost
+	}
 	url, err := url.Parse(daemonHost)
 	if err != nil {
 		log.Printf("Failed to parse daemon host, err: %v", err)

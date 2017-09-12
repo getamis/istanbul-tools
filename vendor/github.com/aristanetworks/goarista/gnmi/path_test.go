@@ -58,7 +58,7 @@ func TestSplitPath(t *testing.T) {
 
 func TestStrPath(t *testing.T) {
 	for i, tc := range []struct {
-		path, alt string
+		path string
 	}{{
 		path: "/",
 	}, {
@@ -67,13 +67,10 @@ func TestStrPath(t *testing.T) {
 		path: "/foo[name=a]/bar",
 	}, {
 		path: "/foo[a=1][b=2]/bar",
-		alt:  "/foo[b=2][a=1]/bar",
 	}, {
 		path: "/foo[a=1\\]2][b=2]/bar",
-		alt:  "/foo[b=2][a=1\\]2]/bar",
 	}, {
 		path: "/foo[a=1][b=2]/bar\\/baz",
-		alt:  "/foo[b=2][a=1]/bar\\/baz",
 	}} {
 		sElms := SplitPath(tc.path)
 		pbElms, err := ParseGNMIElements(sElms)
@@ -82,11 +79,24 @@ func TestStrPath(t *testing.T) {
 		}
 		s := StrPath(&pb.Path{Elem: pbElms})
 		if !test.DeepEqual(tc.path, s) {
-			if tc.alt == "" {
-				t.Errorf("[%d] want %s, got %s", i, tc.path, s)
-			} else if !test.DeepEqual(tc.alt, s) {
-				t.Errorf("[%d] want %s OR %s, got %s", i, tc.path, tc.alt, s)
-			}
+			t.Errorf("[%d] want %s, got %s", i, tc.path, s)
+		}
+	}
+}
+
+func TestStrPathBackwardsCompat(t *testing.T) {
+	for i, tc := range []struct {
+		path *pb.Path
+		str  string
+	}{{
+		path: &pb.Path{
+			Element: p("foo[a=1][b=2]", "bar"),
+		},
+		str: "/foo[a=1][b=2]/bar",
+	}} {
+		got := StrPath(tc.path)
+		if got != tc.str {
+			t.Errorf("[%d] want %q, got %q", i, tc.str, got)
 		}
 	}
 }

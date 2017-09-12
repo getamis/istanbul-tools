@@ -7,6 +7,7 @@ package gnmi
 import (
 	"bytes"
 	"fmt"
+	"sort"
 	"strings"
 
 	pb "github.com/openconfig/gnmi/proto/gnmi"
@@ -72,24 +73,45 @@ func SplitPaths(paths []string) [][]string {
 // StrPath builds a human-readable form of a gnmi path.
 // e.g. /a/b/c[e=f]
 func StrPath(path *pb.Path) string {
-	if len(path.Elem) == 0 {
+	if len(path.Elem) != 0 {
+		return strPathV04(path)
+	} else if len(path.Element) != 0 {
+		return strPathV03(path)
+	} else {
 		return "/"
 	}
+}
+
+// strPathV04 handles the v0.4 gnmi and later path.Elem member.
+func strPathV04(path *pb.Path) string {
 	buf := &bytes.Buffer{}
 	for _, elm := range path.Elem {
 		buf.WriteRune('/')
 		writeSafeString(buf, elm.Name, '/')
 		if len(elm.Key) > 0 {
-			for k, v := range elm.Key {
+			// Sort the keys so that they print in a conistent
+			// order. We don't have the YANG AST information, so the
+			// best we can do is sort them alphabetically.
+			keys := make([]string, 0, len(elm.Key))
+			for k := range elm.Key {
+				keys = append(keys, k)
+			}
+			sort.Strings(keys)
+			for _, k := range keys {
 				buf.WriteRune('[')
 				buf.WriteString(k)
 				buf.WriteRune('=')
-				writeSafeString(buf, v, ']')
+				writeSafeString(buf, elm.Key[k], ']')
 				buf.WriteRune(']')
 			}
 		}
 	}
 	return buf.String()
+}
+
+// strPathV03 handles the v0.3 gnmi and earlier path.Element member.
+func strPathV03(path *pb.Path) string {
+	return "/" + strings.Join(path.Element, "/")
 }
 
 func writeSafeString(buf *bytes.Buffer, s string, esc rune) {

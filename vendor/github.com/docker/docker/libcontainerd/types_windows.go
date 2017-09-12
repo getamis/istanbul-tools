@@ -2,7 +2,6 @@ package libcontainerd
 
 import (
 	"github.com/Microsoft/hcsshim"
-	opengcs "github.com/jhowardmsft/opengcs/gogcs/client"
 	"github.com/opencontainers/runtime-spec/specs-go"
 )
 
@@ -26,11 +25,6 @@ type Stats hcsshim.Statistics
 // Resources defines updatable container resource values.
 type Resources struct{}
 
-// LCOWOption is a CreateOption required for LCOW configuration
-type LCOWOption struct {
-	Config *opengcs.Config
-}
-
 // ServicingOption is a CreateOption with a no-op application that signifies
 // the container needs to be used for a Windows servicing operation.
 type ServicingOption struct {
@@ -45,9 +39,10 @@ type FlushOption struct {
 }
 
 // HyperVIsolationOption is a CreateOption that indicates whether the runtime
-// should start the container as a Hyper-V container.
+// should start the container as a Hyper-V container, and if so, the sandbox path.
 type HyperVIsolationOption struct {
-	IsHyperV bool
+	IsHyperV    bool
+	SandboxPath string `json:",omitempty"`
 }
 
 // LayerOption is a CreateOption that indicates to the runtime the layer folder

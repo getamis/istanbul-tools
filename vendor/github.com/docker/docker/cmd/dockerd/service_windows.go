@@ -9,11 +9,12 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"syscall"
 	"time"
 	"unsafe"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/pkg/system"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/svc"
@@ -29,7 +30,7 @@ var (
 	flRunService        *bool
 
 	setStdHandle = windows.NewLazySystemDLL("kernel32.dll").NewProc("SetStdHandle")
-	oldStderr    windows.Handle
+	oldStderr    syscall.Handle
 	panicFile    *os.File
 
 	service *handler
@@ -130,14 +131,14 @@ func (h *etwHook) Fire(e *logrus.Entry) error {
 		err error
 	)
 
-	ss[0], err = windows.UTF16PtrFromString(e.Message)
+	ss[0], err = syscall.UTF16PtrFromString(e.Message)
 	if err != nil {
 		return err
 	}
 
 	count := uint16(1)
 	if exts != "" {
-		ss[1], err = windows.UTF16PtrFromString(exts)
+		ss[1], err = syscall.UTF16PtrFromString(exts)
 		if err != nil {
 			return err
 		}
@@ -396,8 +397,8 @@ func initPanicFile(path string) error {
 	// Update STD_ERROR_HANDLE to point to the panic file so that Go writes to
 	// it when it panics. Remember the old stderr to restore it before removing
 	// the panic file.
-	sh := windows.STD_ERROR_HANDLE
-	h, err := windows.GetStdHandle(uint32(sh))
+	sh := syscall.STD_ERROR_HANDLE
+	h, err := syscall.GetStdHandle(sh)
 	if err != nil {
 		return err
 	}
@@ -421,7 +422,7 @@ func initPanicFile(path string) error {
 func removePanicFile() {
 	if st, err := panicFile.Stat(); err == nil {
 		if st.Size() == 0 {
-			sh := windows.STD_ERROR_HANDLE
+			sh := syscall.STD_ERROR_HANDLE
 			setStdHandle.Call(uintptr(sh), uintptr(oldStderr))
 			panicFile.Close()
 			os.Remove(panicFile.Name())

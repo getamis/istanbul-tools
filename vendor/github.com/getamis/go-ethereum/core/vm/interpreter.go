@@ -59,7 +59,8 @@ type Interpreter struct {
 	gasTable params.GasTable
 	intPool  *intPool
 
-	readonly bool
+	readOnly   bool   // Whether to throw on stateful modifications
+	returnData []byte // Last CALL's return data for subsequent reuse
 }
 
 // NewInterpreter returns a new instance of the Interpreter.
@@ -69,6 +70,8 @@ func NewInterpreter(evm *EVM, cfg Config) *Interpreter {
 	// we'll set the default jump table.
 	if !cfg.JumpTable[STOP].valid {
 		switch {
+		case evm.ChainConfig().IsMetropolis(evm.BlockNumber):
+			cfg.JumpTable = metropolisInstructionSet
 		case evm.ChainConfig().IsHomestead(evm.BlockNumber):
 			cfg.JumpTable = homesteadInstructionSet
 		default:
@@ -85,6 +88,18 @@ func NewInterpreter(evm *EVM, cfg Config) *Interpreter {
 }
 
 func (in *Interpreter) enforceRestrictions(op OpCode, operation operation, stack *Stack) error {
+	if in.evm.chainRules.IsMetropolis {
+		if in.readOnly {
+			// If the interpreter is operating in readonly mode, make sure no
+			// state-modifying operation is performed. The 3rd stack item
+			// for a call operation is the value. Transferring value from one
+			// account to the others means the state is modified and should also
+			// return with an error.
+			if operation.writes || (op == CALL && stack.Back(2).BitLen() > 0) {
+				return errWriteProtection
+			}
+		}
+	}
 	return nil
 }
 
@@ -95,8 +110,13 @@ func (in *Interpreter) enforceRestrictions(op OpCode, operation operation, stack
 // considered a revert-and-consume-all-gas operation. No error specific checks
 // should be handled to reduce complexity and errors further down the in.
 func (in *Interpreter) Run(snapshot int, contract *Contract, input []byte) (ret []byte, err error) {
+	// Increment the call depth which is restricted to 1024
 	in.evm.depth++
 	defer func() { in.evm.depth-- }()
+
+	// Reset the previous call's return data. It's unimportant to preserve the old buffer
+	// as every returning call will return new data anyway.
+	in.returnData = nil
 
 	// Don't bother with the execution if there's no code.
 	if len(contract.Code) == 0 {
@@ -189,19 +209,21 @@ func (in *Interpreter) Run(snapshot int, contract *Contract, input []byte) (ret 
 		if verifyPool {
 			verifyIntegerPool(in.intPool)
 		}
+		// if the operation clears the return data (e.g. it has returning data)
+		// set the last return to the result of the operation.
+		if operation.returns {
+			in.returnData = res
+		}
 
 		switch {
 		case err != nil:
 			return nil, err
+		case operation.reverts:
+			return res, errExecutionReverted
 		case operation.halts:
 			return res, nil
 		case !operation.jumps:
 			pc++
-		}
-		// if the operation returned a value make sure that is also set
-		// the last return data.
-		if res != nil {
-			mem.lastReturn = ret
 		}
 	}
 	return nil, nil

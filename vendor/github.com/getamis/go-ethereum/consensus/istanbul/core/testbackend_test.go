@@ -92,11 +92,6 @@ func (self *testSystemBackend) Gossip(valSet istanbul.ValidatorSet, message []by
 	return nil
 }
 
-func (self *testSystemBackend) NextRound() error {
-	testLogger.Warn("nothing to happen")
-	return nil
-}
-
 func (self *testSystemBackend) Commit(proposal istanbul.Proposal, seals [][]byte) error {
 	testLogger.Info("commit message", "address", self.Address())
 	self.committedMsgs = append(self.committedMsgs, testCommittedMsgs{
@@ -196,7 +191,7 @@ func NewTestSystemWithBackend(n, f uint64) *testSystem {
 		core.current = newRoundState(&istanbul.View{
 			Round:    big.NewInt(0),
 			Sequence: big.NewInt(1),
-		}, vset, common.Hash{}, nil)
+		}, vset, common.Hash{}, nil, nil)
 		core.logger = testLogger
 		core.validateFn = backend.CheckValidatorSignature
 

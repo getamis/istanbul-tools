@@ -32,6 +32,7 @@ func (c *core) handleRequest(request *istanbul.Request) error {
 
 	logger.Trace("handleRequest", "number", request.Proposal.Number(), "hash", request.Proposal.Hash())
 
+	c.current.pendingRequest = request
 	if c.state == StateAcceptRequest {
 		c.sendPreprepare(request)
 	}

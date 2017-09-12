@@ -44,9 +44,6 @@ type Backend interface {
 	// The delivered proposal will be put into blockchain.
 	Commit(proposal Proposal, seals [][]byte) error
 
-	// NextRound is called when we want to trigger next Seal()
-	NextRound() error
-
 	// Verify verifies the proposal. If a consensus.ErrFutureBlock error is returned,
 	// the time difference of the proposal and current time is also returned.
 	Verify(Proposal) (time.Duration, error)

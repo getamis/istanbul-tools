@@ -33,15 +33,16 @@ func TestState(t *testing.T) {
 	st.skipShortMode(`^stQuadraticComplexityTest/`)
 	// Broken tests:
 	st.skipLoad(`^stTransactionTest/OverflowGasRequire\.json`) // gasLimit > 256 bits
-	st.skipLoad(`^stStackTests/shallowStackOK\.json`)          // bad hex encoding
 	st.skipLoad(`^stTransactionTest/zeroSigTransa[^/]*\.json`) // EIP-86 is not supported yet
 	// Expected failures:
-	st.fails(`^stCallCreateCallCodeTest/createJS_ExampleContract\.json`, "bug in test")
-	st.fails(`^stCodeSizeLimit/codesizeOOGInvalidSize\.json/(Frontier|Homestead)`,
+	st.fails(`^stCodeSizeLimit/codesizeOOGInvalidSize\.json/(Frontier|Homestead|EIP150)`,
 		"code size limit implementation is not conditional on fork")
 	st.fails(`^stRevertTest/RevertDepthCreateAddressCollision\.json/EIP15[08]/[67]`, "bug in test")
 	st.fails(`^stRevertTest/RevertPrecompiledTouch\.json/EIP158`, "bug in test")
 	st.fails(`^stRevertTest/RevertPrefoundEmptyOOG\.json/EIP158`, "bug in test")
+	st.fails(`^stRevertTest/RevertDepthCreateAddressCollision\.json/Byzantium/[67]`, "bug in test")
+	st.fails(`^stRevertTest/RevertPrecompiledTouch\.json/Byzantium`, "bug in test")
+	st.fails(`^stRevertTest/RevertPrefoundEmptyOOG\.json/Byzantium`, "bug in test")
 
 	st.walk(t, stateTestDir, func(t *testing.T, name string, test *StateTest) {
 		for _, subtest := range test.Subtests() {
@@ -49,8 +50,8 @@ func TestState(t *testing.T) {
 			key := fmt.Sprintf("%s/%d", subtest.Fork, subtest.Index)
 			name := name + "/" + key
 			t.Run(key, func(t *testing.T) {
-				if subtest.Fork == "Metropolis" {
-					t.Skip("metropolis not supported yet")
+				if subtest.Fork == "Constantinople" {
+					t.Skip("constantinople not supported yet")
 				}
 				withTrace(t, test.gasLimit(subtest), func(vmconfig vm.Config) error {
 					return st.checkFailure(t, name, test.Run(subtest, vmconfig))

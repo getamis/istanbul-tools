@@ -29,26 +29,28 @@ import (
 // newRoundState creates a new roundState instance with the given view and validatorSet
 // lockedHash and preprepare are for round change when lock exists,
 // we need to keep a reference of preprepare in order to propose locked proposal when there is a lock and itself is the proposer
-func newRoundState(view *istanbul.View, validatorSet istanbul.ValidatorSet, lockedHash common.Hash, preprepare *istanbul.Preprepare) *roundState {
+func newRoundState(view *istanbul.View, validatorSet istanbul.ValidatorSet, lockedHash common.Hash, preprepare *istanbul.Preprepare, pendingRequest *istanbul.Request) *roundState {
 	return &roundState{
-		round:      view.Round,
-		sequence:   view.Sequence,
-		Preprepare: preprepare,
-		Prepares:   newMessageSet(validatorSet),
-		Commits:    newMessageSet(validatorSet),
-		lockedHash: lockedHash,
-		mu:         new(sync.RWMutex),
+		round:          view.Round,
+		sequence:       view.Sequence,
+		Preprepare:     preprepare,
+		Prepares:       newMessageSet(validatorSet),
+		Commits:        newMessageSet(validatorSet),
+		lockedHash:     lockedHash,
+		mu:             new(sync.RWMutex),
+		pendingRequest: pendingRequest,
 	}
 }
 
 // roundState stores the consensus state
 type roundState struct {
-	round      *big.Int
-	sequence   *big.Int
-	Preprepare *istanbul.Preprepare
-	Prepares   *messageSet
-	Commits    *messageSet
-	lockedHash common.Hash
+	round          *big.Int
+	sequence       *big.Int
+	Preprepare     *istanbul.Preprepare
+	Prepares       *messageSet
+	Commits        *messageSet
+	lockedHash     common.Hash
+	pendingRequest *istanbul.Request
 
 	mu *sync.RWMutex
 }
@@ -151,12 +153,13 @@ func (s *roundState) GetLockedHash() common.Hash {
 // be confusing.
 func (s *roundState) DecodeRLP(stream *rlp.Stream) error {
 	var ss struct {
-		Round      *big.Int
-		Sequence   *big.Int
-		Preprepare *istanbul.Preprepare
-		Prepares   *messageSet
-		Commits    *messageSet
-		lockedHash common.Hash
+		Round          *big.Int
+		Sequence       *big.Int
+		Preprepare     *istanbul.Preprepare
+		Prepares       *messageSet
+		Commits        *messageSet
+		lockedHash     common.Hash
+		pendingRequest *istanbul.Request
 	}
 
 	if err := stream.Decode(&ss); err != nil {
@@ -168,6 +171,7 @@ func (s *roundState) DecodeRLP(stream *rlp.Stream) error {
 	s.Prepares = ss.Prepares
 	s.Commits = ss.Commits
 	s.lockedHash = ss.lockedHash
+	s.pendingRequest = ss.pendingRequest
 	s.mu = new(sync.RWMutex)
 
 	return nil
@@ -192,5 +196,6 @@ func (s *roundState) EncodeRLP(w io.Writer) error {
 		s.Prepares,
 		s.Commits,
 		s.lockedHash,
+		s.pendingRequest,
 	})
 }
