@@ -19,12 +19,12 @@ package load
 import (
 	"testing"
 
-	"github.com/getamis/istanbul-tools/charts"
-	"github.com/getamis/istanbul-tools/common"
-
-	"github.com/getamis/istanbul-tools/tests"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"github.com/getamis/istanbul-tools/container"
+	"github.com/getamis/istanbul-tools/k8s"
+	"github.com/getamis/istanbul-tools/tests"
 )
 
 var _ = Describe("TPS-01: Large amount of transactions", func() {
@@ -48,38 +48,40 @@ var _ = Describe("TPS-01: Large amount of transactions", func() {
 		},
 
 		tests.Case("4 validators", 4),
-		tests.Case("7 validators", 7),
-		tests.Case("10 validators", 10),
 	)
 })
 
 func runTests(numberOfValidators int, gaslimit int, txpoolSize int) {
 	Describe("", func() {
 		var (
-			genesisChart     tests.ChartInstaller
-			staticNodesChart tests.ChartInstaller
+			blockchain container.Blockchain
 		)
 
 		BeforeEach(func() {
-			_, nodekeys, addrs := common.GenerateKeys(numberOfValidators)
-			genesisChart = charts.NewGenesisChart(addrs, uint64(gaslimit))
-			Expect(genesisChart.Install(false)).To(BeNil())
-
-			staticNodesChart = charts.NewStaticNodesChart(nodekeys, common.GenerateIPs(len(nodekeys)))
-			Expect(staticNodesChart.Install(false)).To(BeNil())
+			blockchain = k8s.NewBlockchain(
+				numberOfValidators,
+				uint64(gaslimit),
+				k8s.ImageRepository("quay.io/amis/geth"),
+				k8s.ImageTag("istanbul_develop"),
+				k8s.ServiceType("LoadBalancer"),
+				k8s.Mine(),
+				k8s.TxPoolSize(txpoolSize),
+			)
+			Expect(blockchain.Start(true)).To(BeNil())
 		})
 
 		AfterEach(func() {
-			Expect(genesisChart.Uninstall()).To(BeNil())
-			Expect(staticNodesChart.Uninstall()).To(BeNil())
+			Expect(blockchain.Stop(true)).To(BeNil())
+			blockchain.Finalize()
 		})
 
 		It("", func() {
+
 		})
 	})
 }
 
-func IstanbulLoadTest(t *testing.T) {
+func TestIstanbulLoadTesting(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Istanbul Load Test Suite")
 }
