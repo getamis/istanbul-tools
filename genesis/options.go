@@ -19,7 +19,6 @@ package genesis
 import (
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core"
@@ -47,11 +46,11 @@ func GasLimit(limit uint64) Option {
 	}
 }
 
-func Alloc(accounts []accounts.Account, balance *big.Int) Option {
+func Alloc(addrs []common.Address, balance *big.Int) Option {
 	return func(genesis *core.Genesis) {
 		alloc := make(map[common.Address]core.GenesisAccount)
-		for _, a := range accounts {
-			alloc[a.Address] = core.GenesisAccount{Balance: balance}
+		for _, addr := range addrs {
+			alloc[addr] = core.GenesisAccount{Balance: balance}
 		}
 		genesis.Alloc = alloc
 	}

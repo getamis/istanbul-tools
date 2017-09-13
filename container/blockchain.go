@@ -512,9 +512,14 @@ func (bc *blockchain) generateAccounts(num int) {
 func (bc *blockchain) setupGenesis(addrs []common.Address) {
 	balance, _ := new(big.Int).SetString(allocBalance, 10)
 	if bc.genesisFile == "" {
+		var allocAddrs []common.Address
+		allocAddrs = append(allocAddrs, addrs...)
+		for _, acc := range bc.accounts {
+			allocAddrs = append(allocAddrs, acc.Address)
+		}
 		bc.genesisFile = genesis.NewFile(bc.isQuorum,
 			genesis.Validators(addrs...),
-			genesis.Alloc(bc.accounts, balance),
+			genesis.Alloc(allocAddrs, balance),
 		)
 	}
 }
