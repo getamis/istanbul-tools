@@ -1,5 +1,5 @@
-hash: bd3abdfdc78ce27b81bff09d5ab0a5cbf8ca09f0af6bdd319de22e3ca09df80e
-updated: 2017-09-06T12:55:47.821302594+08:00
+hash: 3bee7720fa731cac676ae38b1a4a3b0e8054f48beb9ea241d79e78ba2668557a
+updated: 2017-09-12T12:04:11.035550429+08:00
 imports:
 - name: github.com/aristanetworks/goarista
   version: 316cb1751909fe30bb23726dd0d7a5ea1e44673f
@@ -60,11 +60,13 @@ imports:
 - name: github.com/emicklei/go-restful-swagger12
   version: dcef7f55730566d41eae5db10e7d6981829720f6
 - name: github.com/ethereum/go-ethereum
-  version: 74d8f1527f60f32e33cffd2e3b18ae840b8f83f0
+  version: 1087a1cd1fd6904897cf622a4083ee2e3a061092
   repo: git@github.com:getamis/go-ethereum
   vcs: git
   subpackages:
   - accounts
+  - accounts/abi
+  - accounts/abi/bind
   - accounts/keystore
   - accounts/usbwallet
   - accounts/usbwallet/internal/trezor
@@ -125,8 +127,7 @@ imports:
   version: ee11f706a673005f8b220c09b2ef5302411f5d14
   subpackages:
   - core/types
-  - crypto
-  - p2p/discover
+  - ethclient
 - name: github.com/ghodss/yaml
   version: 73d445a93680fa1a78ae23a5839bad48f32ba1ee
 - name: github.com/go-openapi/analysis
@@ -176,6 +177,8 @@ imports:
   - ssdp
 - name: github.com/imdario/mergo
   version: 6633656539c1639d9d78127b7d47c622b5d7b6dc
+- name: github.com/inconshreveable/log15
+  version: b105bd37f74e5d9dc7b6ad7806715c7a2b83fd3f
 - name: github.com/jackpal/go-nat-pmp
   version: 28a68d0c24adce1da43f8df6a57340909ecd7fdd
 - name: github.com/juju/ratelimit
@@ -349,8 +352,18 @@ imports:
   - unicode/bidi
   - unicode/norm
   - width
+- name: golang.org/x/tools
+  version: 3b1faeda9afbcba128c2d794b38ffe7982141139
+  subpackages:
+  - go/ast/astutil
+  - imports
 - name: gopkg.in/fatih/set.v0
   version: 27c40922c40b43fe04554d8223a402af3ea333f3
+- name: gopkg.in/inconshreveable/log15.v2
+  version: b105bd37f74e5d9dc7b6ad7806715c7a2b83fd3f
+  subpackages:
+  - stack
+  - term
 - name: gopkg.in/inf.v0
   version: 3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4
 - name: gopkg.in/karalabe/cookiejar.v2

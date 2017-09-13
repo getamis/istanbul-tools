@@ -18,7 +18,6 @@ package charts
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -26,6 +25,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/getamis/istanbul-tools/genesis"
+	"github.com/getamis/istanbul-tools/log"
 )
 
 type GenesisChart struct {
@@ -40,7 +40,8 @@ func NewGenesisChart(addrs []common.Address, gasLimit uint64) *GenesisChart {
 	genesisPath := filepath.Join(chartPath, ".genesis")
 	err := os.MkdirAll(genesisPath, 0700)
 	if err != nil {
-		log.Fatal(err)
+		log.Error("Failed to create dir", "dir", genesisPath, "err", err)
+		return nil
 	}
 
 	chart := &GenesisChart{

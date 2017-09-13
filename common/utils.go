@@ -22,7 +22,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net"
 	"os"
 	"path/filepath"
@@ -30,8 +29,10 @@ import (
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/getamis/go-ethereum/p2p/discover"
+	"github.com/ethereum/go-ethereum/p2p/discover"
 	uuid "github.com/satori/go.uuid"
+
+	"github.com/getamis/istanbul-tools/log"
 )
 
 const (
@@ -51,12 +52,13 @@ func GenerateIPs(num int) (ips []string) {
 func GenerateRandomDir() (string, error) {
 	err := os.MkdirAll(filepath.Join(defaultLocalDir), 0700)
 	if err != nil {
+		log.Error("Failed to create dir", "dir", defaultLocalDir, "err", err)
 		return "", err
 	}
 
 	instanceDir := filepath.Join(defaultLocalDir, fmt.Sprintf("%s-%s", clientIdentifier, uuid.NewV4().String()))
 	if err := os.MkdirAll(instanceDir, 0700); err != nil {
-		log.Println(fmt.Sprintf("Failed to create instance dir: %v", err))
+		log.Error("Failed to create dir", "dir", instanceDir, "err", err)
 		return "", err
 	}
 
@@ -67,7 +69,8 @@ func GeneratePasswordFile(dir string, filename string, password string) {
 	path := filepath.Join(dir, filename)
 	err := ioutil.WriteFile(path, []byte(password), 0644)
 	if err != nil {
-		log.Fatalf("Failed to generate password file, err:%v", err)
+		log.Error("Failed to generate password file", "file", path, "err", err)
+		return
 	}
 }
 
@@ -75,7 +78,8 @@ func CopyKeystore(dir string, accounts []accounts.Account) {
 	keystorePath := filepath.Join(dir, "keystore")
 	err := os.MkdirAll(keystorePath, 0744)
 	if err != nil {
-		log.Fatalf("Failed to copy keystore, err:%v", err)
+		log.Error("Failed to copy keystore", "dir", keystorePath, "err", err)
+		return
 	}
 	for _, a := range accounts {
 		src := a.URL.Path
@@ -91,7 +95,8 @@ func GenerateKeys(num int) (keys []*ecdsa.PrivateKey, nodekeys []string, addrs [
 
 		key, err := crypto.HexToECDSA(nodekey)
 		if err != nil {
-			log.Fatalf("couldn't generate key: " + err.Error())
+			log.Error("Failed to generate key", "err", err)
+			return nil, nil, nil
 		}
 		keys = append(keys, key)
 
@@ -105,13 +110,13 @@ func GenerateKeys(num int) (keys []*ecdsa.PrivateKey, nodekeys []string, addrs [
 func SaveNodeKey(key *ecdsa.PrivateKey, dataDir string) error {
 	keyDir := filepath.Join(dataDir, clientIdentifier)
 	if err := os.MkdirAll(keyDir, 0700); err != nil {
-		log.Println(fmt.Sprintf("Failed to create key dir: %v", err))
+		log.Error("Failed to create dir", "dir", keyDir, "err", err)
 		return err
 	}
 
 	keyfile := filepath.Join(keyDir, nodekeyFileName)
 	if err := crypto.SaveECDSA(keyfile, key); err != nil {
-		log.Println(fmt.Sprintf("Failed to persist node key: %v", err))
+		log.Error("Failed to persist node key", "file", keyfile, "err", err)
 		return err
 	}
 	return nil
@@ -123,7 +128,7 @@ func GenerateStaticNodesAt(dir string, nodekeys []string, ipAddrs []string) (fil
 	for i, nodekey := range nodekeys {
 		key, err := crypto.HexToECDSA(nodekey)
 		if err != nil {
-			log.Printf("Failed to create key, err: %v\n", err)
+			log.Error("Failed to create key from hex", "hex", nodekey, "err", err)
 			return ""
 		}
 		node := discover.NewNode(
@@ -138,7 +143,7 @@ func GenerateStaticNodesAt(dir string, nodekeys []string, ipAddrs []string) (fil
 	filename = filepath.Join(dir, "static-nodes.json")
 	bytes, _ := json.Marshal(nodes)
 	if err := ioutil.WriteFile(filename, bytes, 0644); err != nil {
-		log.Printf("Failed to write '%s', err: %v\n", filename, err)
+		log.Error("Failed to write file", "file", filename, "err", err)
 		return ""
 	}
 
@@ -146,11 +151,7 @@ func GenerateStaticNodesAt(dir string, nodekeys []string, ipAddrs []string) (fil
 }
 
 func GenerateStaticNodes(nodekeys []string, ipAddrs []string) (filename string) {
-	dir, err := GenerateRandomDir()
-	if err != nil {
-		log.Printf("Failed to generate directory, err: %v\n", err)
-		return ""
-	}
+	dir, _ := GenerateRandomDir()
 
 	return GenerateStaticNodesAt(dir, nodekeys, ipAddrs)
 }
@@ -162,10 +163,7 @@ func RandomHex() string {
 
 func RandomBytes(len int) ([]byte, error) {
 	b := make([]byte, len)
-	_, err := rand.Read(b)
-	if err != nil {
-		log.Fatalln(err)
-	}
+	_, _ = rand.Read(b)
 
 	return b, nil
 }
@@ -173,10 +171,12 @@ func RandomBytes(len int) ([]byte, error) {
 func copyFile(src string, dst string) {
 	data, err := ioutil.ReadFile(src)
 	if err != nil {
-		log.Fatal(err)
+		log.Error("Failed to read file", "file", src, "err", err)
+		return
 	}
 	err = ioutil.WriteFile(dst, data, 0644)
 	if err != nil {
-		log.Fatal(err)
+		log.Error("Failed to write file", "file", dst, "err", err)
+		return
 	}
 }

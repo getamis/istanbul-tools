@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net"
 	"os"
 	"path/filepath"
@@ -35,6 +34,7 @@ import (
 	"github.com/docker/go-connections/nat"
 
 	"github.com/getamis/istanbul-tools/common"
+	"github.com/getamis/istanbul-tools/log"
 )
 
 //TODO: refactor this with ethereum options?
@@ -153,7 +153,7 @@ func NewConstellation(c *client.Client, options ...ConstellationOption) *constel
 	if len(images) == 0 || err != nil {
 		out, err := ct.client.ImagePull(context.Background(), ct.Image(), types.ImagePullOptions{})
 		if err != nil {
-			log.Printf("Cannot pull %s, err: %v", ct.Image(), err)
+			log.Error("Failed to pull image", "image", ct.Image(), "err", err)
 			return nil
 		}
 		if ct.logging {
@@ -198,7 +198,7 @@ func (ct *constellation) GenerateKey() (localWorkDir string, err error) {
 	// Generate empty password file
 	ct.localWorkDir, err = common.GenerateRandomDir()
 	if err != nil {
-		log.Printf("Failed to generate working dir, err: :%v\n", err)
+		log.Error("Failed to generate working dir", "dir", ct.localWorkDir, "err", err)
 		return "", err
 	}
 
@@ -208,7 +208,7 @@ func (ct *constellation) GenerateKey() (localWorkDir string, err error) {
 	localConfigPath := ct.localConfigPath()
 	err = ioutil.WriteFile(localConfigPath, []byte(configContent), 0600)
 	if err != nil {
-		log.Printf("Failed to write config, err: %v\n", err)
+		log.Error("Failed to write config", "file", localConfigPath, "err", err)
 		return "", err
 	}
 
@@ -225,14 +225,14 @@ func (ct *constellation) GenerateKey() (localWorkDir string, err error) {
 	}
 	resp, err := ct.client.ContainerCreate(context.Background(), config, hostConfig, nil, "")
 	if err != nil {
-		log.Printf("Failed to create container, err: %v\n", err)
+		log.Error("Failed to create container", "err", err)
 		return "", err
 	}
 	id := resp.ID
 
 	// Start container
 	if err := ct.client.ContainerStart(context.Background(), id, types.ContainerStartOptions{}); err != nil {
-		log.Printf("Failed to start container, err: %v\n", err)
+		log.Error("Failed to start container", "err", err)
 		return "", err
 	}
 
@@ -240,7 +240,7 @@ func (ct *constellation) GenerateKey() (localWorkDir string, err error) {
 	// - constellation-node generatekeys takes stdin as password
 	hiresp, err := ct.client.ContainerAttach(context.Background(), id, types.ContainerAttachOptions{Stream: true, Stdin: true})
 	if err != nil {
-		log.Printf("Failed to attach container, err: %v\n", err)
+		log.Error("Failed to attach container", "err", err)
 		return "", err
 	}
 	// - write empty string password to container stdin
@@ -249,7 +249,7 @@ func (ct *constellation) GenerateKey() (localWorkDir string, err error) {
 	// Wait container
 	_, err = ct.client.ContainerWait(context.Background(), id)
 	if err != nil {
-		log.Printf("Failed to wait container, err: %v\n", err)
+		log.Error("Failed to wait container", "err", err)
 		return "", err
 	}
 
@@ -302,7 +302,7 @@ func (ct *constellation) Start() error {
 	// Create container
 	resp, err := ct.client.ContainerCreate(context.Background(), config, hostConfig, networkingConfig, "")
 	if err != nil {
-		log.Printf("Failed to create container, err: %v\n", err)
+		log.Error("Failed to create container", "err", err)
 		return err
 	}
 	ct.containerID = resp.ID
@@ -310,7 +310,7 @@ func (ct *constellation) Start() error {
 	// Start container
 	err = ct.client.ContainerStart(context.Background(), ct.containerID, types.ContainerStartOptions{})
 	if err != nil {
-		log.Printf("Failed to start container, err: %v, ip:%v\n", err, ct.ip)
+		log.Error("Failed to start container", "ip", ct.ip, "err", err)
 		return err
 	}
 
@@ -338,7 +338,7 @@ func (ct *constellation) Host() string {
 func (ct *constellation) Running() bool {
 	containers, err := ct.client.ContainerList(context.Background(), types.ContainerListOptions{})
 	if err != nil {
-		log.Printf("Failed to list containers, err: %v", err)
+		log.Error("Failed to list containers", "err", err)
 		return false
 	}
 
@@ -367,7 +367,8 @@ func (ct *constellation) PublicKeys() []string {
 	keyPath := ct.localKeyPath("pub")
 	keyBytes, err := ioutil.ReadFile(keyPath)
 	if err != nil {
-		log.Fatalf("Unable to read key file")
+		log.Error("Unable to read key file", "file", keyPath, "err", err)
+		return nil
 	}
 	return []string{string(keyBytes)}
 }
@@ -382,7 +383,8 @@ func (ct *constellation) showLog(context context.Context) {
 		defer readCloser.Close()
 		_, err = io.Copy(os.Stdout, readCloser)
 		if err != nil && err != io.EOF {
-			log.Fatal(err)
+			log.Error("Failed to print container log", "err", err)
+			return
 		}
 	}
 }

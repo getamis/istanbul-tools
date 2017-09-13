@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"math/big"
 	"path/filepath"
 	"strings"
@@ -32,6 +31,7 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 
 	"github.com/getamis/istanbul-tools/common"
+	"github.com/getamis/istanbul-tools/log"
 )
 
 const (
@@ -69,17 +69,15 @@ func New(options ...Option) *core.Genesis {
 func NewFileAt(dir string, isQuorum bool, options ...Option) string {
 	genesis := New(options...)
 	if err := Save(dir, genesis, isQuorum); err != nil {
-		log.Fatalf("Failed to save genesis to '%s', err: %v", dir, err)
+		log.Error("Failed to save genesis", "dir", dir, "err", err)
+		return ""
 	}
 
 	return filepath.Join(dir, FileName)
 }
 
 func NewFile(isQuorum bool, options ...Option) string {
-	dir, err := common.GenerateRandomDir()
-	if err != nil {
-		log.Fatalf("Failed to create random directory, err: %v", err)
-	}
+	dir, _ := common.GenerateRandomDir()
 	return NewFileAt(dir, isQuorum, options...)
 }
 

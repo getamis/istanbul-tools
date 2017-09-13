@@ -21,7 +21,6 @@ import (
 	"crypto/ecdsa"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"math/big"
 	"net"
 	"os"
@@ -36,6 +35,7 @@ import (
 
 	istcommon "github.com/getamis/istanbul-tools/common"
 	"github.com/getamis/istanbul-tools/genesis"
+	"github.com/getamis/istanbul-tools/log"
 )
 
 const (
@@ -62,13 +62,15 @@ func NewBlockchain(network *DockerNetwork, numOfValidators int, options ...Optio
 	var err error
 	bc.dockerClient, err = client.NewEnvClient()
 	if err != nil {
-		log.Fatalf("Cannot connect to Docker daemon, err: %v", err)
+		log.Error("Failed to connect to Docker daemon", "err", err)
+		return nil
 	}
 
 	if network == nil {
 		bc.defaultNetwork, err = NewDockerNetwork()
 		if err != nil {
-			log.Fatalf("Cannot create Docker network, err: %v", err)
+			log.Error("Failed to create Docker network", "err", err)
+			return nil
 		}
 		network = bc.defaultNetwork
 	}
@@ -132,13 +134,15 @@ func NewDefaultBlockchainWithFaulty(network *DockerNetwork, numOfNormal int, num
 	var err error
 	bc.dockerClient, err = client.NewEnvClient()
 	if err != nil {
-		log.Fatalf("Cannot connect to Docker daemon, err: %v", err)
+		log.Error("Failed to connect to Docker daemon", "err", err)
+		return nil
 	}
 
 	if network == nil {
 		bc.defaultNetwork, err = NewDockerNetwork()
 		if err != nil {
-			log.Fatalf("Cannot create Docker network, err: %v", err)
+			log.Error("Failed to create Docker network", "err", err)
+			return nil
 		}
 		network = bc.defaultNetwork
 	}
@@ -153,7 +157,8 @@ func NewDefaultBlockchainWithFaulty(network *DockerNetwork, numOfNormal int, num
 
 	ips, err := bc.getFreeIPAddrs(totalNodes)
 	if err != nil {
-		log.Fatalf("Failed to get free ip addresses, err: %v", err)
+		log.Error("Failed to get free ip addresses", "err", err)
+		return nil
 	}
 
 	//Create accounts
@@ -178,13 +183,15 @@ func NewQuorumBlockchain(network *DockerNetwork, ctn ConstellationNetwork, optio
 	var err error
 	bc.dockerClient, err = client.NewEnvClient()
 	if err != nil {
-		log.Fatalf("Cannot connect to Docker daemon, err: %v", err)
+		log.Error("Failed to connect to Docker daemon", "err", err)
+		return nil
 	}
 
 	if network == nil {
 		bc.defaultNetwork, err = NewDockerNetwork()
 		if err != nil {
-			log.Fatalf("Cannot create Docker network, err: %v", err)
+			log.Error("Failed to create Docker network", "err", err)
+			return nil
 		}
 		network = bc.defaultNetwork
 	}
@@ -419,7 +426,7 @@ func (bc *blockchain) CreateNodes(num int, options ...Option) (nodes []Ethereum,
 		// Host data directory
 		dataDir, err := istcommon.GenerateRandomDir()
 		if err != nil {
-			log.Println("Failed to create data dir", err)
+			log.Error("Failed to create data dir", "dir", dataDir, "err", err)
 			return nil, err
 		}
 		opts = append(opts, HostDataDir(dataDir))
@@ -434,7 +441,7 @@ func (bc *blockchain) CreateNodes(num int, options ...Option) (nodes []Ethereum,
 
 		err = geth.Init(bc.genesisFile)
 		if err != nil {
-			log.Println("Failed to init genesis", err)
+			log.Error("Failed to init genesis", "file", bc.genesisFile, "err", err)
 			return nil, err
 		}
 
@@ -482,7 +489,8 @@ func (bc *blockchain) generateAccounts(num int) {
 	// Create keystore object
 	d, err := ioutil.TempDir("", "istanbul-keystore")
 	if err != nil {
-		log.Fatalf("Failed to create temp folder for keystore", err)
+		log.Error("Failed to create temp folder for keystore", "err", err)
+		return
 	}
 	ks := keystore.NewKeyStore(d, veryLightScryptN, veryLightScryptP)
 	bc.keystorePath = d
@@ -491,7 +499,8 @@ func (bc *blockchain) generateAccounts(num int) {
 	for i := 0; i < num; i++ {
 		a, e := ks.NewAccount(defaultPassword)
 		if e != nil {
-			log.Fatalf("Failed to create account", err)
+			log.Error("Failed to create account", "err", err)
+			return
 		}
 		bc.accounts = append(bc.accounts, a)
 	}
@@ -516,7 +525,8 @@ func (bc *blockchain) setupValidators(ips []net.IP, keys []*ecdsa.PrivateKey, of
 		// Host data directory
 		dataDir, err := istcommon.GenerateRandomDir()
 		if err != nil {
-			log.Fatal("Failed to create data dir", err)
+			log.Error("Failed to create data dir", "dir", dataDir, "err", err)
+			return
 		}
 		opts = append(opts, HostDataDir(dataDir))
 		opts = append(opts, HostWebSocketPort(freeport.GetPort()))
@@ -544,7 +554,8 @@ func (bc *blockchain) setupValidators(ips []net.IP, keys []*ecdsa.PrivateKey, of
 
 		err = geth.Init(bc.genesisFile)
 		if err != nil {
-			log.Fatal("Failed to init genesis", err)
+			log.Error("Failed to init genesis", "file", bc.genesisFile, "err", err)
+			return
 		}
 
 		bc.validators = append(bc.validators, geth)
@@ -584,11 +595,13 @@ func NewConstellationNetwork(network *DockerNetwork, numOfValidators int, option
 	var err error
 	ctn.dockerClient, err = client.NewEnvClient()
 	if err != nil {
-		log.Fatalf("Cannot connect to Docker daemon, err: %v", err)
+		log.Error("Failed to connect to Docker daemon", "err", err)
+		return nil
 	}
 
 	if network == nil {
-		log.Fatalf("Network is required")
+		log.Error("Network is required")
+		return
 	}
 
 	ctn.dockerNetworkName = network.Name()
@@ -630,7 +643,7 @@ func (ctn *constellationNetwork) Start() error {
 	for i, ct := range ctn.constellations {
 		err := ct.Start()
 		if err != nil {
-			log.Fatalf("Failed to start constellation %v, err:%v\n", i, err)
+			log.Error("Failed to start constellation", "index", i, "err", err)
 			return err
 		}
 	}
@@ -642,7 +655,7 @@ func (ctn *constellationNetwork) Stop() error {
 	for i, ct := range ctn.constellations {
 		err := ct.Stop()
 		if err != nil {
-			log.Fatalf("Failed to stop constellation %v, err:%v\n", i, err)
+			log.Error("Failed to stop constellation", "index", i, "err", err)
 			return err
 		}
 	}
@@ -667,7 +680,8 @@ func (ctn *constellationNetwork) GetConstellation(idx int) Constellation {
 func (ctn *constellationNetwork) getFreeHosts(num int) ([]net.IP, []int) {
 	ips, err := ctn.getFreeIPAddrs(num)
 	if err != nil {
-		log.Fatalf("Cannot get free ip, err: %v", err)
+		log.Error("Cannot get free ip", "err", err)
+		return nil, nil
 	}
 	var ports []int
 	for i := 0; i < num; i++ {

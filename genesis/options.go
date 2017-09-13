@@ -17,7 +17,6 @@
 package genesis
 
 import (
-	"log"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts"
@@ -26,6 +25,7 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 
 	"github.com/getamis/istanbul-tools/cmd/istanbul/extra"
+	"github.com/getamis/istanbul-tools/log"
 )
 
 type Option func(*core.Genesis)
@@ -34,7 +34,8 @@ func Validators(addrs ...common.Address) Option {
 	return func(genesis *core.Genesis) {
 		extraData, err := extra.Encode("0x00", addrs)
 		if err != nil {
-			log.Fatalf("Failed to generate genesis, err:%s", err)
+			log.Error("Failed to encode extra data", "err", err)
+			return
 		}
 		genesis.ExtraData = hexutil.MustDecode(extraData)
 	}

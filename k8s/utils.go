@@ -17,7 +17,6 @@
 package k8s
 
 import (
-	"log"
 	"os"
 	"path/filepath"
 	"sync"
@@ -26,6 +25,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
+
+	"github.com/getamis/istanbul-tools/log"
 )
 
 const (
@@ -38,19 +39,20 @@ const (
 func k8sClient(podName string) *kubernetes.Clientset {
 	config, err := clientcmd.BuildConfigFromFlags("", filepath.Join(os.Getenv("HOME"), ".kube", "config"))
 	if err != nil {
-		log.Fatalln(err)
+		log.Error("Failed to create Kubernetes config", "err", err)
+		return nil
 	}
 
 	for i := 0; i < healthCheckRetryCount; i++ {
 		client, err := kubernetes.NewForConfig(config)
 		if err != nil {
-			log.Println(err)
+			log.Error("Failed to create Kubernetes client from config", "config", config, "err", err)
 			<-time.After(healthCheckRetryDelay)
 			continue
 		}
 		_, err = client.CoreV1().Pods(defaultNamespace).Get(podName, metav1.GetOptions{})
 		if err != nil {
-			log.Println(err)
+			log.Error("Failed to get pod", "namespace", defaultNamespace, "pod", podName, "err", err)
 			<-time.After(healthCheckRetryDelay)
 			continue
 		} else {
@@ -58,7 +60,7 @@ func k8sClient(podName string) *kubernetes.Clientset {
 		}
 	}
 
-	log.Fatalln("Failed to retrieve kubernetes client")
+	log.Error("Failed to retrieve kubernetes client")
 	return nil
 }
 

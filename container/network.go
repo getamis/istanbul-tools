@@ -26,6 +26,8 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
+
+	"github.com/getamis/istanbul-tools/log"
 )
 
 const (
@@ -64,7 +66,7 @@ func NewDockerNetwork() (*DockerNetwork, error) {
 			ipIndex: ipv4Addr,
 		}
 		if err = network.create(); err != nil {
-			fmt.Printf("Failed to create network and retry, err:%v\n", err)
+			log.Error("Failed to create network, retry...", "err", err)
 		} else {
 			return network, nil
 		}
@@ -126,7 +128,7 @@ func (n *DockerNetwork) GetFreeIPAddrs(num int) ([]net.IP, error) {
 	}
 
 	if len(ips) != num {
-		return nil, errors.New("Insufficient IP address.")
+		return nil, errors.New("insufficient IP address.")
 	}
 	return ips, nil
 }

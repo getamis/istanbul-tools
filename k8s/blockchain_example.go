@@ -17,11 +17,12 @@
 package k8s
 
 import (
-	"testing"
 	"time"
+
+	"github.com/getamis/istanbul-tools/log"
 )
 
-func ExampleK8SBlockchain(t *testing.T) {
+func ExampleK8SBlockchain() {
 	chain := NewBlockchain(
 		4,
 		21000*1000,
@@ -34,13 +35,15 @@ func ExampleK8SBlockchain(t *testing.T) {
 
 	err := chain.Start(true)
 	if err != nil {
-		t.Error(err)
+		log.Error("Failed to start chain", "err", err)
+		return
 	}
 
 	<-time.After(20 * time.Second)
 
 	err = chain.Stop(false)
 	if err != nil {
-		t.Error(err)
+		log.Error("Failed to stop chain", "err", err)
+		return
 	}
 }

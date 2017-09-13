@@ -17,25 +17,24 @@
 package k8s
 
 import (
-	"fmt"
-
 	"github.com/getamis/istanbul-tools/charts"
 	"github.com/getamis/istanbul-tools/common"
 	"github.com/getamis/istanbul-tools/genesis"
+	"github.com/getamis/istanbul-tools/log"
 )
 
 func ExampleK8SEthereum() {
 	_, nodekeys, addrs := common.GenerateKeys(1)
 	genesisChart := charts.NewGenesisChart(addrs, genesis.InitGasLimit)
 	if err := genesisChart.Install(false); err != nil {
-		fmt.Println(err)
+		log.Error("Failed to install genesis chart", "err", err)
 		return
 	}
 	defer genesisChart.Uninstall()
 
 	staticNodesChart := charts.NewStaticNodesChart(nodekeys, common.GenerateIPs(len(nodekeys)))
 	if err := staticNodesChart.Install(false); err != nil {
-		fmt.Println(err)
+		log.Error("Failed to install static nodes chart", "err", err)
 		return
 	}
 	defer staticNodesChart.Uninstall()
@@ -52,13 +51,13 @@ func ExampleK8SEthereum() {
 
 	err := geth.Start()
 	if err != nil {
-		fmt.Println(err)
+		log.Error("Failed to start geth", "err", err)
 		return
 	}
 
 	err = geth.Stop()
 	if err != nil {
-		fmt.Println(err)
+		log.Error("Failed to stop geth", "err", err)
 		return
 	}
 }

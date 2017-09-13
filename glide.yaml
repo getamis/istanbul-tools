@@ -44,3 +44,5 @@ import:
   - proto
 - package: github.com/Sirupsen/logrus
   version: v1.0.3
+- package: github.com/inconshreveable/log15
+  version: ^2.11.0
