@@ -17,8 +17,13 @@
 package load
 
 import (
+	"context"
+	"math/big"
+	"sync"
 	"testing"
+	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -76,7 +81,24 @@ func runTests(numberOfValidators int, gaslimit int, txpoolSize int) {
 		})
 
 		It("", func() {
+			tests.WaitFor(blockchain.Validators(), func(geth container.Ethereum, wg *sync.WaitGroup) {
+				richman, ok := geth.(k8s.RichMan)
+				Expect(ok).To(BeTrue())
 
+				var addrs []common.Address
+				for _, acc := range geth.Accounts() {
+					addrs = append(addrs, acc.Address)
+				}
+
+				// Give ether to all accounts
+				err := richman.GiveEther(context.Background(), addrs, new(big.Int).Exp(big.NewInt(10), big.NewInt(24), nil))
+				Expect(err).NotTo(BeNil())
+
+				err = geth.WaitForBalances(addrs, 10*time.Second)
+				Expect(err).NotTo(BeNil())
+
+				wg.Done()
+			})
 		})
 	})
 }
