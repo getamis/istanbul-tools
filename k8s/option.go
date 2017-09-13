@@ -67,6 +67,7 @@ func Mine() Option {
 
 func NodeKeyHex(hex string) Option {
 	return func(eth *ethereum) {
+		eth.nodekey = hex
 		eth.args = append(eth.args, fmt.Sprintf("ethereum.nodekey.hex=%s", hex))
 	}
 }

@@ -18,6 +18,7 @@ package k8s
 
 import (
 	"context"
+	"crypto/ecdsa"
 	"errors"
 	"math/big"
 	"sync"
@@ -30,6 +31,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
+	"github.com/getamis/go-ethereum/crypto"
 	"github.com/getamis/istanbul-tools/charts"
 	"github.com/getamis/istanbul-tools/client"
 	istcommon "github.com/getamis/istanbul-tools/common"
@@ -45,6 +47,12 @@ func NewEthereum(options ...Option) *ethereum {
 		opt(eth)
 	}
 
+	var err error
+	eth.key, err = crypto.HexToECDSA(eth.nodekey)
+	if err != nil {
+		log.Error("Failed to create private key from nodekey", "nodekey", eth.nodekey)
+		return nil
+	}
 	eth.chart = charts.NewValidatorChart(eth.name, eth.args)
 
 	return eth
@@ -55,6 +63,8 @@ type ethereum struct {
 	name  string
 	args  []string
 
+	nodekey   string
+	key       *ecdsa.PrivateKey
 	k8sClient *kubernetes.Clientset
 }
 
@@ -108,7 +118,7 @@ func (eth *ethereum) NodeAddress() string {
 }
 
 func (eth *ethereum) Address() common.Address {
-	return common.Address{}
+	return crypto.PubkeyToAddress(eth.key.PublicKey)
 }
 
 func (eth *ethereum) ConsensusMonitor(errCh chan<- error, quit chan struct{}) {
