@@ -258,13 +258,15 @@ func NewDefaultQuorumBlockchainWithFaulty(network *DockerNetwork, ctn Constellat
 	var err error
 	bc.dockerClient, err = client.NewEnvClient()
 	if err != nil {
-		log.Fatalf("Cannot connect to Docker daemon, err: %v", err)
+		log.Error("Failed to connect to Docker daemon", "err", err)
+		return nil
 	}
 
 	if network == nil {
 		bc.defaultNetwork, err = NewDockerNetwork()
 		if err != nil {
-			log.Fatalf("Cannot create Docker network, err: %v", err)
+			log.Error("Failed to create Docker network", "err", err)
+			return nil
 		}
 		network = bc.defaultNetwork
 	}
@@ -279,7 +281,8 @@ func NewDefaultQuorumBlockchainWithFaulty(network *DockerNetwork, ctn Constellat
 
 	ips, err := bc.getFreeIPAddrs(totalNodes)
 	if err != nil {
-		log.Fatalf("Failed to get free ip addresses, err: %v", err)
+		log.Error("Failed to get free ip addresses", "err", err)
+		return nil
 	}
 
 	//Create accounts
