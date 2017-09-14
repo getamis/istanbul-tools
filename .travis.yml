@@ -31,4 +31,8 @@ script:
      fi'
 
 notifications:
-    slack: maicoin:p2HicxEGvZveE900zgacSYwL
+  webhooks:
+    urls:
+      - https://webhooks.gitter.im/e/250f433972aaec17b964
+    on_success: always
+    on_failure: always
