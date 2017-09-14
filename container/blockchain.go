@@ -56,7 +56,12 @@ type Blockchain interface {
 }
 
 func NewBlockchain(network *DockerNetwork, numOfValidators int, options ...Option) (bc *blockchain) {
-	bc = &blockchain{opts: options}
+	if network == nil {
+		log.Error("Docker network is required")
+		return nil
+	}
+
+	bc = &blockchain{dockerNetwork: network, opts: options}
 
 	var err error
 	bc.dockerClient, err = client.NewEnvClient()
@@ -65,18 +70,7 @@ func NewBlockchain(network *DockerNetwork, numOfValidators int, options ...Optio
 		return nil
 	}
 
-	if network == nil {
-		bc.defaultNetwork, err = NewDockerNetwork()
-		if err != nil {
-			log.Error("Failed to create Docker network", "err", err)
-			return nil
-		}
-		network = bc.defaultNetwork
-	}
-
-	bc.dockerNetworkName = network.Name()
-	bc.getFreeIPAddrs = network.GetFreeIPAddrs
-	bc.opts = append(bc.opts, DockerNetworkName(bc.dockerNetworkName))
+	bc.opts = append(bc.opts, DockerNetworkName(bc.dockerNetwork.Name()))
 
 	//Create accounts
 	bc.generateAccounts(numOfValidators)
@@ -107,7 +101,13 @@ func NewDefaultBlockchain(network *DockerNetwork, numOfValidators int) (bc *bloc
 }
 
 func NewDefaultBlockchainWithFaulty(network *DockerNetwork, numOfNormal int, numOfFaulty int) (bc *blockchain) {
+	if network == nil {
+		log.Error("Docker network is required")
+		return nil
+	}
+
 	commonOpts := [...]Option{
+		DockerNetworkName(network.Name()),
 		DataDir("/data"),
 		WebSocket(),
 		WebSocketAddress("0.0.0.0"),
@@ -129,7 +129,7 @@ func NewDefaultBlockchainWithFaulty(network *DockerNetwork, numOfNormal int, num
 	faultyOpts = append(faultyOpts, ImageRepository("quay.io/amis/geth_faulty"), ImageTag("latest"), FaultyMode(1))
 
 	// New env client
-	bc = &blockchain{}
+	bc = &blockchain{dockerNetwork: network}
 	var err error
 	bc.dockerClient, err = client.NewEnvClient()
 	if err != nil {
@@ -137,24 +137,9 @@ func NewDefaultBlockchainWithFaulty(network *DockerNetwork, numOfNormal int, num
 		return nil
 	}
 
-	if network == nil {
-		bc.defaultNetwork, err = NewDockerNetwork()
-		if err != nil {
-			log.Error("Failed to create Docker network", "err", err)
-			return nil
-		}
-		network = bc.defaultNetwork
-	}
-
-	bc.dockerNetworkName = network.Name()
-	bc.getFreeIPAddrs = network.GetFreeIPAddrs
-
-	normalOpts = append(normalOpts, DockerNetworkName(bc.dockerNetworkName))
-	faultyOpts = append(faultyOpts, DockerNetworkName(bc.dockerNetworkName))
-
 	totalNodes := numOfNormal + numOfFaulty
 
-	ips, err := bc.getFreeIPAddrs(totalNodes)
+	ips, err := bc.dockerNetwork.GetFreeIPAddrs(totalNodes)
 	if err != nil {
 		log.Error("Failed to get free ip addresses", "err", err)
 		return nil
@@ -175,7 +160,12 @@ func NewDefaultBlockchainWithFaulty(network *DockerNetwork, numOfNormal int, num
 }
 
 func NewQuorumBlockchain(network *DockerNetwork, ctn ConstellationNetwork, options ...Option) (bc *blockchain) {
-	bc = &blockchain{opts: options, isQuorum: true, constellationNetwork: ctn}
+	if network == nil {
+		log.Error("Docker network is required")
+		return nil
+	}
+
+	bc = &blockchain{dockerNetwork: network, opts: options, isQuorum: true, constellationNetwork: ctn}
 	bc.opts = append(bc.opts, IsQuorum(true))
 	bc.opts = append(bc.opts, NoUSB())
 
@@ -186,18 +176,7 @@ func NewQuorumBlockchain(network *DockerNetwork, ctn ConstellationNetwork, optio
 		return nil
 	}
 
-	if network == nil {
-		bc.defaultNetwork, err = NewDockerNetwork()
-		if err != nil {
-			log.Error("Failed to create Docker network", "err", err)
-			return nil
-		}
-		network = bc.defaultNetwork
-	}
-
-	bc.dockerNetworkName = network.Name()
-	bc.getFreeIPAddrs = network.GetFreeIPAddrs
-	bc.opts = append(bc.opts, DockerNetworkName(bc.dockerNetworkName))
+	bc.opts = append(bc.opts, DockerNetworkName(bc.dockerNetwork.Name()))
 
 	//Create accounts
 	bc.generateAccounts(ctn.NumOfConstellations())
@@ -228,7 +207,13 @@ func NewDefaultQuorumBlockchain(network *DockerNetwork, ctn ConstellationNetwork
 }
 
 func NewDefaultQuorumBlockchainWithFaulty(network *DockerNetwork, ctn ConstellationNetwork, numOfNormal int, numOfFaulty int) (bc *blockchain) {
+	if network == nil {
+		log.Error("Docker network is required")
+		return nil
+	}
+
 	commonOpts := [...]Option{
+		DockerNetworkName(network.Name()),
 		DataDir("/data"),
 		WebSocket(),
 		WebSocketAddress("0.0.0.0"),
@@ -249,11 +234,10 @@ func NewDefaultQuorumBlockchainWithFaulty(network *DockerNetwork, ctn Constellat
 	normalOpts = append(normalOpts, ImageRepository("quay.io/amis/quorum"), ImageTag("feature_istanbul"))
 	faultyOpts := make([]Option, len(commonOpts), len(commonOpts)+3)
 	copy(faultyOpts, commonOpts[:])
-	// FIXME: Needs a faulty quorum
 	faultyOpts = append(faultyOpts, ImageRepository("quay.io/amis/quorum_faulty"), ImageTag("latest"), FaultyMode(1))
 
 	// New env client
-	bc = &blockchain{isQuorum: true, constellationNetwork: ctn}
+	bc = &blockchain{dockerNetwork: network, isQuorum: true, constellationNetwork: ctn}
 	var err error
 	bc.dockerClient, err = client.NewEnvClient()
 	if err != nil {
@@ -261,24 +245,9 @@ func NewDefaultQuorumBlockchainWithFaulty(network *DockerNetwork, ctn Constellat
 		return nil
 	}
 
-	if network == nil {
-		bc.defaultNetwork, err = NewDockerNetwork()
-		if err != nil {
-			log.Error("Failed to create Docker network", "err", err)
-			return nil
-		}
-		network = bc.defaultNetwork
-	}
-
-	bc.dockerNetworkName = network.Name()
-	bc.getFreeIPAddrs = network.GetFreeIPAddrs
-
-	normalOpts = append(normalOpts, DockerNetworkName(bc.dockerNetworkName))
-	faultyOpts = append(faultyOpts, DockerNetworkName(bc.dockerNetworkName))
-
 	totalNodes := numOfNormal + numOfFaulty
 
-	ips, err := bc.getFreeIPAddrs(totalNodes)
+	ips, err := bc.dockerNetwork.GetFreeIPAddrs(totalNodes)
 	if err != nil {
 		log.Error("Failed to get free ip addresses", "err", err)
 		return nil
@@ -302,9 +271,7 @@ func NewDefaultQuorumBlockchainWithFaulty(network *DockerNetwork, ctn Constellat
 
 type blockchain struct {
 	dockerClient         *client.Client
-	defaultNetwork       *DockerNetwork
-	dockerNetworkName    string
-	getFreeIPAddrs       func(int) ([]net.IP, error)
+	dockerNetwork        *DockerNetwork
 	genesisFile          string
 	isQuorum             bool
 	validators           []Ethereum
@@ -399,11 +366,6 @@ func (bc *blockchain) Stop(force bool) error {
 		return err
 	}
 
-	if bc.defaultNetwork != nil {
-		err := bc.defaultNetwork.Remove()
-		bc.defaultNetwork = nil
-		return err
-	}
 	return nil
 }
 
@@ -416,7 +378,7 @@ func (bc *blockchain) Validators() []Ethereum {
 }
 
 func (bc *blockchain) CreateNodes(num int, options ...Option) (nodes []Ethereum, err error) {
-	ips, err := bc.getFreeIPAddrs(num)
+	ips, err := bc.dockerNetwork.GetFreeIPAddrs(num)
 	if err != nil {
 		return nil, err
 	}
@@ -434,7 +396,7 @@ func (bc *blockchain) CreateNodes(num int, options ...Option) (nodes []Ethereum,
 		opts = append(opts, HostDataDir(dataDir))
 		opts = append(opts, HostWebSocketPort(freeport.GetPort()))
 		opts = append(opts, HostIP(ips[i]))
-		opts = append(opts, DockerNetworkName(bc.dockerNetworkName))
+		opts = append(opts, DockerNetworkName(bc.dockerNetwork.Name()))
 
 		geth := NewEthereum(
 			bc.dockerClient,
@@ -456,7 +418,7 @@ func (bc *blockchain) CreateNodes(num int, options ...Option) (nodes []Ethereum,
 // ----------------------------------------------------------------------------
 
 func (bc *blockchain) addValidators(numOfValidators int) error {
-	ips, err := bc.getFreeIPAddrs(numOfValidators)
+	ips, err := bc.dockerNetwork.GetFreeIPAddrs(numOfValidators)
 	if err != nil {
 		return err
 	}
@@ -597,7 +559,11 @@ type ConstellationNetwork interface {
 }
 
 func NewConstellationNetwork(network *DockerNetwork, numOfValidators int, options ...ConstellationOption) (ctn *constellationNetwork) {
-	ctn = &constellationNetwork{opts: options}
+	if network == nil {
+		log.Error("Docker network is required")
+		return nil
+	}
+	ctn = &constellationNetwork{dockerNetwork: network, opts: options}
 
 	var err error
 	ctn.dockerClient, err = client.NewEnvClient()
@@ -606,14 +572,7 @@ func NewConstellationNetwork(network *DockerNetwork, numOfValidators int, option
 		return nil
 	}
 
-	if network == nil {
-		log.Error("Network is required")
-		return
-	}
-
-	ctn.dockerNetworkName = network.Name()
-	ctn.getFreeIPAddrs = network.GetFreeIPAddrs
-	ctn.opts = append(ctn.opts, CTDockerNetworkName(ctn.dockerNetworkName))
+	ctn.opts = append(ctn.opts, CTDockerNetworkName(ctn.dockerNetwork.Name()))
 
 	ctn.setupConstellations(numOfValidators)
 	return ctn
@@ -685,7 +644,7 @@ func (ctn *constellationNetwork) GetConstellation(idx int) Constellation {
 }
 
 func (ctn *constellationNetwork) getFreeHosts(num int) ([]net.IP, []int) {
-	ips, err := ctn.getFreeIPAddrs(num)
+	ips, err := ctn.dockerNetwork.GetFreeIPAddrs(num)
 	if err != nil {
 		log.Error("Cannot get free ip", "err", err)
 		return nil, nil
@@ -709,9 +668,8 @@ func (ctn *constellationNetwork) getOtherNodes(ips []net.IP, ports []int, idx in
 }
 
 type constellationNetwork struct {
-	dockerClient      *client.Client
-	dockerNetworkName string
-	getFreeIPAddrs    func(int) ([]net.IP, error)
-	opts              []ConstellationOption
-	constellations    []Constellation
+	dockerClient   *client.Client
+	dockerNetwork  *DockerNetwork
+	opts           []ConstellationOption
+	constellations []Constellation
 }
