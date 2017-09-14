@@ -24,7 +24,6 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 
 	"github.com/getamis/istanbul-tools/cmd/istanbul/extra"
-	"github.com/getamis/istanbul-tools/log"
 )
 
 type Option func(*core.Genesis)

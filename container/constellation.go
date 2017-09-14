@@ -34,7 +34,6 @@ import (
 	"github.com/docker/go-connections/nat"
 
 	"github.com/getamis/istanbul-tools/common"
-	"github.com/getamis/istanbul-tools/log"
 )
 
 //TODO: refactor this with ethereum options?

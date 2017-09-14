@@ -24,7 +24,6 @@ import (
 	"github.com/getamis/istanbul-tools/charts"
 	istcommon "github.com/getamis/istanbul-tools/common"
 	"github.com/getamis/istanbul-tools/container"
-	"github.com/getamis/istanbul-tools/log"
 )
 
 func NewBlockchain(numOfValidators int, gaslimit uint64, options ...Option) (bc *blockchain) {

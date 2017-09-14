@@ -17,31 +17,7 @@
 package k8s
 
 import (
-	"time"
+	logging "github.com/getamis/istanbul-tools/log"
 )
 
-func ExampleK8SBlockchain() {
-	chain := NewBlockchain(
-		4,
-		21000*1000,
-		ImageRepository("quay.io/amis/geth"),
-		ImageTag("istanbul_develop"),
-		ServiceType("LoadBalancer"),
-		Mine(),
-	)
-	defer chain.Finalize()
-
-	err := chain.Start(true)
-	if err != nil {
-		log.Error("Failed to start chain", "err", err)
-		return
-	}
-
-	<-time.After(20 * time.Second)
-
-	err = chain.Stop(false)
-	if err != nil {
-		log.Error("Failed to stop chain", "err", err)
-		return
-	}
-}
+var log = logging.New()

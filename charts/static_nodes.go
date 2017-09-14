@@ -23,7 +23,6 @@ import (
 	"strings"
 
 	"github.com/getamis/istanbul-tools/common"
-	"github.com/getamis/istanbul-tools/log"
 )
 
 type StaticNodesChart struct {
