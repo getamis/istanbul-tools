@@ -78,7 +78,7 @@ func executeInParallel(fns ...func() error) error {
 	var err error
 	for i := 0; i < len(fns); i++ {
 		if err = <-errc; err != nil {
-			return err
+			break
 		}
 	}
 	wg.Wait()

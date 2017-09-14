@@ -633,7 +633,7 @@ func (eth *ethereum) WaitForBalances(addrs []common.Address, duration ...time.Du
 	var err error
 	for i := 0; i < len(addrs); i++ {
 		if err = <-errc; err != nil {
-			return err
+			break
 		}
 	}
 	wg.Wait()
