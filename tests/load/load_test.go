@@ -17,19 +17,46 @@
 package load
 
 import (
+	"context"
+	"fmt"
+	"math/big"
+	"sync"
 	"testing"
+	"time"
 
-	"github.com/getamis/istanbul-tools/charts"
-	"github.com/getamis/istanbul-tools/common"
-
-	"github.com/getamis/istanbul-tools/tests"
+	"github.com/ethereum/go-ethereum/common"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"github.com/getamis/istanbul-tools/charts"
+	"github.com/getamis/istanbul-tools/container"
+	"github.com/getamis/istanbul-tools/k8s"
+	"github.com/getamis/istanbul-tools/tests"
 )
 
 var _ = Describe("TPS-01: Large amount of transactions", func() {
+
 	tests.CaseTable("with number of validators",
 		func(numberOfValidators int) {
+			var svcCharts []*charts.ValidatorServiceChart
+
+			BeforeSuite(func() {
+				for i := 0; i < numberOfValidators; i++ {
+					chart := charts.NewValidatorServiceChart(fmt.Sprintf("%d", i), nil)
+					svcCharts = append(svcCharts, chart)
+
+					if err := chart.Install(false); err != nil {
+						fmt.Println(err)
+					}
+				}
+			})
+
+			AfterSuite(func() {
+				for i := 0; i < numberOfValidators; i++ {
+					svcCharts[i].Uninstall()
+				}
+			})
+
 			tests.CaseTable("with gas limit",
 				func(gaslimit int) {
 					tests.CaseTable("with txpool size",
@@ -45,41 +72,62 @@ var _ = Describe("TPS-01: Large amount of transactions", func() {
 				tests.Case("21000*1000", 21000*1000),
 				tests.Case("21000*3000", 21000*3000),
 			)
+
 		},
 
 		tests.Case("4 validators", 4),
-		tests.Case("7 validators", 7),
-		tests.Case("10 validators", 10),
 	)
 })
 
 func runTests(numberOfValidators int, gaslimit int, txpoolSize int) {
 	Describe("", func() {
 		var (
-			genesisChart     tests.ChartInstaller
-			staticNodesChart tests.ChartInstaller
+			blockchain container.Blockchain
 		)
 
 		BeforeEach(func() {
-			_, nodekeys, addrs := common.GenerateKeys(numberOfValidators)
-			genesisChart = charts.NewGenesisChart(addrs, uint64(gaslimit))
-			Expect(genesisChart.Install(false)).To(BeNil())
+			blockchain = k8s.NewBlockchain(
+				numberOfValidators,
+				uint64(gaslimit),
+				k8s.ImageRepository("quay.io/amis/geth"),
+				k8s.ImageTag("istanbul_develop"),
+				k8s.ServiceType("LoadBalancer"),
+				k8s.Mine(),
+				k8s.TxPoolSize(txpoolSize),
+			)
+			Expect(blockchain.Start(true)).To(BeNil())
 
-			staticNodesChart = charts.NewStaticNodesChart(nodekeys, common.GenerateIPs(len(nodekeys)))
-			Expect(staticNodesChart.Install(false)).To(BeNil())
+			tests.WaitFor(blockchain.Validators(), func(geth container.Ethereum, wg *sync.WaitGroup) {
+				richman, ok := geth.(k8s.RichMan)
+				Expect(ok).To(BeTrue())
+
+				var addrs []common.Address
+				addr := common.HexToAddress("0x1a9afb711302c5f83b5902843d1c007a1a137632")
+				addrs = append(addrs, addr)
+
+				// Give ether to all accounts
+				err := richman.GiveEther(context.Background(), addrs, new(big.Int).Exp(big.NewInt(10), big.NewInt(24), nil))
+				Expect(err).NotTo(BeNil())
+
+				err = geth.WaitForBalances(addrs, 10*time.Second)
+				Expect(err).NotTo(BeNil())
+
+				wg.Done()
+			})
 		})
 
 		AfterEach(func() {
-			Expect(genesisChart.Uninstall()).To(BeNil())
-			Expect(staticNodesChart.Uninstall()).To(BeNil())
+			Expect(blockchain.Stop(true)).To(BeNil())
+			blockchain.Finalize()
 		})
 
 		It("", func() {
+
 		})
 	})
 }
 
-func IstanbulLoadTest(t *testing.T) {
+func TestIstanbulLoadTesting(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Istanbul Load Test Suite")
 }

@@ -3,4 +3,5 @@
 from subprocess import call
 
 for v in range(0, 26, 1):
+  call(["helm" ,"delete", "--purge", "validator-svc-{}".format(v)])
   call(["helm" ,"delete", "--purge", "validator-{}".format(v)])

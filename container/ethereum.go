@@ -27,6 +27,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/docker/docker/api/types"
@@ -53,8 +54,8 @@ const (
 )
 
 var (
-	ErrNoBlock          = errors.New("no block generated")
-	ErrConsensusTimeout = errors.New("consensus timeout")
+	ErrNoBlock = errors.New("no block generated")
+	ErrTimeout = errors.New("timeout")
 )
 
 type Ethereum interface {
@@ -76,6 +77,9 @@ type Ethereum interface {
 	WaitForBlockHeight(int) error
 	// Want for block for no more than the given number during the given time duration
 	WaitForNoBlocks(int, time.Duration) error
+
+	// Wait for settling balances for the given accounts
+	WaitForBalances([]common.Address, ...time.Duration) error
 
 	AddPeer(string) error
 
@@ -400,6 +404,7 @@ func (eth *ethereum) ConsensusMonitor(errCh chan<- error, quit chan struct{}) {
 	defer sub.Unsubscribe()
 
 	timer := time.NewTimer(10 * time.Second)
+	defer timer.Stop()
 	blockNumber := uint64(0)
 	for {
 		select {
@@ -411,7 +416,7 @@ func (eth *ethereum) ConsensusMonitor(errCh chan<- error, quit chan struct{}) {
 			if blockNumber == 0 {
 				errCh <- ErrNoBlock
 			} else {
-				errCh <- ErrConsensusTimeout
+				errCh <- ErrTimeout
 			}
 			return
 		case head := <-subCh:
@@ -442,6 +447,7 @@ func (eth *ethereum) WaitForProposed(expectedAddress common.Address, timeout tim
 	defer sub.Unsubscribe()
 
 	timer := time.NewTimer(timeout)
+	defer timer.Stop()
 	for {
 		select {
 		case err := <-sub.Err():
@@ -464,6 +470,7 @@ func (eth *ethereum) WaitForPeersConnected(expectedPeercount int) error {
 	defer client.Close()
 
 	ticker := time.NewTicker(time.Second * 1)
+	defer ticker.Stop()
 	for _ = range ticker.C {
 		infos, err := client.AdminPeers(context.Background())
 		if err != nil {
@@ -472,7 +479,6 @@ func (eth *ethereum) WaitForPeersConnected(expectedPeercount int) error {
 		if len(infos) < expectedPeercount {
 			continue
 		} else {
-			ticker.Stop()
 			break
 		}
 	}
@@ -498,6 +504,7 @@ func (eth *ethereum) WaitForBlocks(num int, waitingTime ...time.Duration) error 
 
 	timeout := time.After(t)
 	ticker := time.NewTicker(time.Millisecond * 500)
+	defer ticker.Stop()
 	for {
 		select {
 		case <-timeout:
@@ -514,7 +521,6 @@ func (eth *ethereum) WaitForBlocks(num int, waitingTime ...time.Duration) error 
 			}
 			// Check if new blocks are getting generated
 			if new(big.Int).Sub(n, first).Int64() >= int64(num) {
-				ticker.Stop()
 				return nil
 			}
 		}
@@ -529,13 +535,13 @@ func (eth *ethereum) WaitForBlockHeight(num int) error {
 	defer client.Close()
 
 	ticker := time.NewTicker(time.Millisecond * 500)
+	defer ticker.Stop()
 	for _ = range ticker.C {
 		n, err := client.BlockNumber(context.Background())
 		if err != nil {
 			return err
 		}
 		if n.Int64() >= int64(num) {
-			ticker.Stop()
 			break
 		}
 	}
@@ -552,12 +558,13 @@ func (eth *ethereum) WaitForNoBlocks(num int, duration time.Duration) error {
 	}
 
 	timeout := time.After(duration)
-	tick := time.Tick(time.Millisecond * 500)
+	ticker := time.NewTicker(time.Millisecond * 500)
+	defer ticker.Stop()
 	for {
 		select {
 		case <-timeout:
 			return nil
-		case <-tick:
+		case <-ticker.C:
 			n, err := client.BlockNumber(context.Background())
 			if err != nil {
 				return err
@@ -573,6 +580,67 @@ func (eth *ethereum) WaitForNoBlocks(num int, duration time.Duration) error {
 		}
 	}
 }
+
+func (eth *ethereum) WaitForBalances(addrs []common.Address, duration ...time.Duration) error {
+	client := eth.NewClient()
+	if client == nil {
+		return errors.New("failed to retrieve client")
+	}
+
+	var t time.Duration
+	if len(duration) > 0 {
+		t = duration[0]
+	} else {
+		t = 1 * time.Hour
+	}
+
+	waitBalance := func(addr common.Address) error {
+		timeout := time.After(t)
+		ticker := time.NewTicker(time.Millisecond * 500)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-timeout:
+				return ErrTimeout
+			case <-ticker.C:
+				n, err := client.BalanceAt(context.Background(), addr, nil)
+				if err != nil {
+					return err
+				}
+
+				// Check if new blocks are getting generated
+				if n.Uint64() <= 0 {
+					continue
+				} else {
+					return nil
+				}
+			}
+		}
+	}
+
+	var wg sync.WaitGroup
+	errc := make(chan error, len(addrs))
+	wg.Add(len(addrs))
+
+	for _, addr := range addrs {
+		addr := addr
+		go func() {
+			defer wg.Done()
+			errc <- waitBalance(addr)
+		}()
+	}
+	// Wait for the first error, then terminate the others.
+	var err error
+	for i := 0; i < len(addrs); i++ {
+		if err = <-errc; err != nil {
+			break
+		}
+	}
+	wg.Wait()
+	return err
+}
+
+// ----------------------------------------------------------------------------
 
 func (eth *ethereum) AddPeer(address string) error {
 	client := eth.NewClient()

@@ -67,7 +67,17 @@ func Mine() Option {
 
 func NodeKeyHex(hex string) Option {
 	return func(eth *ethereum) {
+		eth.nodekey = hex
 		eth.args = append(eth.args, fmt.Sprintf("ethereum.nodekey.hex=%s", hex))
+	}
+}
+
+func TxPoolSize(size int) Option {
+	return func(eth *ethereum) {
+		eth.args = append(eth.args, fmt.Sprintf("benchmark.txpool.globalslots=%d", size))
+		eth.args = append(eth.args, fmt.Sprintf("benchmark.txpool.accountslots=%d", size))
+		eth.args = append(eth.args, fmt.Sprintf("benchmark.txpool.globalqueue=%d", size))
+		eth.args = append(eth.args, fmt.Sprintf("benchmark.txpool.accountqueue=%d", size))
 	}
 }
 

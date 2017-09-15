@@ -1,0 +1,21 @@
+# Default values for validator-service.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+nameOverride:
+
+# service.yaml
+service:
+  type: ClusterIP
+  externalRPCPort: 8545
+  externalWSPort: 8546
+
+ethereum:
+  rpc:
+    enabled: false
+    port: 8545
+  ws:
+    enabled: true
+    port: 8546
+
+app: validator

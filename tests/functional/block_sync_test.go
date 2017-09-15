@@ -52,7 +52,11 @@ var _ = Describe("Block synchronization testing", func() {
 
 		BeforeEach(func() {
 			var err error
-			nodes, err = blockchain.CreateNodes(numberOfNodes,
+
+			incubator, ok := blockchain.(container.NodeIncubator)
+			Expect(ok).To(BeTrue())
+
+			nodes, err = incubator.CreateNodes(numberOfNodes,
 				container.ImageRepository("quay.io/amis/geth"),
 				container.ImageTag("istanbul_develop"),
 				container.DataDir("/data"),
