@@ -1,5 +1,13 @@
 # istanbul-tools
 
+[![Test Status](https://travis-ci.org/getamis/istanbul-tools.svg?branch=feature%2Fadd-travis-yml)](https://travis-ci.org/getamis/istanbul-tools)
+
+
+Istanbul tools contain tools for configuring `extraData` field for istanbul BFT (IBFT) network, integration tests for both IBFT Geth and Quorum, and load testing utilities for IBFT Geth.
+
+Command line tools
+---
+
 Genesis extra-data encoder and decoder library for Istanbul consensus. 
    
 istanbul-tools is used to generate extra-data field of genesis due to extra-data is combined signer vanity with RLP encoded `Istanbul extra data`. The `Istanbul extra data` struct is defined as follows:
@@ -14,7 +22,7 @@ type IstanbulExtra struct {
 
 Please note: The `Seal`, and `CommittedSeal` is not considered in genesis block.  
 
-## Getting started
+### Getting started
 
 ```
 $ make istanbul
@@ -39,9 +47,9 @@ COPYRIGHT:
 
 ```
 
-## Example
+### Example
 
-### Encode command
+#### Encode command
 
 Encode the given file to `Encoded Istanbul extra-data` 
 ```
@@ -51,7 +59,7 @@ OUTPUT:
 Encoded Istanbul extra-data: 0x0000000000000000000000000000000000000000000000000000000000000000f89af85494475cc98b5521ab2a1335683e7567c8048bfe79ed9407d8299de61faed3686ba4c4e6c3b9083d7e2371944fe035ce99af680d89e2c4d73aca01dbfc1bd2fd94dc421209441a754f79c4a4ecd2b49c935aad0312b8410000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c0
 ```
 
-### Decode command
+#### Decode command
 
 Decode extraData for the given input
 ```
@@ -65,3 +73,18 @@ validator:  0x4fe035ce99af680d89e2c4d73aca01dbfc1bd2fd
 validator:  0xdc421209441a754f79c4a4ecd2b49c935aad0312
 seal: 0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 ```
+
+Integration tests
+---
+### Istanbul BFT Geth Integration tests
+[Test specification](https://github.com/getamis/istanbul-tools/wiki/Istanbul-BFT-Test-Specification)
+[Source code](https://github.com/getamis/istanbul-tools/tree/develop/tests/functional)
+
+### Istanbul BFT Quorum Integration tests
+[Test specification](https://github.com/getamis/istanbul-tools/wiki/Istanbul-BFT-on-Quorum-Test-Specification)
+[Source code](https://github.com/getamis/istanbul-tools/tree/develop/tests/quorum/functional)
+
+
+Load tests
+---
+[Test specification](https://github.com/getamis/istanbul-tools/wiki/Istanbul-BFT-Benchmarking)
