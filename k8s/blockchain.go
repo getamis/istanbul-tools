@@ -94,10 +94,6 @@ func (bc *blockchain) Stop(force bool) error {
 }
 
 func (bc *blockchain) Finalize() {
-	for _, v := range bc.validators {
-		v.Stop()
-	}
-
 	bc.staticNodes.Uninstall()
 	bc.genesis.Uninstall()
 }
@@ -121,7 +117,9 @@ func (bc *blockchain) setupValidators(num int, nodekeys []string, ips []string, 
 			opts...,
 		)
 
-		bc.validators = append(bc.validators, geth)
+		if geth != nil {
+			bc.validators = append(bc.validators, geth)
+		}
 	}
 }
 
