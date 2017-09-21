@@ -363,7 +363,7 @@ func (eth *ethereum) Host() string {
 		log.Error("Invalid validator pod name")
 		return ""
 	}
-	name := "validator-service-" + eth.chart.Name()[index+1:]
+	name := "validator-svc-" + eth.chart.Name()[index+1:]
 	svc, err := eth.k8sClient.CoreV1().Services(defaultNamespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		log.Error("Failed to find service", "svc", name, "err", err)

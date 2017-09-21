@@ -18,7 +18,6 @@ package load
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 	"sync"
 	"testing"
@@ -28,35 +27,14 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/getamis/istanbul-tools/charts"
 	"github.com/getamis/istanbul-tools/container"
 	"github.com/getamis/istanbul-tools/k8s"
 	"github.com/getamis/istanbul-tools/tests"
 )
 
 var _ = Describe("TPS-01: Large amount of transactions", func() {
-
 	tests.CaseTable("with number of validators",
 		func(numberOfValidators int) {
-			var svcCharts []*charts.ValidatorServiceChart
-
-			BeforeSuite(func() {
-				for i := 0; i < numberOfValidators; i++ {
-					chart := charts.NewValidatorServiceChart(fmt.Sprintf("%d", i), nil)
-					svcCharts = append(svcCharts, chart)
-
-					if err := chart.Install(false); err != nil {
-						fmt.Println(err)
-					}
-				}
-			})
-
-			AfterSuite(func() {
-				for i := 0; i < numberOfValidators; i++ {
-					svcCharts[i].Uninstall()
-				}
-			})
-
 			tests.CaseTable("with gas limit",
 				func(gaslimit int) {
 					tests.CaseTable("with txpool size",
@@ -82,7 +60,10 @@ var _ = Describe("TPS-01: Large amount of transactions", func() {
 func runTests(numberOfValidators int, gaslimit int, txpoolSize int) {
 	Describe("", func() {
 		var (
-			blockchain container.Blockchain
+			blockchain     container.Blockchain
+			sendEtherAddrs map[common.Address]common.Address
+
+			duration = 10 * time.Minute
 		)
 
 		BeforeEach(func() {
@@ -91,38 +72,49 @@ func runTests(numberOfValidators int, gaslimit int, txpoolSize int) {
 				uint64(gaslimit),
 				k8s.ImageRepository("quay.io/amis/geth"),
 				k8s.ImageTag("istanbul_develop"),
-				k8s.ServiceType("LoadBalancer"),
 				k8s.Mine(),
 				k8s.TxPoolSize(txpoolSize),
 			)
+			Expect(blockchain).NotTo(BeNil())
 			Expect(blockchain.Start(true)).To(BeNil())
 
-			tests.WaitFor(blockchain.Validators(), func(geth container.Ethereum, wg *sync.WaitGroup) {
-				richman, ok := geth.(k8s.RichMan)
-				Expect(ok).To(BeTrue())
-
-				var addrs []common.Address
-				addr := common.HexToAddress("0x1a9afb711302c5f83b5902843d1c007a1a137632")
-				addrs = append(addrs, addr)
-
-				// Give ether to all accounts
-				err := richman.GiveEther(context.Background(), addrs, new(big.Int).Exp(big.NewInt(10), big.NewInt(24), nil))
-				Expect(err).NotTo(BeNil())
-
-				err = geth.WaitForBalances(addrs, 10*time.Second)
-				Expect(err).NotTo(BeNil())
-
-				wg.Done()
-			})
+			sendEtherAddrs = make(map[common.Address]common.Address)
+			num := len(blockchain.Validators())
+			for i, v := range blockchain.Validators() {
+				sendEtherAddrs[v.Address()] = blockchain.Validators()[(i+1)%num].Address()
+			}
 		})
 
 		AfterEach(func() {
+			Expect(blockchain).NotTo(BeNil())
 			Expect(blockchain.Stop(true)).To(BeNil())
 			blockchain.Finalize()
 		})
 
 		It("", func() {
+			By("Wait for p2p connection", func() {
+				tests.WaitFor(blockchain.Validators(), func(geth container.Ethereum, wg *sync.WaitGroup) {
+					Expect(geth.WaitForPeersConnected(numberOfValidators - 1)).To(BeNil())
+					wg.Done()
+				})
+			})
 
+			By("Send transactions", func() {
+				tests.WaitFor(blockchain.Validators(), func(geth container.Ethereum, wg *sync.WaitGroup) {
+					transactor, ok := geth.(k8s.Transactor)
+					Expect(ok).To(BeTrue())
+
+					Expect(
+						transactor.SendTransactions(
+							context.Background(),
+							sendEtherAddrs[geth.Address()],
+							new(big.Int).Exp(big.NewInt(10), big.NewInt(3), nil),
+							duration),
+					).To(BeNil())
+
+					wg.Done()
+				})
+			})
 		})
 	})
 }
