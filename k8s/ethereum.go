@@ -21,6 +21,7 @@ import (
 	"crypto/ecdsa"
 	"errors"
 	"math/big"
+	"strings"
 	"sync"
 	"time"
 
@@ -106,11 +107,18 @@ func (eth *ethereum) DockerBinds() []string {
 }
 
 func (eth *ethereum) NewClient() *client.Client {
-	client, err := client.Dial("ws://" + eth.Host() + ":8546")
-	if err != nil {
-		return nil
+	for i := 0; i < healthCheckRetryCount; i++ {
+		client, err := client.Dial("ws://" + eth.Host() + ":8546")
+		if err != nil {
+			log.Warn("Failed to create client", "err", err)
+			<-time.After(healthCheckRetryDelay)
+			continue
+		} else {
+			return client
+		}
 	}
-	return client
+
+	return nil
 }
 
 func (eth *ethereum) NodeAddress() string {
@@ -350,9 +358,16 @@ func (eth *ethereum) Accounts() []accounts.Account {
 // ----------------------------------------------------------------------------
 
 func (eth *ethereum) Host() string {
-	svc, err := eth.k8sClient.CoreV1().Services(defaultNamespace).Get(eth.chart.Name()+"-0", metav1.GetOptions{})
-	if err != nil {
+	index := strings.LastIndex(eth.chart.Name(), "-")
+	if index < 0 {
+		log.Error("Invalid validator pod name")
 		return ""
 	}
-	return svc.Spec.LoadBalancerIP
+	name := "validator-svc-" + eth.chart.Name()[index+1:]
+	svc, err := eth.k8sClient.CoreV1().Services(defaultNamespace).Get(name, metav1.GetOptions{})
+	if err != nil {
+		log.Error("Failed to find service", "svc", name, "err", err)
+		return ""
+	}
+	return svc.Status.LoadBalancer.Ingress[0].IP
 }

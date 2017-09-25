@@ -18,6 +18,7 @@ package charts
 
 import (
 	"fmt"
+	"math/big"
 	"os"
 	"path/filepath"
 	"strings"
@@ -51,6 +52,7 @@ func NewGenesisChart(addrs []common.Address, gasLimit uint64) *GenesisChart {
 			false,
 			genesis.Validators(addrs...),
 			genesis.GasLimit(gasLimit),
+			genesis.Alloc(addrs, new(big.Int).Exp(big.NewInt(10), big.NewInt(50), nil)),
 		),
 	}
 

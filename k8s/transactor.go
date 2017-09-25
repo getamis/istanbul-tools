@@ -14,37 +14,43 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-package common
+package k8s
 
 import (
 	"context"
-	"crypto/ecdsa"
+	"errors"
 	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 
-	"github.com/getamis/istanbul-tools/client"
+	istcommon "github.com/getamis/istanbul-tools/common"
 )
 
-var (
-	DefaultGasPrice int64 = 20000000000
-	DefaultGasLimit int64 = 22000 // the gas of ether tx should be 21000
-)
+type Transactor interface {
+	SendTransactions(context.Context, common.Address, *big.Int, time.Duration) error
+}
 
-func SendEther(client *client.Client, from *ecdsa.PrivateKey, to common.Address, amount *big.Int, nonce uint64) error {
-	tx := types.NewTransaction(nonce, to, amount, big.NewInt(DefaultGasLimit), big.NewInt(DefaultGasPrice), []byte{})
-	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(big.NewInt(2017)), from)
+func (eth *ethereum) SendTransactions(ctx context.Context, to common.Address, amount *big.Int, duration time.Duration) error {
+	client := eth.NewClient()
+	if client == nil {
+		return errors.New("failed to retrieve client")
+	}
+
+	nonce, err := client.NonceAt(context.Background(), eth.Address(), nil)
 	if err != nil {
-		log.Error("Failed to sign transaction", "tx", tx, "err", err)
+		log.Error("Failed to get nonce", "addr", eth.Address(), "err", err)
 		return err
 	}
 
-	err = client.SendRawTransaction(context.Background(), signedTx)
-	if err != nil {
-		log.Error("Failed to send transaction", "tx", signedTx, "nonce", nonce, "err", err)
-		return err
+	timeout := time.After(duration)
+	for {
+		select {
+		case <-timeout:
+			return nil
+		default:
+			_ = istcommon.SendEther(client, eth.key, to, amount, nonce)
+			nonce++
+		}
 	}
-
-	return nil
 }

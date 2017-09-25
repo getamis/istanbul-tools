@@ -46,6 +46,7 @@ func New(options ...Option) *core.Genesis {
 		Difficulty: big.NewInt(InitDifficulty),
 		Alloc:      make(core.GenesisAlloc),
 		Config: &params.ChainConfig{
+			ChainId:        big.NewInt(2017),
 			HomesteadBlock: big.NewInt(1),
 			EIP150Block:    big.NewInt(2),
 			EIP155Block:    big.NewInt(3),
