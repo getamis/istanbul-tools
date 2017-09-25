@@ -32,7 +32,7 @@ var (
 	DefaultGasLimit int64 = 22000 // the gas of ether tx should be 21000
 )
 
-func SendEther(client *client.Client, from *ecdsa.PrivateKey, to common.Address, amount *big.Int, nonce uint64) error {
+func SendEther(client client.Client, from *ecdsa.PrivateKey, to common.Address, amount *big.Int, nonce uint64) error {
 	tx := types.NewTransaction(nonce, to, amount, big.NewInt(DefaultGasLimit), big.NewInt(DefaultGasPrice), []byte{})
 	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(big.NewInt(2017)), from)
 	if err != nil {

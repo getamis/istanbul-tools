@@ -28,10 +28,10 @@ import (
 )
 
 type Transactor interface {
-	SendTransactions(*client.Client, *big.Int, time.Duration) error
+	SendTransactions(client.Client, *big.Int, time.Duration) error
 }
 
-func (eth *ethereum) SendTransactions(client *client.Client, amount *big.Int, duration time.Duration) error {
+func (eth *ethereum) SendTransactions(client client.Client, amount *big.Int, duration time.Duration) error {
 	var fns []func() error
 	for i, key := range eth.accounts {
 		i := i

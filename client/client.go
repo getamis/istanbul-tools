@@ -30,29 +30,29 @@ import (
 	"github.com/getamis/go-ethereum/ethclient"
 )
 
-type Client struct {
+type client struct {
 	c         *rpc.Client
 	ethClient *ethclient.Client
 }
 
-func Dial(rawurl string) (*Client, error) {
+func Dial(rawurl string) (Client, error) {
 	c, err := rpc.Dial(rawurl)
 	if err != nil {
 		return nil, err
 	}
-	return &Client{
+	return &client{
 		c:         c,
 		ethClient: ethclient.NewClient(c),
 	}, nil
 }
 
-func (c *Client) Close() {
+func (c *client) Close() {
 	c.c.Close()
 }
 
 // ----------------------------------------------------------------------------
 
-func (ic *Client) AddPeer(ctx context.Context, nodeURL string) error {
+func (ic *client) AddPeer(ctx context.Context, nodeURL string) error {
 	var r bool
 	// TODO: Result needs to be verified
 	// The response data type are bytes, but we cannot parse...
@@ -63,7 +63,7 @@ func (ic *Client) AddPeer(ctx context.Context, nodeURL string) error {
 	return err
 }
 
-func (ic *Client) AdminPeers(ctx context.Context) ([]*p2p.PeerInfo, error) {
+func (ic *client) AdminPeers(ctx context.Context) ([]*p2p.PeerInfo, error) {
 	var r []*p2p.PeerInfo
 	// The response data type are bytes, but we cannot parse...
 	err := ic.c.CallContext(ctx, &r, "admin_peers")
@@ -73,7 +73,7 @@ func (ic *Client) AdminPeers(ctx context.Context) ([]*p2p.PeerInfo, error) {
 	return r, err
 }
 
-func (ic *Client) NodeInfo(ctx context.Context) (*p2p.PeerInfo, error) {
+func (ic *client) NodeInfo(ctx context.Context) (*p2p.PeerInfo, error) {
 	var r *p2p.PeerInfo
 	err := ic.c.CallContext(ctx, &r, "admin_nodeInfo")
 	if err != nil {
@@ -83,7 +83,7 @@ func (ic *Client) NodeInfo(ctx context.Context) (*p2p.PeerInfo, error) {
 }
 
 // ----------------------------------------------------------------------------
-func (ic *Client) BlockNumber(ctx context.Context) (*big.Int, error) {
+func (ic *client) BlockNumber(ctx context.Context) (*big.Int, error) {
 	var r string
 	err := ic.c.CallContext(ctx, &r, "eth_blockNumber")
 	if err != nil {
@@ -95,7 +95,7 @@ func (ic *Client) BlockNumber(ctx context.Context) (*big.Int, error) {
 
 // ----------------------------------------------------------------------------
 
-func (ic *Client) StartMining(ctx context.Context) error {
+func (ic *client) StartMining(ctx context.Context) error {
 	var r []byte
 	// TODO: Result needs to be verified
 	// The response data type are bytes, but we cannot parse...
@@ -106,7 +106,7 @@ func (ic *Client) StartMining(ctx context.Context) error {
 	return err
 }
 
-func (ic *Client) StopMining(ctx context.Context) error {
+func (ic *client) StopMining(ctx context.Context) error {
 	err := ic.c.CallContext(ctx, nil, "miner_stop", nil)
 	if err != nil {
 		return err
@@ -116,7 +116,7 @@ func (ic *Client) StopMining(ctx context.Context) error {
 
 // ----------------------------------------------------------------------------
 
-func (ic *Client) SendTransaction(ctx context.Context, from, to common.Address, value *big.Int) (txHash string, err error) {
+func (ic *client) SendTransaction(ctx context.Context, from, to common.Address, value *big.Int) (txHash string, err error) {
 	var hex hexutil.Bytes
 	arg := map[string]interface{}{
 		"from":  from,
@@ -129,7 +129,7 @@ func (ic *Client) SendTransaction(ctx context.Context, from, to common.Address, 
 	return
 }
 
-func (ic *Client) CreateContract(ctx context.Context, from common.Address, bytecode string, gas *big.Int) (txHash string, err error) {
+func (ic *client) CreateContract(ctx context.Context, from common.Address, bytecode string, gas *big.Int) (txHash string, err error) {
 	var hex hexutil.Bytes
 	arg := map[string]interface{}{
 		"from": from,
@@ -142,7 +142,7 @@ func (ic *Client) CreateContract(ctx context.Context, from common.Address, bytec
 	return
 }
 
-func (ic *Client) CreatePrivateContract(ctx context.Context, from common.Address, bytecode string, gas *big.Int, privateFor []string) (txHash string, err error) {
+func (ic *client) CreatePrivateContract(ctx context.Context, from common.Address, bytecode string, gas *big.Int, privateFor []string) (txHash string, err error) {
 	var hex hexutil.Bytes
 	arg := map[string]interface{}{
 		"from":       from,
@@ -158,7 +158,7 @@ func (ic *Client) CreatePrivateContract(ctx context.Context, from common.Address
 
 // ----------------------------------------------------------------------------
 
-func (ic *Client) ProposeValidator(ctx context.Context, address common.Address, auth bool) error {
+func (ic *client) ProposeValidator(ctx context.Context, address common.Address, auth bool) error {
 	var r []byte
 	// TODO: Result needs to be verified with other method
 	// The response data type are bytes, but we cannot parse...
@@ -183,7 +183,7 @@ func (addrs addresses) Swap(i, j int) {
 	addrs[i], addrs[j] = addrs[j], addrs[i]
 }
 
-func (ic *Client) GetValidators(ctx context.Context, blockNumbers *big.Int) ([]common.Address, error) {
+func (ic *client) GetValidators(ctx context.Context, blockNumbers *big.Int) ([]common.Address, error) {
 	var r []common.Address
 	err := ic.c.CallContext(ctx, &r, "istanbul_getValidators", toNumArg(blockNumbers))
 	if err == nil && r == nil {

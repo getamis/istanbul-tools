@@ -106,7 +106,7 @@ func (eth *ethereum) DockerBinds() []string {
 	return nil
 }
 
-func (eth *ethereum) NewClient() *client.Client {
+func (eth *ethereum) NewClient() client.Client {
 	for i := 0; i < healthCheckRetryCount; i++ {
 		client, err := client.Dial("ws://" + eth.Host() + ":8546")
 		if err != nil {

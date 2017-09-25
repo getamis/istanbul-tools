@@ -31,7 +31,7 @@ import (
 //
 // Note that loading full blocks requires two requests. Use HeaderByHash
 // if you don't need all transactions or uncle headers.
-func (c *Client) BlockByHash(ctx context.Context, hash common.Hash) (*types.Block, error) {
+func (c *client) BlockByHash(ctx context.Context, hash common.Hash) (*types.Block, error) {
 	return c.ethClient.BlockByHash(ctx, hash)
 }
 
@@ -40,122 +40,122 @@ func (c *Client) BlockByHash(ctx context.Context, hash common.Hash) (*types.Bloc
 //
 // Note that loading full blocks requires two requests. Use HeaderByNumber
 // if you don't need all transactions or uncle headers.
-func (c *Client) BlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error) {
+func (c *client) BlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error) {
 	return c.ethClient.BlockByNumber(ctx, number)
 }
 
 // HeaderByHash returns the block header with the given hash.
-func (c *Client) HeaderByHash(ctx context.Context, hash common.Hash) (*types.Header, error) {
+func (c *client) HeaderByHash(ctx context.Context, hash common.Hash) (*types.Header, error) {
 	return c.ethClient.HeaderByHash(ctx, hash)
 }
 
 // HeaderByNumber returns a block header from the current canonical chain. If number is
 // nil, the latest known header is returned.
-func (c *Client) HeaderByNumber(ctx context.Context, number *big.Int) (*types.Header, error) {
+func (c *client) HeaderByNumber(ctx context.Context, number *big.Int) (*types.Header, error) {
 	return c.ethClient.HeaderByNumber(ctx, number)
 }
 
 // TransactionByHash returns the transaction with the given hash.
-func (c *Client) TransactionByHash(ctx context.Context, hash common.Hash) (tx *types.Transaction, isPending bool, err error) {
+func (c *client) TransactionByHash(ctx context.Context, hash common.Hash) (tx *types.Transaction, isPending bool, err error) {
 	return c.ethClient.TransactionByHash(ctx, hash)
 }
 
 // TransactionCount returns the total number of transactions in the given block.
-func (c *Client) TransactionCount(ctx context.Context, blockHash common.Hash) (uint, error) {
+func (c *client) TransactionCount(ctx context.Context, blockHash common.Hash) (uint, error) {
 	return c.ethClient.TransactionCount(ctx, blockHash)
 }
 
 // TransactionInBlock returns a single transaction at index in the given block.
-func (c *Client) TransactionInBlock(ctx context.Context, blockHash common.Hash, index uint) (*types.Transaction, error) {
+func (c *client) TransactionInBlock(ctx context.Context, blockHash common.Hash, index uint) (*types.Transaction, error) {
 	return c.ethClient.TransactionInBlock(ctx, blockHash, index)
 }
 
 // TransactionReceipt returns the receipt of a transaction by transaction hash.
 // Note that the receipt is not available for pending transactions.
-func (c *Client) TransactionReceipt(ctx context.Context, txHash common.Hash) (*types.Receipt, error) {
+func (c *client) TransactionReceipt(ctx context.Context, txHash common.Hash) (*types.Receipt, error) {
 	return c.ethClient.TransactionReceipt(ctx, txHash)
 }
 
 // SyncProgress retrieves the current progress of the sync algorithm. If there's
 // no sync currently running, it returns nil.
-func (c *Client) SyncProgress(ctx context.Context) (*ethereum.SyncProgress, error) {
+func (c *client) SyncProgress(ctx context.Context) (*ethereum.SyncProgress, error) {
 	return c.ethClient.SyncProgress(ctx)
 }
 
 // SubscribeNewHead subscribes to notifications about the current blockchain head
 // on the given channel.
-func (c *Client) SubscribeNewHead(ctx context.Context, ch chan<- *types.Header) (ethereum.Subscription, error) {
+func (c *client) SubscribeNewHead(ctx context.Context, ch chan<- *types.Header) (ethereum.Subscription, error) {
 	return c.ethClient.SubscribeNewHead(ctx, ch)
 }
 
 // State Access
 
 // NetworkID returns the network ID (also known as the chain ID) for this chain.
-func (c *Client) NetworkID(ctx context.Context) (*big.Int, error) {
+func (c *client) NetworkID(ctx context.Context) (*big.Int, error) {
 	return c.ethClient.NetworkID(ctx)
 }
 
 // BalanceAt returns the wei balance of the given account.
 // The block number can be nil, in which case the balance is taken from the latest known block.
-func (c *Client) BalanceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (*big.Int, error) {
+func (c *client) BalanceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (*big.Int, error) {
 	return c.ethClient.BalanceAt(ctx, account, blockNumber)
 }
 
 // StorageAt returns the value of key in the contract storage of the given account.
 // The block number can be nil, in which case the value is taken from the latest known block.
-func (c *Client) StorageAt(ctx context.Context, account common.Address, key common.Hash, blockNumber *big.Int) ([]byte, error) {
+func (c *client) StorageAt(ctx context.Context, account common.Address, key common.Hash, blockNumber *big.Int) ([]byte, error) {
 	return c.ethClient.StorageAt(ctx, account, key, blockNumber)
 }
 
 // CodeAt returns the contract code of the given account.
 // The block number can be nil, in which case the code is taken from the latest known block.
-func (c *Client) CodeAt(ctx context.Context, account common.Address, blockNumber *big.Int) ([]byte, error) {
+func (c *client) CodeAt(ctx context.Context, account common.Address, blockNumber *big.Int) ([]byte, error) {
 	return c.ethClient.CodeAt(ctx, account, blockNumber)
 }
 
 // NonceAt returns the account nonce of the given account.
 // The block number can be nil, in which case the nonce is taken from the latest known block.
-func (c *Client) NonceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (uint64, error) {
+func (c *client) NonceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (uint64, error) {
 	return c.ethClient.NonceAt(ctx, account, blockNumber)
 }
 
 // Filters
 
 // FilterLogs executes a filter query.
-func (c *Client) FilterLogs(ctx context.Context, q ethereum.FilterQuery) ([]types.Log, error) {
+func (c *client) FilterLogs(ctx context.Context, q ethereum.FilterQuery) ([]types.Log, error) {
 	return c.ethClient.FilterLogs(ctx, q)
 }
 
 // SubscribeFilterLogs subscribes to the results of a streaming filter query.
-func (c *Client) SubscribeFilterLogs(ctx context.Context, q ethereum.FilterQuery, ch chan<- types.Log) (ethereum.Subscription, error) {
+func (c *client) SubscribeFilterLogs(ctx context.Context, q ethereum.FilterQuery, ch chan<- types.Log) (ethereum.Subscription, error) {
 	return c.ethClient.SubscribeFilterLogs(ctx, q, ch)
 }
 
 // Pending State
 
 // PendingBalanceAt returns the wei balance of the given account in the pending state.
-func (c *Client) PendingBalanceAt(ctx context.Context, account common.Address) (*big.Int, error) {
+func (c *client) PendingBalanceAt(ctx context.Context, account common.Address) (*big.Int, error) {
 	return c.ethClient.PendingBalanceAt(ctx, account)
 }
 
 // PendingStorageAt returns the value of key in the contract storage of the given account in the pending state.
-func (c *Client) PendingStorageAt(ctx context.Context, account common.Address, key common.Hash) ([]byte, error) {
+func (c *client) PendingStorageAt(ctx context.Context, account common.Address, key common.Hash) ([]byte, error) {
 	return c.ethClient.PendingStorageAt(ctx, account, key)
 }
 
 // PendingCodeAt returns the contract code of the given account in the pending state.
-func (c *Client) PendingCodeAt(ctx context.Context, account common.Address) ([]byte, error) {
+func (c *client) PendingCodeAt(ctx context.Context, account common.Address) ([]byte, error) {
 	return c.ethClient.PendingCodeAt(ctx, account)
 }
 
 // PendingNonceAt returns the account nonce of the given account in the pending state.
 // This is the nonce that should be used for the next transaction.
-func (c *Client) PendingNonceAt(ctx context.Context, account common.Address) (uint64, error) {
+func (c *client) PendingNonceAt(ctx context.Context, account common.Address) (uint64, error) {
 	return c.ethClient.PendingNonceAt(ctx, account)
 }
 
 // PendingTransactionCount returns the total number of transactions in the pending state.
-func (c *Client) PendingTransactionCount(ctx context.Context) (uint, error) {
+func (c *client) PendingTransactionCount(ctx context.Context) (uint, error) {
 	return c.ethClient.PendingTransactionCount(ctx)
 }
 
@@ -167,19 +167,19 @@ func (c *Client) PendingTransactionCount(ctx context.Context) (uint, error) {
 // blockNumber selects the block height at which the call runs. It can be nil, in which
 // case the code is taken from the latest known block. Note that state from very old
 // blocks might not be available.
-func (c *Client) CallContract(ctx context.Context, msg ethereum.CallMsg, blockNumber *big.Int) ([]byte, error) {
+func (c *client) CallContract(ctx context.Context, msg ethereum.CallMsg, blockNumber *big.Int) ([]byte, error) {
 	return c.ethClient.CallContract(ctx, msg, blockNumber)
 }
 
 // PendingCallContract executes a message call transaction using the EVM.
 // The state seen by the contract call is the pending state.
-func (c *Client) PendingCallContract(ctx context.Context, msg ethereum.CallMsg) ([]byte, error) {
+func (c *client) PendingCallContract(ctx context.Context, msg ethereum.CallMsg) ([]byte, error) {
 	return c.ethClient.PendingCallContract(ctx, msg)
 }
 
 // SuggestGasPrice retrieves the currently suggested gas price to allow a timely
 // execution of a transaction.
-func (c *Client) SuggestGasPrice(ctx context.Context) (*big.Int, error) {
+func (c *client) SuggestGasPrice(ctx context.Context) (*big.Int, error) {
 	return c.ethClient.SuggestGasPrice(ctx)
 }
 
@@ -187,7 +187,7 @@ func (c *Client) SuggestGasPrice(ctx context.Context) (*big.Int, error) {
 // the current pending state of the backend blockchain. There is no guarantee that this is
 // the true gas limit requirement as other transactions may be added or removed by miners,
 // but it should provide a basis for setting a reasonable default.
-func (c *Client) EstimateGas(ctx context.Context, msg ethereum.CallMsg) (*big.Int, error) {
+func (c *client) EstimateGas(ctx context.Context, msg ethereum.CallMsg) (*big.Int, error) {
 	return c.ethClient.EstimateGas(ctx, msg)
 }
 
@@ -195,6 +195,6 @@ func (c *Client) EstimateGas(ctx context.Context, msg ethereum.CallMsg) (*big.In
 //
 // If the transaction was a contract creation use the TransactionReceipt method to get the
 // contract address after the transaction has been mined.
-func (c *Client) SendRawTransaction(ctx context.Context, tx *types.Transaction) error {
+func (c *client) SendRawTransaction(ctx context.Context, tx *types.Transaction) error {
 	return c.ethClient.SendTransaction(ctx, tx)
 }
