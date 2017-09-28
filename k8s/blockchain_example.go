@@ -23,6 +23,7 @@ import (
 func ExampleK8SBlockchain() {
 	chain := NewBlockchain(
 		4,
+		0,
 		21000*1000,
 		ImageRepository("quay.io/amis/geth"),
 		ImageTag("istanbul_develop"),
