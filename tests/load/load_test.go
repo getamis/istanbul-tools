@@ -28,6 +28,7 @@ import (
 
 	"github.com/getamis/istanbul-tools/container"
 	"github.com/getamis/istanbul-tools/k8s"
+	"github.com/getamis/istanbul-tools/metrics"
 	"github.com/getamis/istanbul-tools/tests"
 )
 
@@ -74,6 +75,7 @@ func runTests(numberOfValidators int, gaslimit int, txpoolSize int) {
 				k8s.Mine(),
 				k8s.TxPoolSize(txpoolSize),
 			)
+			blockchain = metrics.NewMetricChain(blockchain)
 			Expect(blockchain).NotTo(BeNil())
 			Expect(blockchain.Start(true)).To(BeNil())
 
@@ -86,6 +88,10 @@ func runTests(numberOfValidators int, gaslimit int, txpoolSize int) {
 
 		AfterEach(func() {
 			Expect(blockchain).NotTo(BeNil())
+			tests.WaitFor(blockchain.Validators(), func(geth container.Ethereum, wg *sync.WaitGroup) {
+				Expect(geth.WaitForBlocks(10)).To(BeNil())
+				wg.Done()
+			})
 			Expect(blockchain.Stop(true)).To(BeNil())
 			blockchain.Finalize()
 		})

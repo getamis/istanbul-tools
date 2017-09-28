@@ -14,37 +14,38 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-package common
+package metrics
 
 import (
-	"context"
-	"crypto/ecdsa"
+	"errors"
+	"fmt"
 	"math/big"
-
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
+	"time"
 
 	"github.com/getamis/istanbul-tools/client"
+	"github.com/getamis/istanbul-tools/container"
+	"github.com/getamis/istanbul-tools/k8s"
 )
 
-var (
-	DefaultGasPrice int64 = 20000000000
-	DefaultGasLimit int64 = 21000 // the gas of ether tx should be 21000
-)
+type metricEthereum struct {
+	container.Ethereum
+	txStartCh  chan *txInfo
+	metricsMgr *metricsManager
+}
 
-func SendEther(client client.Client, from *ecdsa.PrivateKey, to common.Address, amount *big.Int, nonce uint64) error {
-	tx := types.NewTransaction(nonce, to, amount, big.NewInt(DefaultGasLimit), big.NewInt(DefaultGasPrice), []byte{})
-	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(big.NewInt(2017)), from)
-	if err != nil {
-		log.Error("Failed to sign transaction", "tx", tx, "err", err)
-		return err
+func (e *metricEthereum) NewClient() client.Client {
+	return &metricClient{
+		Client:     e.Ethereum.NewClient(),
+		txStartCh:  e.txStartCh,
+		metricsMgr: e.metricsMgr,
 	}
+}
 
-	err = client.SendRawTransaction(context.Background(), signedTx)
-	if err != nil {
-		log.Error("Failed to send transaction", "tx", signedTx, "nonce", nonce, "err", err)
-		return err
+func (eth *metricEthereum) SendTransactions(client client.Client, amount *big.Int, duration time.Duration) error {
+	transactor, ok := eth.Ethereum.(k8s.Transactor)
+	if !ok {
+		return errors.New("Not support Transactor interface.")
 	}
-
-	return nil
+	fmt.Println("Begin to SendTransactions.")
+	return transactor.SendTransactions(client, amount, duration)
 }
