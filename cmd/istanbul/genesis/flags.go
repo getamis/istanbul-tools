@@ -14,33 +14,23 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package genesis
 
-import (
-	"fmt"
-	"os"
+import "github.com/urfave/cli"
 
-	"github.com/urfave/cli"
+var (
+	numOfValidatorsFlag = cli.IntFlag{
+		Name:  "num",
+		Usage: "Number of validators",
+	}
 
-	"github.com/getamis/istanbul-tools/cmd/istanbul/extra"
-	"github.com/getamis/istanbul-tools/cmd/istanbul/genesis"
-	"github.com/getamis/istanbul-tools/cmd/utils"
+	verboseFlag = cli.BoolFlag{
+		Name:  "verbose",
+		Usage: "Print more information",
+	}
+
+	staticNodesFlag = cli.BoolFlag{
+		Name:  "nodes",
+		Usage: "Print static-nodes.json",
+	}
 )
-
-func main() {
-	app := utils.NewApp()
-	app.Usage = "the istanbul-tools command line interface"
-
-	app.HideVersion = true // we have a command to print the version
-	app.Copyright = "Copyright 2017 The Amis Authors"
-
-	app.Commands = []cli.Command{
-		extra.ExtraCommand,
-		genesis.GenesisCommand,
-	}
-
-	if err := app.Run(os.Args); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
-}
