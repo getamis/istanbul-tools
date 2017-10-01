@@ -17,7 +17,6 @@
 package load
 
 import (
-	"context"
 	"math/big"
 	"sync"
 	"testing"
@@ -42,12 +41,10 @@ var _ = Describe("TPS-01: Large amount of transactions", func() {
 							runTests(numberOfValidators, gaslimit, txpoolSize)
 						},
 
-						tests.Case("2048", 2048),
 						tests.Case("10240", 10240),
 					)
 				},
 
-				tests.Case("21000*1000", 21000*1000),
 				tests.Case("21000*3000", 21000*3000),
 			)
 
@@ -63,12 +60,14 @@ func runTests(numberOfValidators int, gaslimit int, txpoolSize int) {
 			blockchain     container.Blockchain
 			sendEtherAddrs map[common.Address]common.Address
 
-			duration = 10 * time.Minute
+			duration        = 10 * time.Minute
+			accountsPerGeth = 30
 		)
 
 		BeforeEach(func() {
 			blockchain = k8s.NewBlockchain(
 				numberOfValidators,
+				accountsPerGeth,
 				uint64(gaslimit),
 				k8s.ImageRepository("quay.io/amis/geth"),
 				k8s.ImageTag("istanbul_develop"),
@@ -104,13 +103,13 @@ func runTests(numberOfValidators int, gaslimit int, txpoolSize int) {
 					transactor, ok := geth.(k8s.Transactor)
 					Expect(ok).To(BeTrue())
 
-					Expect(
-						transactor.SendTransactions(
-							context.Background(),
-							sendEtherAddrs[geth.Address()],
-							new(big.Int).Exp(big.NewInt(10), big.NewInt(3), nil),
-							duration),
-					).To(BeNil())
+					client := geth.NewClient()
+					Expect(client).NotTo(BeNil())
+
+					Expect(transactor.SendTransactions(
+						client,
+						new(big.Int).Exp(big.NewInt(10), big.NewInt(3), nil),
+						duration)).To(BeNil())
 
 					wg.Done()
 				})

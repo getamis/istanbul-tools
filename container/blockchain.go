@@ -504,8 +504,13 @@ func (bc *blockchain) setupValidators(ips []net.IP, keys []*ecdsa.PrivateKey, of
 		opts = append(opts, HostWebSocketPort(freeport.GetPort()))
 		opts = append(opts, Key(keys[i]))
 		opts = append(opts, HostIP(ips[i]))
+
 		accounts := bc.accounts[i+offset : i+offset+1]
-		opts = append(opts, Accounts(accounts))
+		var addrs []common.Address
+		for _, acc := range accounts {
+			addrs = append(addrs, acc.Address)
+		}
+		opts = append(opts, Accounts(addrs))
 
 		// Add PRIVATE_CONFIG for quorum
 		if bc.isQuorum {

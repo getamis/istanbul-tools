@@ -28,7 +28,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
@@ -66,6 +65,7 @@ type ethereum struct {
 
 	nodekey   string
 	key       *ecdsa.PrivateKey
+	accounts  []*ecdsa.PrivateKey
 	k8sClient *kubernetes.Clientset
 }
 
@@ -351,8 +351,11 @@ func (eth *ethereum) StopMining() error {
 	return nil
 }
 
-func (eth *ethereum) Accounts() []accounts.Account {
-	return nil
+func (eth *ethereum) Accounts() (addrs []common.Address) {
+	for _, acc := range eth.accounts {
+		addrs = append(addrs, crypto.PubkeyToAddress(acc.PublicKey))
+	}
+	return addrs
 }
 
 // ----------------------------------------------------------------------------

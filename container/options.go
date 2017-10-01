@@ -22,8 +22,8 @@ import (
 	"net"
 	"path/filepath"
 
-	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/cmd/utils"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 type Option func(*ethereum)
@@ -293,7 +293,7 @@ func NoUSB() Option {
 	}
 }
 
-func Accounts(accounts []accounts.Account) Option {
+func Accounts(accounts []common.Address) Option {
 	return func(eth *ethereum) {
 		eth.accounts = accounts
 	}

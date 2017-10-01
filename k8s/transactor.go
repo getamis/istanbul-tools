@@ -18,39 +18,51 @@ package k8s
 
 import (
 	"context"
-	"errors"
 	"math/big"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 
+	"github.com/getamis/istanbul-tools/client"
 	istcommon "github.com/getamis/istanbul-tools/common"
 )
 
 type Transactor interface {
-	SendTransactions(context.Context, common.Address, *big.Int, time.Duration) error
+	SendTransactions(*client.Client, *big.Int, time.Duration) error
 }
 
-func (eth *ethereum) SendTransactions(ctx context.Context, to common.Address, amount *big.Int, duration time.Duration) error {
-	client := eth.NewClient()
-	if client == nil {
-		return errors.New("failed to retrieve client")
-	}
+func (eth *ethereum) SendTransactions(client *client.Client, amount *big.Int, duration time.Duration) error {
+	var fns []func() error
+	for i, key := range eth.accounts {
+		i := i
+		key := key
 
-	nonce, err := client.NonceAt(context.Background(), eth.Address(), nil)
-	if err != nil {
-		log.Error("Failed to get nonce", "addr", eth.Address(), "err", err)
-		return err
-	}
+		fn := func() error {
+			fromAddr := crypto.PubkeyToAddress(key.PublicKey)
+			toAddr := crypto.PubkeyToAddress(eth.accounts[(i+1)%len(eth.accounts)].PublicKey)
+			timeout := time.After(duration)
 
-	timeout := time.After(duration)
-	for {
-		select {
-		case <-timeout:
-			return nil
-		default:
-			_ = istcommon.SendEther(client, eth.key, to, amount, nonce)
-			nonce++
+			nonce, err := client.NonceAt(context.Background(), fromAddr, nil)
+			if err != nil {
+				log.Error("Failed to get nonce", "addr", fromAddr, "err", err)
+				return err
+			}
+
+			for {
+				select {
+				case <-timeout:
+					return nil
+				default:
+					if err := istcommon.SendEther(client, key, toAddr, amount, nonce); err != nil {
+						return err
+					}
+					nonce++
+				}
+			}
 		}
+
+		fns = append(fns, fn)
 	}
+
+	return executeInParallel(fns...)
 }

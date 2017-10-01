@@ -16,7 +16,10 @@
 
 package k8s
 
-import "fmt"
+import (
+	"crypto/ecdsa"
+	"fmt"
+)
 
 type Option func(*ethereum)
 
@@ -84,5 +87,11 @@ func TxPoolSize(size int) Option {
 func Verbosity(verbosity int) Option {
 	return func(eth *ethereum) {
 		eth.args = append(eth.args, fmt.Sprintf("ethereum.verbosity=%d", verbosity))
+	}
+}
+
+func ExtraAccounts(keys []*ecdsa.PrivateKey) Option {
+	return func(eth *ethereum) {
+		eth.accounts = keys
 	}
 }

@@ -17,21 +17,36 @@
 package k8s
 
 import (
+	"crypto/ecdsa"
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/getamis/istanbul-tools/charts"
 	istcommon "github.com/getamis/istanbul-tools/common"
 	"github.com/getamis/istanbul-tools/container"
 )
 
-func NewBlockchain(numOfValidators int, gaslimit uint64, options ...Option) (bc *blockchain) {
+func NewBlockchain(numOfValidators int, numOfExtraAccounts int, gaslimit uint64, options ...Option) (bc *blockchain) {
 	_, nodekeys, addrs := istcommon.GenerateKeys(numOfValidators)
 	ips := istcommon.GenerateIPs(len(nodekeys))
 
+	extraKeys := make([][]*ecdsa.PrivateKey, numOfValidators)
+	extraAddrs := make([][]common.Address, numOfValidators)
+
+	allAddrs := addrs
+
+	if numOfExtraAccounts > 0 {
+		for i := 0; i < numOfValidators; i++ {
+			extraKeys[i], _, extraAddrs[i] = istcommon.GenerateKeys(numOfExtraAccounts)
+			allAddrs = append(allAddrs, extraAddrs[i]...)
+		}
+	}
+
 	bc = &blockchain{
-		genesis:     charts.NewGenesisChart(addrs, uint64(gaslimit)),
+		genesis:     charts.NewGenesisChart(allAddrs, uint64(gaslimit)),
 		staticNodes: charts.NewStaticNodesChart(nodekeys, ips),
 	}
 
@@ -44,7 +59,7 @@ func NewBlockchain(numOfValidators int, gaslimit uint64, options ...Option) (bc 
 		bc.genesis.Uninstall()
 		return nil
 	}
-	bc.setupValidators(numOfValidators, nodekeys, ips, options...)
+	bc.setupValidators(numOfValidators, extraKeys, nodekeys, ips, options...)
 	return bc
 }
 
@@ -104,7 +119,7 @@ func (bc *blockchain) Validators() []container.Ethereum {
 
 // ----------------------------------------------------------------------------
 
-func (bc *blockchain) setupValidators(num int, nodekeys []string, ips []string, options ...Option) {
+func (bc *blockchain) setupValidators(num int, extraKeys [][]*ecdsa.PrivateKey, nodekeys []string, ips []string, options ...Option) {
 	for i := 0; i < num; i++ {
 		var opts []Option
 		opts = append(opts, options...)
@@ -112,6 +127,7 @@ func (bc *blockchain) setupValidators(num int, nodekeys []string, ips []string, 
 		opts = append(opts, Name(fmt.Sprintf("%d", i)))
 		opts = append(opts, NodeKeyHex(nodekeys[i]))
 		opts = append(opts, IPAddress(ips[i]))
+		opts = append(opts, ExtraAccounts(extraKeys[i]))
 
 		geth := NewEthereum(
 			opts...,
