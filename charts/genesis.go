@@ -35,7 +35,7 @@ type GenesisChart struct {
 	args        []string
 }
 
-func NewGenesisChart(addrs []common.Address, gasLimit uint64) *GenesisChart {
+func NewGenesisChart(validators []common.Address, allocs []common.Address, gasLimit uint64) *GenesisChart {
 	chartPath := filepath.Join(chartBasePath, "genesis-block")
 	genesisPath := filepath.Join(chartPath, ".genesis")
 	err := os.MkdirAll(genesisPath, 0700)
@@ -50,9 +50,9 @@ func NewGenesisChart(addrs []common.Address, gasLimit uint64) *GenesisChart {
 		genesisFile: genesis.NewFileAt(
 			genesisPath,
 			false,
-			genesis.Validators(addrs...),
+			genesis.Validators(validators...),
 			genesis.GasLimit(gasLimit),
-			genesis.Alloc(addrs, new(big.Int).Exp(big.NewInt(10), big.NewInt(50), nil)),
+			genesis.Alloc(append(validators, allocs...), new(big.Int).Exp(big.NewInt(10), big.NewInt(50), nil)),
 		),
 	}
 

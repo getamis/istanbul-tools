@@ -24,7 +24,7 @@ import (
 
 func ExampleK8SEthereum() {
 	_, nodekeys, addrs := common.GenerateKeys(1)
-	genesisChart := charts.NewGenesisChart(addrs, genesis.InitGasLimit)
+	genesisChart := charts.NewGenesisChart(addrs, nil, genesis.InitGasLimit)
 	if err := genesisChart.Install(false); err != nil {
 		log.Error("Failed to install genesis chart", "err", err)
 		return
