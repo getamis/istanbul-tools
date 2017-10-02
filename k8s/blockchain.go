@@ -36,17 +36,16 @@ func NewBlockchain(numOfValidators int, numOfExtraAccounts int, gaslimit uint64,
 	extraKeys := make([][]*ecdsa.PrivateKey, numOfValidators)
 	extraAddrs := make([][]common.Address, numOfValidators)
 
-	allAddrs := addrs
-
+	var allocAddrs []common.Address
 	if numOfExtraAccounts > 0 {
 		for i := 0; i < numOfValidators; i++ {
 			extraKeys[i], _, extraAddrs[i] = istcommon.GenerateKeys(numOfExtraAccounts)
-			allAddrs = append(allAddrs, extraAddrs[i]...)
+			allocAddrs = append(allocAddrs, extraAddrs[i]...)
 		}
 	}
 
 	bc = &blockchain{
-		genesis:     charts.NewGenesisChart(allAddrs, uint64(gaslimit)),
+		genesis:     charts.NewGenesisChart(addrs, allocAddrs, uint64(gaslimit)),
 		staticNodes: charts.NewStaticNodesChart(nodekeys, ips),
 	}
 
