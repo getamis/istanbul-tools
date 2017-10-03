@@ -26,6 +26,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	istcommon "github.com/getamis/istanbul-tools/common"
 	"github.com/getamis/istanbul-tools/container"
 	"github.com/getamis/istanbul-tools/k8s"
 	"github.com/getamis/istanbul-tools/metrics"
@@ -88,8 +89,14 @@ func runTests(numberOfValidators int, gaslimit int, txpoolSize int) {
 
 		AfterEach(func() {
 			Expect(blockchain).NotTo(BeNil())
+			var blocksCnt int = 5
+			metricsExport, ok := blockchain.(metrics.Exporter)
+			if ok {
+				blockSize := gaslimit / int(istcommon.DefaultGasLimit)
+				blocksCnt = int(metricsExport.SentTxCount()-metricsExport.ExcutedTxCount())/blockSize + 1
+			}
 			tests.WaitFor(blockchain.Validators(), func(geth container.Ethereum, wg *sync.WaitGroup) {
-				Expect(geth.WaitForBlocks(10)).To(BeNil())
+				Expect(geth.WaitForBlocks(blocksCnt)).To(BeNil())
 				wg.Done()
 			})
 			Expect(blockchain.Stop(true)).To(BeNil())

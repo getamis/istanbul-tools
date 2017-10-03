@@ -142,7 +142,7 @@ func (mc *metricChain) Stop(strong bool) error {
 		sub.Unsubscribe()
 	}
 	mc.wg.Wait()
-	mc.metricsMgr.Export()
+	mc.Export()
 	return mc.Blockchain.Stop(strong)
 }
 
