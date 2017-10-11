@@ -17,6 +17,7 @@
 package load
 
 import (
+	"fmt"
 	"math/big"
 	"sync"
 	"testing"
@@ -43,11 +44,11 @@ var _ = Describe("TPS-01: Large amount of transactions", func() {
 							runTests(numberOfValidators, gaslimit, txpoolSize)
 						},
 
-						tests.Case("10240", 10240),
+						tests.Case("20480", 20480),
 					)
 				},
 
-				tests.Case("21000*3000", 21000*3000),
+				tests.Case("21000*1500", 21000*1500),
 			)
 
 		},
@@ -62,8 +63,8 @@ func runTests(numberOfValidators int, gaslimit int, txpoolSize int) {
 			blockchain     container.Blockchain
 			sendEtherAddrs map[common.Address]common.Address
 
-			duration        = 10 * time.Minute
-			accountsPerGeth = 30
+			duration        = 15 * time.Minute
+			accountsPerGeth = 20
 		)
 
 		BeforeEach(func() {
@@ -92,22 +93,28 @@ func runTests(numberOfValidators int, gaslimit int, txpoolSize int) {
 			var blocksCnt int = 5
 			metricsExport, ok := blockchain.(metrics.Exporter)
 			if ok {
+
 				blockSize := gaslimit / int(istcommon.DefaultGasLimit)
-				blocksCnt = int(metricsExport.SentTxCount()-metricsExport.ExcutedTxCount())/blockSize + 1
+				blocksCnt = int(int(metricsExport.SentTxCount()-metricsExport.ExcutedTxCount())/blockSize/8*10) + 5
+				fmt.Println("blockSize", blockSize, "sendTx", metricsExport.SentTxCount(), "excutedTx", metricsExport.ExcutedTxCount(), "waitFor", blocksCnt)
 			}
 			tests.WaitFor(blockchain.Validators(), func(geth container.Ethereum, wg *sync.WaitGroup) {
 				Expect(geth.WaitForBlocks(blocksCnt)).To(BeNil())
 				wg.Done()
 			})
+			fmt.Println("Begin to Stop blockchain")
 			Expect(blockchain.Stop(true)).To(BeNil())
+			fmt.Println("End to Stop blockchain")
 			blockchain.Finalize()
 		})
 
 		It("", func() {
 			By("Wait for p2p connection", func() {
 				tests.WaitFor(blockchain.Validators(), func(geth container.Ethereum, wg *sync.WaitGroup) {
+					fmt.Println("Start p2p")
 					Expect(geth.WaitForPeersConnected(numberOfValidators - 1)).To(BeNil())
 					wg.Done()
+					fmt.Println("Done p2p")
 				})
 			})
 
