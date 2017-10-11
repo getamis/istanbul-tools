@@ -78,6 +78,8 @@ func (eth *ethereum) Start() error {
 		return err
 	}
 
+	<-time.After(3 * time.Minute)
+
 	eth.k8sClient = k8sClient(eth.chart.Name() + "-0")
 	return nil
 }
