@@ -18,33 +18,33 @@ package metrics
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/rcrowley/go-metrics"
 
 	"github.com/getamis/istanbul-tools/client"
 	"github.com/getamis/istanbul-tools/container"
 )
 
+type StopSnapshot func()
+
 type metricsManager struct {
 	registry *DefaultRegistry
 
-	SentTxCounter     metrics.Counter
-	TxErrCounter      metrics.Counter
-	ReqMeter          metrics.Meter
-	ExcutedTxCounter  metrics.Counter
-	RespMeter         metrics.Meter
-	UnknownTxCounter  metrics.Counter
-	TxLatencyTimer    metrics.Timer
-	BlockPeriodTimer  metrics.Timer
-	BlockLatencyTimer metrics.Timer
-	TPSBlockHistogram metrics.Histogram
+	SentTxCounter     *Counter
+	TxErrCounter      *Counter
+	ExcutedTxCounter  *Counter
+	UnknownTxCounter  *Counter
+	ReqMeter          *Meter
+	RespMeter         *Meter
+	TxLatencyTimer    *Timer
+	BlockPeriodTimer  *Timer
+	BlockLatencyTimer *Timer
 }
 
 func newMetricsManager() *metricsManager {
@@ -57,7 +57,6 @@ func newMetricsManager() *metricsManager {
 		UnknownTxCounter:  r.NewCounter("tx/unknown"),
 		ReqMeter:          r.NewMeter("tx/rps"),
 		RespMeter:         r.NewMeter("tx/tps/response"),
-		TPSBlockHistogram: r.NewHistogram("tx/tps/block"),
 		TxLatencyTimer:    r.NewTimer("tx/latency"),
 		BlockPeriodTimer:  r.NewTimer("block/period"),
 		BlockLatencyTimer: r.NewTimer("block/latency"),
@@ -68,6 +67,33 @@ func (m *metricsManager) Export() {
 	m.registry.Export()
 }
 
+func (m *metricsManager) SnapshotMeter(meters []*Meter, d time.Duration) StopSnapshot {
+	stop := make(chan struct{})
+	stopFn := func() {
+		close(stop)
+	}
+
+	go func() {
+		ticker := time.NewTicker(d)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				for _, metric := range meters {
+					snapshot := metric.Snapshot()
+					his := m.registry.NewHistogram(fmt.Sprintf("%s/histogram", metric.Name()))
+					his.Update(int64(snapshot.Rate1()))
+				}
+			case <-stop:
+				return
+			}
+		}
+	}()
+	return stopFn
+}
+
+// --------------------------------------------------------------------------------------------------
+
 type metricChain struct {
 	container.Blockchain
 
@@ -77,7 +103,8 @@ type metricChain struct {
 	txStartCh chan *txInfo
 	txDoneCh  chan *txInfo
 
-	metricsMgr *metricsManager
+	metricsMgr   *metricsManager
+	stopSnapshot StopSnapshot
 
 	wg   sync.WaitGroup
 	quit chan struct{}
@@ -89,7 +116,7 @@ func NewMetricChain(blockchain container.Blockchain) container.Blockchain {
 	}
 	mc := &metricChain{
 		Blockchain: blockchain,
-		headCh:     make(chan *ethtypes.Header),
+		headCh:     make(chan *ethtypes.Header, 1000),
 		txStartCh:  make(chan *txInfo, 10000),
 		txDoneCh:   make(chan *txInfo, 10000),
 		quit:       make(chan struct{}),
@@ -129,6 +156,8 @@ func (mc *metricChain) Start(strong bool) error {
 		}
 		mc.headSubs = append(mc.headSubs, sub)
 	}
+	snapshotMeters := []*Meter{mc.metricsMgr.ReqMeter, mc.metricsMgr.RespMeter}
+	mc.stopSnapshot = mc.metricsMgr.SnapshotMeter(snapshotMeters, 1*time.Minute)
 
 	mc.wg.Add(2)
 	go mc.handleNewHeadEvent()
@@ -142,6 +171,7 @@ func (mc *metricChain) Stop(strong bool) error {
 		sub.Unsubscribe()
 	}
 	mc.wg.Wait()
+	mc.stopSnapshot()
 	mc.Export()
 	return mc.Blockchain.Stop(strong)
 }
@@ -199,14 +229,6 @@ func (mc *metricChain) handleNewHeadEvent() {
 				mc.metricsMgr.BlockLatencyTimer.Update(now.Sub(preBlockTime))
 				preBlockTime = now
 
-				// check counts of txs
-				if header.TxHash == ethtypes.DeriveSha(ethtypes.Transactions{}) && header.UncleHash == types.CalcUncleHash([]*ethtypes.Header{}) {
-					mc.metricsMgr.ExcutedTxCounter.Inc(0)
-					mc.metricsMgr.RespMeter.Mark(0)
-					mc.metricsMgr.TPSBlockHistogram.Update(0)
-					return
-				}
-
 				// get block
 				blockCh := make(chan *ethtypes.Block, len(mc.eths))
 				ctx, cancel := context.WithCancel(context.Background())
@@ -228,9 +250,6 @@ func (mc *metricChain) handleNewHeadEvent() {
 
 				mc.metricsMgr.ExcutedTxCounter.Inc(int64(len(headBlock.Transactions())))
 				mc.metricsMgr.RespMeter.Mark(int64(len(headBlock.Transactions())))
-				if blockPeriod > 0 {
-					mc.metricsMgr.TPSBlockHistogram.Update(int64(len(headBlock.Transactions())) / blockPeriod)
-				}
 
 				// update tx info
 				for _, tx := range headBlock.Transactions() {

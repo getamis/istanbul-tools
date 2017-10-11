@@ -23,37 +23,36 @@ import (
 )
 
 type DefaultRegistry struct {
-	registry metrics.Registry
+	metrics.Registry
 }
 
 func NewRegistry() *DefaultRegistry {
 	r := metrics.NewRegistry()
-	return &DefaultRegistry{registry: r}
+	return &DefaultRegistry{r}
 }
 
-func (r *DefaultRegistry) NewCounter(name string) metrics.Counter {
-	return metrics.GetOrRegisterCounter(name, r.registry)
+func (r *DefaultRegistry) NewCounter(name string) *Counter {
+	return &Counter{metrics.GetOrRegisterCounter(name, r.Registry), name}
 }
 
-func (r *DefaultRegistry) NewMeter(name string) metrics.Meter {
-	return metrics.GetOrRegisterMeter(name, r.registry)
+func (r *DefaultRegistry) NewMeter(name string) *Meter {
+	return &Meter{metrics.GetOrRegisterMeter(name, r.Registry), name}
 }
 
-func (r *DefaultRegistry) NewTimer(name string) metrics.Timer {
-	return metrics.GetOrRegisterTimer(name, r.registry)
+func (r *DefaultRegistry) NewTimer(name string) *Timer {
+	return &Timer{metrics.GetOrRegisterTimer(name, r.Registry), name}
 }
 
-func (r *DefaultRegistry) NewHistogram(name string) metrics.Histogram {
-	return metrics.GetOrRegisterHistogram(name, r.registry, metrics.NewExpDecaySample(1028, 0.015))
+func (r *DefaultRegistry) NewHistogram(name string) *Histogram {
+	return &Histogram{metrics.GetOrRegisterHistogram(name, r.Registry, metrics.NewExpDecaySample(1028, 0.015)), name}
 }
 
-// -----------------------------------------------------------------
 func (r *DefaultRegistry) Export() {
 	r.export()
 }
 
 func (r *DefaultRegistry) export() {
-	r.registry.Each(func(name string, i interface{}) {
+	r.Registry.Each(func(name string, i interface{}) {
 		switch metric := i.(type) {
 		case metrics.Counter:
 			fmt.Printf("counter %s\n", name)
@@ -70,7 +69,7 @@ func (r *DefaultRegistry) export() {
 			fmt.Printf("  error:       %v\n", metric.Error())
 		case metrics.Histogram:
 			h := metric.Snapshot()
-			ps := h.Percentiles([]float64{0.5, 0.75, 0.95, 0.99, 0.999})
+			ps := h.Percentiles([]float64{0.5, 0.75, 0.90, 0.95, 0.99})
 			fmt.Printf("histogram %s\n", name)
 			fmt.Printf("  count:       %9d\n", h.Count())
 			fmt.Printf("  min:         %9d\n", h.Min())
@@ -79,9 +78,9 @@ func (r *DefaultRegistry) export() {
 			fmt.Printf("  stddev:      %e\n", h.StdDev())
 			fmt.Printf("  median:      %e\n", ps[0])
 			fmt.Printf("  75%%:         %e\n", ps[1])
-			fmt.Printf("  95%%:         %e\n", ps[2])
-			fmt.Printf("  99%%:         %e\n", ps[3])
-			fmt.Printf("  99.9%%:       %e\n", ps[4])
+			fmt.Printf("  90%%:         %e\n", ps[2])
+			fmt.Printf("  95%%:         %e\n", ps[3])
+			fmt.Printf("  99%%:         %e\n", ps[4])
 		case metrics.Meter:
 			m := metric.Snapshot()
 			fmt.Printf("meter %s\n", name)
@@ -92,7 +91,7 @@ func (r *DefaultRegistry) export() {
 			fmt.Printf("  mean rate:   %e\n", m.RateMean())
 		case metrics.Timer:
 			t := metric.Snapshot()
-			ps := t.Percentiles([]float64{0.5, 0.75, 0.95, 0.99, 0.999})
+			ps := t.Percentiles([]float64{0.5, 0.75, 0.90, 0.95, 0.99})
 			fmt.Printf("timer %s\n", name)
 			fmt.Printf("  count:       %9d\n", t.Count())
 			fmt.Printf("  min:         %e\n", float64(t.Min()))
@@ -101,9 +100,9 @@ func (r *DefaultRegistry) export() {
 			fmt.Printf("  stddev:      %e\n", t.StdDev())
 			fmt.Printf("  median:      %e\n", ps[0])
 			fmt.Printf("  75%%:         %e\n", ps[1])
-			fmt.Printf("  95%%:         %e\n", ps[2])
-			fmt.Printf("  99%%:         %e\n", ps[3])
-			fmt.Printf("  99.9%%:       %e\n", ps[4])
+			fmt.Printf("  90%%:         %e\n", ps[2])
+			fmt.Printf("  95%%:         %e\n", ps[3])
+			fmt.Printf("  99%%:         %e\n", ps[4])
 			fmt.Printf("  1-min rate:  %e\n", t.Rate1())
 			fmt.Printf("  5-min rate:  %e\n", t.Rate5())
 			fmt.Printf("  15-min rate: %e\n", t.Rate15())
@@ -111,3 +110,31 @@ func (r *DefaultRegistry) export() {
 		}
 	})
 }
+
+type Counter struct {
+	metrics.Counter
+	name string
+}
+
+func (c *Counter) Name() string { return c.name }
+
+type Meter struct {
+	metrics.Meter
+	name string
+}
+
+func (m *Meter) Name() string { return m.name }
+
+type Timer struct {
+	metrics.Timer
+	name string
+}
+
+func (t *Timer) Name() string { return t.name }
+
+type Histogram struct {
+	metrics.Histogram
+	name string
+}
+
+func (h *Histogram) Name() string { return h.name }
