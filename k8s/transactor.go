@@ -57,6 +57,9 @@ func (eth *ethereum) SendTransactions(client client.Client, amount *big.Int, dur
 						return err
 					}
 					nonce++
+					if nonce%100 == 0 {
+						<-time.After(4 * time.Second)
+					}
 				}
 			}
 		}
