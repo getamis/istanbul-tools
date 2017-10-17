@@ -17,8 +17,8 @@
 package metrics
 
 import (
+	"crypto/ecdsa"
 	"errors"
-	"fmt"
 	"math/big"
 	"time"
 
@@ -41,11 +41,27 @@ func (e *metricEthereum) NewClient() client.Client {
 	}
 }
 
-func (eth *metricEthereum) SendTransactions(client client.Client, amount *big.Int, duration time.Duration) error {
+func (eth *metricEthereum) AccountKeys() []*ecdsa.PrivateKey {
+	transactor, ok := eth.Ethereum.(k8s.Transactor)
+	if !ok {
+		return nil
+	}
+	return transactor.AccountKeys()
+}
+
+func (eth *metricEthereum) SendTransactions(client client.Client, accounts []*ecdsa.PrivateKey, amount *big.Int, duration, frequnce time.Duration) error {
 	transactor, ok := eth.Ethereum.(k8s.Transactor)
 	if !ok {
 		return errors.New("Not support Transactor interface.")
 	}
-	fmt.Println("Begin to SendTransactions.")
-	return transactor.SendTransactions(client, amount, duration)
+	return transactor.SendTransactions(client, accounts, amount, duration, frequnce)
+}
+
+func (eth *metricEthereum) PreloadTransactions(client client.Client, accounts []*ecdsa.PrivateKey, amount *big.Int, txCount int) error {
+	transactor, ok := eth.Ethereum.(k8s.Transactor)
+	if !ok {
+		return errors.New("Not support Transactor interface.")
+	}
+	return transactor.PreloadTransactions(client, accounts, amount, txCount)
+
 }

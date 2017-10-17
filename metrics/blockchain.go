@@ -31,7 +31,7 @@ import (
 	"github.com/getamis/istanbul-tools/container"
 )
 
-type StopSnapshot func()
+type SnapshotStopper func()
 
 type metricsManager struct {
 	registry *DefaultRegistry
@@ -67,9 +67,11 @@ func (m *metricsManager) Export() {
 	m.registry.Export()
 }
 
-func (m *metricsManager) SnapshotMeter(meters []*Meter, d time.Duration) StopSnapshot {
+func (m *metricsManager) SnapshotMeter(meter *Meter, name string, d time.Duration) SnapshotStopper {
+	mname := fmt.Sprintf("%s/%s", meter.Name(), name)
 	stop := make(chan struct{})
 	stopFn := func() {
+		fmt.Println("Stop snapshot", mname)
 		close(stop)
 	}
 
@@ -79,11 +81,9 @@ func (m *metricsManager) SnapshotMeter(meters []*Meter, d time.Duration) StopSna
 		for {
 			select {
 			case <-ticker.C:
-				for _, metric := range meters {
-					snapshot := metric.Snapshot()
-					his := m.registry.NewHistogram(fmt.Sprintf("%s/histogram", metric.Name()))
-					his.Update(int64(snapshot.Rate1()))
-				}
+				snapshot := meter.Snapshot()
+				his := m.registry.NewHistogram(mname)
+				his.Update(int64(snapshot.Rate1()))
 			case <-stop:
 				return
 			}
@@ -103,8 +103,7 @@ type metricChain struct {
 	txStartCh chan *txInfo
 	txDoneCh  chan *txInfo
 
-	metricsMgr   *metricsManager
-	stopSnapshot StopSnapshot
+	metricsMgr *metricsManager
 
 	wg   sync.WaitGroup
 	quit chan struct{}
@@ -156,8 +155,6 @@ func (mc *metricChain) Start(strong bool) error {
 		}
 		mc.headSubs = append(mc.headSubs, sub)
 	}
-	snapshotMeters := []*Meter{mc.metricsMgr.ReqMeter, mc.metricsMgr.RespMeter}
-	mc.stopSnapshot = mc.metricsMgr.SnapshotMeter(snapshotMeters, 1*time.Minute)
 
 	mc.wg.Add(2)
 	go mc.handleNewHeadEvent()
@@ -171,7 +168,6 @@ func (mc *metricChain) Stop(strong bool) error {
 		sub.Unsubscribe()
 	}
 	mc.wg.Wait()
-	mc.stopSnapshot()
 	mc.Export()
 	return mc.Blockchain.Stop(strong)
 }

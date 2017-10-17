@@ -18,7 +18,9 @@ package k8s
 
 import (
 	"context"
+	"crypto/ecdsa"
 	"math/big"
+	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/crypto"
@@ -28,19 +30,30 @@ import (
 )
 
 type Transactor interface {
-	SendTransactions(client.Client, *big.Int, time.Duration) error
+	AccountKeys() []*ecdsa.PrivateKey
+	SendTransactions(client.Client, []*ecdsa.PrivateKey, *big.Int, time.Duration, time.Duration) error
+	PreloadTransactions(client.Client, []*ecdsa.PrivateKey, *big.Int, int) error
 }
 
-func (eth *ethereum) SendTransactions(client client.Client, amount *big.Int, duration time.Duration) error {
+func (eth *ethereum) AccountKeys() []*ecdsa.PrivateKey {
+	return eth.accounts
+}
+
+// SendTransactions is to send a lot of transactions by each account in geth.
+// duration: the period of sending transactions
+// rate: total tx per second
+func (eth *ethereum) SendTransactions(client client.Client, accounts []*ecdsa.PrivateKey, amount *big.Int, duration, frequnce time.Duration) error {
 	var fns []func() error
-	for i, key := range eth.accounts {
+	for i, key := range accounts {
 		i := i
 		key := key
 
 		fn := func() error {
 			fromAddr := crypto.PubkeyToAddress(key.PublicKey)
-			toAddr := crypto.PubkeyToAddress(eth.accounts[(i+1)%len(eth.accounts)].PublicKey)
+			toAddr := crypto.PubkeyToAddress(accounts[(i+1)%len(accounts)].PublicKey)
 			timeout := time.After(duration)
+			ticker := time.NewTicker(frequnce)
+			defer ticker.Stop()
 
 			nonce, err := client.NonceAt(context.Background(), fromAddr, nil)
 			if err != nil {
@@ -48,20 +61,63 @@ func (eth *ethereum) SendTransactions(client client.Client, amount *big.Int, dur
 				return err
 			}
 
+			var wg sync.WaitGroup
+			defer wg.Wait()
+
+			errCh := make(chan error)
 			for {
 				select {
 				case <-timeout:
 					return nil
-				default:
-					if err := istcommon.SendEther(client, key, toAddr, amount, nonce); err != nil {
-						return err
-					}
+				case err := <-errCh:
+					log.Error("Failed to SendEther", "addr", fromAddr, "to", toAddr, "err", err)
+					return err
+				case <-ticker.C:
+					wg.Add(1)
+					go func(nonce uint64, wg *sync.WaitGroup) {
+						if err := istcommon.SendEther(client, key, toAddr, amount, nonce); err != nil {
+							select {
+							case errCh <- err:
+							default:
+							}
+						}
+						wg.Done()
+					}(nonce, &wg)
 					nonce++
-					if nonce%100 == 0 {
-						<-time.After(4 * time.Second)
-					}
 				}
 			}
+		}
+
+		fns = append(fns, fn)
+	}
+
+	return executeInParallel(fns...)
+}
+
+func (eth *ethereum) PreloadTransactions(client client.Client, accounts []*ecdsa.PrivateKey, amount *big.Int, txCount int) error {
+	eachCount := txCount / len(accounts)
+
+	var fns []func() error
+	for i, key := range accounts {
+		i := i
+		key := key
+
+		fn := func() error {
+			fromAddr := crypto.PubkeyToAddress(key.PublicKey)
+			toAddr := crypto.PubkeyToAddress(accounts[(i+1)%len(accounts)].PublicKey)
+			nonce, err := client.NonceAt(context.Background(), fromAddr, nil)
+			if err != nil {
+				log.Error("Failed to get nonce", "addr", fromAddr, "err", err)
+				return err
+			}
+
+			for i := 0; i < eachCount; i++ {
+				if err := istcommon.SendEther(client, key, toAddr, amount, nonce); err != nil {
+					return err
+				}
+				nonce++
+			}
+			return nil
 		}
 
 		fns = append(fns, fn)
