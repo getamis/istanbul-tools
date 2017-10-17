@@ -28,7 +28,7 @@ func ExampleK8SBlockchain() {
 		ImageRepository("quay.io/amis/geth"),
 		ImageTag("istanbul_develop"),
 		ServiceType("LoadBalancer"),
-		Mine(),
+		Mine(true),
 	)
 	defer chain.Finalize()
 

@@ -346,11 +346,23 @@ func (eth *ethereum) AddPeer(address string) error {
 }
 
 func (eth *ethereum) StartMining() error {
-	return nil
+	client := eth.NewClient()
+	if client == nil {
+		return errors.New("failed to retrieve client")
+	}
+	defer client.Close()
+
+	return client.StartMining(context.Background())
 }
 
 func (eth *ethereum) StopMining() error {
-	return nil
+	client := eth.NewClient()
+	if client == nil {
+		return errors.New("failed to retrieve client")
+	}
+	defer client.Close()
+
+	return client.StopMining(context.Background())
 }
 
 func (eth *ethereum) Accounts() (addrs []common.Address) {
