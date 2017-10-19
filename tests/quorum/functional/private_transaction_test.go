@@ -190,7 +190,7 @@ func genByteCodeWithValue(v int) string {
 	return fmt.Sprintf("%s%064x", testBaseByteCode, v)
 }
 
-func getTxReceipt(ethClient *client.Client, txHash common.Hash, timeout time.Duration) (*types.Receipt, error) {
+func getTxReceipt(ethClient client.Client, txHash common.Hash, timeout time.Duration) (*types.Receipt, error) {
 	timer := time.After(timeout)
 	ticker := time.NewTicker(3 * time.Second)
 	defer ticker.Stop()
@@ -207,7 +207,7 @@ func getTxReceipt(ethClient *client.Client, txHash common.Hash, timeout time.Dur
 	}
 }
 
-func checkContractValue(ethClient *client.Client, txHash common.Hash, expValue int) error {
+func checkContractValue(ethClient client.Client, txHash common.Hash, expValue int) error {
 	receipt, err := getTxReceipt(ethClient, txHash, 10*time.Second)
 	if err != nil {
 		return err

@@ -78,6 +78,8 @@ func (eth *ethereum) Start() error {
 		return err
 	}
 
+	<-time.After(3 * time.Minute)
+
 	eth.k8sClient = k8sClient(eth.chart.Name() + "-0")
 	return nil
 }
@@ -106,7 +108,7 @@ func (eth *ethereum) DockerBinds() []string {
 	return nil
 }
 
-func (eth *ethereum) NewClient() *client.Client {
+func (eth *ethereum) NewClient() client.Client {
 	for i := 0; i < healthCheckRetryCount; i++ {
 		client, err := client.Dial("ws://" + eth.Host() + ":8546")
 		if err != nil {
@@ -344,11 +346,23 @@ func (eth *ethereum) AddPeer(address string) error {
 }
 
 func (eth *ethereum) StartMining() error {
-	return nil
+	client := eth.NewClient()
+	if client == nil {
+		return errors.New("failed to retrieve client")
+	}
+	defer client.Close()
+
+	return client.StartMining(context.Background())
 }
 
 func (eth *ethereum) StopMining() error {
-	return nil
+	client := eth.NewClient()
+	if client == nil {
+		return errors.New("failed to retrieve client")
+	}
+	defer client.Close()
+
+	return client.StopMining(context.Background())
 }
 
 func (eth *ethereum) Accounts() (addrs []common.Address) {

@@ -62,9 +62,9 @@ func NetworkID(networkID string) Option {
 	}
 }
 
-func Mine() Option {
+func Mine(mine bool) Option {
 	return func(eth *ethereum) {
-		eth.args = append(eth.args, "ethereum.mining.enabled=true")
+		eth.args = append(eth.args, fmt.Sprintf("ethereum.mining.enabled=%v", mine))
 	}
 }
 

@@ -67,7 +67,7 @@ type Ethereum interface {
 
 	ContainerID() string
 	Host() string
-	NewClient() *client.Client
+	NewClient() client.Client
 	ConsensusMonitor(err chan<- error, quit chan struct{})
 
 	WaitForProposed(expectedAddress common.Address, t time.Duration) error
@@ -356,7 +356,7 @@ func (eth *ethereum) Running() bool {
 	return false
 }
 
-func (eth *ethereum) NewClient() *client.Client {
+func (eth *ethereum) NewClient() client.Client {
 	var scheme, port string
 
 	if eth.rpcPort != "" {

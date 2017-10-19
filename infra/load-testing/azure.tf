@@ -16,7 +16,7 @@ resource "random_id" "namer" {
 }
 
 variable "username" {
-  type = "string"
+  type    = "string"
   default = "amis"
 }
 
@@ -67,8 +67,9 @@ resource "azurerm_container_service" "test" {
 
 resource "null_resource" "kubeconfig" {
   provisioner "local-exec" {
-    command = "sleep 10 && scp -o StrictHostKeyChecking=no ${var.username}@istanbul-${random_id.namer.hex}.${azurerm_resource_group.test.location}.cloudapp.azure.com:~/.kube/config ~/.kube/config"
+    command     = "scp -o StrictHostKeyChecking=no ${var.username}@istanbul-${random_id.namer.hex}.${azurerm_resource_group.test.location}.cloudapp.azure.com:~/.kube/config ~/.kube/config"
     interpreter = ["bash", "-c"]
   }
+
   depends_on = ["azurerm_container_service.test"]
 }

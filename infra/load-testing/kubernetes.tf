@@ -7,9 +7,11 @@ resource "kubernetes_service" "validator-svc" {
     selector {
       app = "validator-${count.index}"
     }
+
     type = "LoadBalancer"
+
     port {
-      port = 8546
+      port        = 8546
       target_port = 8546
     }
 
@@ -17,4 +19,6 @@ resource "kubernetes_service" "validator-svc" {
   }
 
   count = "${length(var.svcs)}"
+
+  depends_on = ["null_resource.kubeconfig"]
 }

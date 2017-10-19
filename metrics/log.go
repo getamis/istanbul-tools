@@ -14,35 +14,10 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-package k8s
+package metrics
 
 import (
-	"time"
+	logging "github.com/getamis/istanbul-tools/log"
 )
 
-func ExampleK8SBlockchain() {
-	chain := NewBlockchain(
-		4,
-		0,
-		21000*1000,
-		ImageRepository("quay.io/amis/geth"),
-		ImageTag("istanbul_develop"),
-		ServiceType("LoadBalancer"),
-		Mine(true),
-	)
-	defer chain.Finalize()
-
-	err := chain.Start(true)
-	if err != nil {
-		log.Error("Failed to start chain", "err", err)
-		return
-	}
-
-	<-time.After(20 * time.Second)
-
-	err = chain.Stop(false)
-	if err != nil {
-		log.Error("Failed to stop chain", "err", err)
-		return
-	}
-}
+var log = logging.New()
