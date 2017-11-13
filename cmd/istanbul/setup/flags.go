@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-package genesis
+package setup
 
 import "github.com/urfave/cli"
 
@@ -26,11 +26,11 @@ var (
 
 	verboseFlag = cli.BoolFlag{
 		Name:  "verbose",
-		Usage: "Print more information",
+		Usage: "Print validator details",
 	}
 
 	staticNodesFlag = cli.BoolFlag{
 		Name:  "nodes",
-		Usage: "Print static-nodes.json",
+		Usage: "Print static nodes template",
 	}
 )
