@@ -19,8 +19,12 @@ package setup
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"math/big"
 	"net"
+	"os"
+	"path"
+	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/p2p/discover"
@@ -53,6 +57,7 @@ var (
 			numOfValidatorsFlag,
 			staticNodesFlag,
 			verboseFlag,
+			saveFlag,
 		},
 	}
 )
@@ -83,6 +88,12 @@ func gen(ctx *cli.Context) error {
 		if ctx.Bool(verboseFlag.Name) {
 			str, _ := json.MarshalIndent(v, "", "\t")
 			fmt.Println(string(str))
+
+			if ctx.Bool(saveFlag.Name) {
+				folderName := strconv.Itoa(i)
+				os.MkdirAll(folderName, os.ModePerm)
+				ioutil.WriteFile(path.Join(folderName, "nodekey"), []byte(nodekeys[i]), os.ModePerm)
+			}
 		}
 	}
 
@@ -90,11 +101,16 @@ func gen(ctx *cli.Context) error {
 		fmt.Print("\n\n\n")
 	}
 
+	staticNodes, _ := json.MarshalIndent(nodes, "", "\t")
 	if ctx.Bool(staticNodesFlag.Name) {
-		staticNodes, _ := json.MarshalIndent(nodes, "", "\t")
-		fmt.Println("static-nodes.json")
+		name := "static-nodes.json"
+		fmt.Println(name)
 		fmt.Println(string(staticNodes))
 		fmt.Print("\n\n\n")
+
+		if ctx.Bool(saveFlag.Name) {
+			ioutil.WriteFile(name, staticNodes, os.ModePerm)
+		}
 	}
 
 	genesis := genesis.New(
@@ -105,6 +121,10 @@ func gen(ctx *cli.Context) error {
 	jsonBytes, _ := json.MarshalIndent(genesis, "", "    ")
 	fmt.Println("genesis.json")
 	fmt.Println(string(jsonBytes))
+
+	if ctx.Bool(saveFlag.Name) {
+		ioutil.WriteFile("genesis.json", jsonBytes, os.ModePerm)
+	}
 
 	return nil
 }
