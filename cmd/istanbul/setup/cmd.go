@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-package genesis
+package setup
 
 import (
 	"encoding/json"
@@ -37,9 +37,17 @@ type validatorInfo struct {
 }
 
 var (
-	GenesisCommand = cli.Command{
-		Name:   "genesis",
-		Usage:  "Istanbul genesis block generator",
+	SetupCommand = cli.Command{
+		Name:  "setup",
+		Usage: "Setup your Istanbul network in seconds",
+		Description: `This tool helps generate:
+
+		* Genesis block
+		* Static nodes for all validators
+		* Validator details
+
+	    for Istanbul consensus.
+`,
 		Action: gen,
 		Flags: []cli.Flag{
 			numOfValidatorsFlag,
@@ -56,29 +64,37 @@ func gen(ctx *cli.Context) error {
 	var nodes []string
 
 	if ctx.Bool(verboseFlag.Name) {
-		for i := 0; i < num; i++ {
-			v := &validatorInfo{
-				Address: addrs[i],
-				Nodekey: nodekeys[i],
-				NodeInfo: discover.NewNode(
-					discover.PubkeyID(&keys[i].PublicKey),
-					net.ParseIP("0.0.0.0"),
-					0,
-					uint16(30303)).String(),
-			}
+		fmt.Println("validators")
+	}
 
-			str, _ := json.MarshalIndent(v, "", "\t")
-			fmt.Println(string(str))
-			nodes = append(nodes, string(v.NodeInfo))
+	for i := 0; i < num; i++ {
+		v := &validatorInfo{
+			Address: addrs[i],
+			Nodekey: nodekeys[i],
+			NodeInfo: discover.NewNode(
+				discover.PubkeyID(&keys[i].PublicKey),
+				net.ParseIP("0.0.0.0"),
+				0,
+				uint16(30303)).String(),
 		}
 
-		fmt.Print("\n===========================================================\n\n")
+		nodes = append(nodes, string(v.NodeInfo))
+
+		if ctx.Bool(verboseFlag.Name) {
+			str, _ := json.MarshalIndent(v, "", "\t")
+			fmt.Println(string(str))
+		}
+	}
+
+	if ctx.Bool(verboseFlag.Name) {
+		fmt.Print("\n\n\n")
 	}
 
 	if ctx.Bool(staticNodesFlag.Name) {
-		staticNodes, _ := json.MarshalIndent(nodes, "", "    ")
+		staticNodes, _ := json.MarshalIndent(nodes, "", "\t")
+		fmt.Println("static-nodes.json")
 		fmt.Println(string(staticNodes))
-		fmt.Print("\n===========================================================\n\n")
+		fmt.Print("\n\n\n")
 	}
 
 	genesis := genesis.New(
@@ -87,6 +103,7 @@ func gen(ctx *cli.Context) error {
 	)
 
 	jsonBytes, _ := json.MarshalIndent(genesis, "", "    ")
+	fmt.Println("genesis.json")
 	fmt.Println(string(jsonBytes))
 
 	return nil
