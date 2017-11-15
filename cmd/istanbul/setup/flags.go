@@ -33,4 +33,9 @@ var (
 		Name:  "nodes",
 		Usage: "Print static nodes template",
 	}
+
+	saveFlag = cli.BoolFlag{
+		Name:  "save",
+		Usage: "Save to files",
+	}
 )
