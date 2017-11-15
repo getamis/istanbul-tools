@@ -25,13 +25,14 @@ import (
 	"os"
 	"path"
 	"strconv"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/p2p/discover"
-	"github.com/urfave/cli"
-
+	"github.com/getamis/istanbul-tools/cmd/istanbul/setup/docker"
 	istcommon "github.com/getamis/istanbul-tools/common"
 	"github.com/getamis/istanbul-tools/genesis"
+	"github.com/urfave/cli"
 )
 
 type validatorInfo struct {
@@ -57,6 +58,7 @@ var (
 			numOfValidatorsFlag,
 			staticNodesFlag,
 			verboseFlag,
+			dockerComposeFlag,
 			saveFlag,
 		},
 	}
@@ -126,5 +128,58 @@ func gen(ctx *cli.Context) error {
 		ioutil.WriteFile("genesis.json", jsonBytes, os.ModePerm)
 	}
 
+	if ctx.Bool(dockerComposeFlag.Name) {
+		g := removeSpacesAndLines(jsonBytes)
+		nodes := removeSpacesAndLines(staticNodes)
+
+		var links []string
+		compose := docker.Compose{
+			IPPrefix: "172.16.239",
+		}
+		compose.Stats = docker.EthStats{
+			// ethstats ip = {{ .IPPrefix }}.9
+			IP:     fmt.Sprintf("%v.9", compose.IPPrefix),
+			Port:   "3000",
+			Secret: "bb98a0b6442386d0cdf8a31b267892c1",
+		}
+
+		for i := 0; i < num; i++ {
+			s := docker.Service{
+				Identity: fmt.Sprintf("validator-%v", i),
+				Genesis:  g,
+				NodeKey:  nodekeys[i],
+				Port:     strconv.Itoa(30303 + i),
+				RPCPort:  strconv.Itoa(8545 + i),
+				EthStats: compose.Stats.Stats(),
+				// from subnet ip 10
+				IP: fmt.Sprintf("%v.%v", compose.IPPrefix, i+10),
+			}
+
+			nodes = strings.Replace(nodes, "0.0.0.0", s.IP, 1)
+			links = append(links, s.Identity)
+			compose.Services = append(compose.Services, s)
+		}
+
+		// update static nodes
+		for i := 0; i < num; i++ {
+			compose.Services[i].StaticNodes = nodes
+		}
+
+		fmt.Print("\n\n\n")
+		fmt.Println("docker-compose.yml")
+		fmt.Println(compose.String())
+		if ctx.Bool(saveFlag.Name) {
+			ioutil.WriteFile("docker-compose.yml", []byte(compose.String()), os.ModePerm)
+		}
+	}
+
 	return nil
+}
+
+func removeSpacesAndLines(b []byte) string {
+	out := string(b)
+	out = strings.Replace(out, " ", "", -1)
+	out = strings.Replace(out, "\t", "", -1)
+	out = strings.Replace(out, "\n", "", -1)
+	return out
 }
