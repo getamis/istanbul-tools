@@ -99,7 +99,7 @@ seal: 0x000000000000000000000000000000000000000000000000000000000000000000000000
 <details>
 <summary>Click here to expand</summary>
 
-When `--nodes --verbose` flags are given, a `static-nodes.json` template as well as the validators' node keys, public keys, and addresses are generated. When `--save` flag is given, the generated configs will be saved.
+When `--nodes --verbose` flags are given, a `static-nodes.json` template as well as the validators' node keys, public keys, and addresses are generated. When `--docker-compose` is given, a `docker-compose.yml` for the validators is generated. When `--save` flag is given, all generated configs will be saved.
 
 **Note**: the generated `static-nodes.json` template are set with IP `0.0.0.0`, please make according change to match your environment.
 
@@ -204,6 +204,7 @@ OPTIONS:
    --num value  Number of validators (default: 0)
    --nodes      Print static nodes template
    --verbose    Print validator details
+   --docker-compose  Print docker compose file
    --save       Save to files
 ```
 

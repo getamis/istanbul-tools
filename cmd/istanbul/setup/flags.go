@@ -34,6 +34,11 @@ var (
 		Usage: "Print static nodes template",
 	}
 
+	dockerComposeFlag = cli.BoolFlag{
+		Name:  "docker-compose",
+		Usage: "Print docker compose file",
+	}
+
 	saveFlag = cli.BoolFlag{
 		Name:  "save",
 		Usage: "Save to files",
