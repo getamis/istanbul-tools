@@ -25,13 +25,14 @@ import (
 	"os"
 	"path"
 	"strconv"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/p2p/discover"
-	"github.com/urfave/cli"
-
 	istcommon "github.com/getamis/istanbul-tools/common"
+	"github.com/getamis/istanbul-tools/docker/compose"
 	"github.com/getamis/istanbul-tools/genesis"
+	"github.com/urfave/cli"
 )
 
 type validatorInfo struct {
@@ -57,6 +58,8 @@ var (
 			numOfValidatorsFlag,
 			staticNodesFlag,
 			verboseFlag,
+			quorumFlag,
+			dockerComposeFlag,
 			saveFlag,
 		},
 	}
@@ -113,12 +116,22 @@ func gen(ctx *cli.Context) error {
 		}
 	}
 
-	genesis := genesis.New(
+	var jsonBytes []byte
+	isQuorum := ctx.Bool(quorumFlag.Name)
+	g := genesis.New(
 		genesis.Validators(addrs...),
 		genesis.Alloc(addrs, new(big.Int).Exp(big.NewInt(10), big.NewInt(50), nil)),
 	)
 
-	jsonBytes, _ := json.MarshalIndent(genesis, "", "    ")
+	jsonBytes, _ = json.MarshalIndent(g, "", "    ")
+	fmt.Println("--Old genesis.json")
+	fmt.Println(string(jsonBytes))
+
+	if isQuorum {
+		jsonBytes, _ = json.MarshalIndent(genesis.ToQuorum(g, true), "", "    ")
+	} else {
+		jsonBytes, _ = json.MarshalIndent(g, "", "    ")
+	}
 	fmt.Println("genesis.json")
 	fmt.Println(string(jsonBytes))
 
@@ -126,5 +139,31 @@ func gen(ctx *cli.Context) error {
 		ioutil.WriteFile("genesis.json", jsonBytes, os.ModePerm)
 	}
 
+	if ctx.Bool(dockerComposeFlag.Name) {
+		fmt.Print("\n\n\n")
+		compose := compose.New(
+			"172.16.239",
+			num,
+			"bb98a0b6442386d0cdf8a31b267892c1",
+			nodekeys,
+			removeSpacesAndLines(jsonBytes),
+			removeSpacesAndLines(staticNodes),
+			isQuorum)
+		fmt.Println("docker-compose.yml")
+		fmt.Println(compose.String())
+
+		if ctx.Bool(saveFlag.Name) {
+			ioutil.WriteFile("docker-compose.yml", []byte(compose.String()), os.ModePerm)
+		}
+	}
+
 	return nil
+}
+
+func removeSpacesAndLines(b []byte) string {
+	out := string(b)
+	out = strings.Replace(out, " ", "", -1)
+	out = strings.Replace(out, "\t", "", -1)
+	out = strings.Replace(out, "\n", "", -1)
+	return out
 }
