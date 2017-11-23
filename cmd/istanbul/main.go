@@ -31,9 +31,8 @@ func main() {
 	app := utils.NewApp()
 	app.Usage = "the istanbul-tools command line interface"
 
-	app.HideVersion = true // we have a command to print the version
+	app.Version = "v1.0.0"
 	app.Copyright = "Copyright 2017 The AMIS Authors"
-
 	app.Commands = []cli.Command{
 		extra.ExtraCommand,
 		setup.SetupCommand,
