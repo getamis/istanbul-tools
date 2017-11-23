@@ -123,10 +123,6 @@ func gen(ctx *cli.Context) error {
 		genesis.Alloc(addrs, new(big.Int).Exp(big.NewInt(10), big.NewInt(50), nil)),
 	)
 
-	jsonBytes, _ = json.MarshalIndent(g, "", "    ")
-	fmt.Println("--Old genesis.json")
-	fmt.Println(string(jsonBytes))
-
 	if isQuorum {
 		jsonBytes, _ = json.MarshalIndent(genesis.ToQuorum(g, true), "", "    ")
 	} else {
