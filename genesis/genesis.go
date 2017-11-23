@@ -18,11 +18,9 @@ package genesis
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"math/big"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/consensus/istanbul"
@@ -84,17 +82,15 @@ func NewFile(isQuorum bool, options ...Option) string {
 func Save(dataDir string, genesis *core.Genesis, isQuorum bool) error {
 	filePath := filepath.Join(dataDir, FileName)
 
-	raw, err := json.Marshal(genesis)
+	var raw []byte
+	var err error
+	if isQuorum {
+		raw, err = json.Marshal(ToQuorum(genesis, true))
+	} else {
+		raw, err = json.Marshal(genesis)
+	}
 	if err != nil {
 		return err
-	}
-
-	//Quorum hack: add isQuorum field
-	if isQuorum {
-		jsonStr := string(raw)
-		idx := strings.Index(jsonStr, ",\"istanbul\"")
-		jsonStr = fmt.Sprintf("%s,\"isQuorum\":true%s", jsonStr[:idx], jsonStr[idx:])
-		raw = []byte(jsonStr)
 	}
 	return ioutil.WriteFile(filePath, raw, 0600)
 }
