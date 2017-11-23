@@ -42,7 +42,7 @@ type Options struct {
 	// set, the content of AllowedOrigins is ignored.
 	AllowOriginFunc func(origin string) bool
 	// AllowedMethods is a list of methods the client is allowed to use with
-	// cross-domain requests. Default value is simple methods (GET and POST)
+	// cross-domain requests. Default value is simple methods (HEAD, GET and POST).
 	AllowedMethods []string
 	// AllowedHeaders is list of non simple headers the client is allowed to use with
 	// cross-domain requests.
@@ -154,7 +154,7 @@ func New(options Options) *Cors {
 	// Allowed Methods
 	if len(options.AllowedMethods) == 0 {
 		// Default is spec's "simple" methods
-		c.allowedMethods = []string{"GET", "POST"}
+		c.allowedMethods = []string{"GET", "POST", "HEAD"}
 	} else {
 		c.allowedMethods = convert(options.AllowedMethods, strings.ToUpper)
 	}
@@ -182,7 +182,7 @@ func AllowAll() *Cors {
 // as necessary.
 func (c *Cors) Handler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == "OPTIONS" {
+		if r.Method == "OPTIONS" && r.Header.Get("Access-Control-Request-Method") != "" {
 			c.logf("Handler: Preflight request")
 			c.handlePreflight(w, r)
 			// Preflight requests are standalone and should stop the chain as some other
@@ -204,7 +204,7 @@ func (c *Cors) Handler(h http.Handler) http.Handler {
 
 // HandlerFunc provides Martini compatible handler
 func (c *Cors) HandlerFunc(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "OPTIONS" {
+	if r.Method == "OPTIONS" && r.Header.Get("Access-Control-Request-Method") != "" {
 		c.logf("HandlerFunc: Preflight request")
 		c.handlePreflight(w, r)
 	} else {
@@ -215,7 +215,7 @@ func (c *Cors) HandlerFunc(w http.ResponseWriter, r *http.Request) {
 
 // Negroni compatible interface
 func (c *Cors) ServeHTTP(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
-	if r.Method == "OPTIONS" {
+	if r.Method == "OPTIONS" && r.Header.Get("Access-Control-Request-Method") != "" {
 		c.logf("ServeHTTP: Preflight request")
 		c.handlePreflight(w, r)
 		// Preflight requests are standalone and should stop the chain as some other

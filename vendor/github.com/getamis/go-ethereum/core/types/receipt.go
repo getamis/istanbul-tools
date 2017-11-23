@@ -28,10 +28,16 @@ import (
 
 //go:generate gencodec -type Receipt -field-override receiptMarshaling -out gen_receipt_json.go
 
+const (
+	receiptStatusSuccessful = byte(0x01)
+	receiptStatusFailed     = byte(0x00)
+)
+
 // Receipt represents the results of a transaction.
 type Receipt struct {
 	// Consensus fields
-	PostState         []byte   `json:"root"              gencodec:"required"`
+	PostState         []byte   `json:"root"`
+	Failed            bool     `json:"failed"`
 	CumulativeGasUsed *big.Int `json:"cumulativeGasUsed" gencodec:"required"`
 	Bloom             Bloom    `json:"logsBloom"         gencodec:"required"`
 	Logs              []*Log   `json:"logs"              gencodec:"required"`
@@ -48,35 +54,102 @@ type receiptMarshaling struct {
 	GasUsed           *hexutil.Big
 }
 
+// homesteadReceiptRLP contains the receipt's Homestead consensus fields, used
+// during RLP serialization.
+type homesteadReceiptRLP struct {
+	PostState         []byte
+	CumulativeGasUsed *big.Int
+	Bloom             Bloom
+	Logs              []*Log
+}
+
+// metropolisReceiptRLP contains the receipt's Metropolis consensus fields, used
+// during RLP serialization.
+type metropolisReceiptRLP struct {
+	Status            byte
+	CumulativeGasUsed *big.Int
+	Bloom             Bloom
+	Logs              []*Log
+}
+
 // NewReceipt creates a barebone transaction receipt, copying the init fields.
-func NewReceipt(root []byte, cumulativeGasUsed *big.Int) *Receipt {
-	return &Receipt{PostState: common.CopyBytes(root), CumulativeGasUsed: new(big.Int).Set(cumulativeGasUsed)}
+func NewReceipt(root []byte, failed bool, cumulativeGasUsed *big.Int) *Receipt {
+	return &Receipt{PostState: common.CopyBytes(root), Failed: failed, CumulativeGasUsed: new(big.Int).Set(cumulativeGasUsed)}
 }
 
 // EncodeRLP implements rlp.Encoder, and flattens the consensus fields of a receipt
-// into an RLP stream.
+// into an RLP stream. If no post state is present, metropolis fork is assumed.
 func (r *Receipt) EncodeRLP(w io.Writer) error {
-	return rlp.Encode(w, []interface{}{r.PostState, r.CumulativeGasUsed, r.Bloom, r.Logs})
+	if r.PostState == nil {
+		status := receiptStatusSuccessful
+		if r.Failed {
+			status = receiptStatusFailed
+		}
+		return rlp.Encode(w, &metropolisReceiptRLP{status, r.CumulativeGasUsed, r.Bloom, r.Logs})
+	}
+	return rlp.Encode(w, &homesteadReceiptRLP{r.PostState, r.CumulativeGasUsed, r.Bloom, r.Logs})
 }
 
 // DecodeRLP implements rlp.Decoder, and loads the consensus fields of a receipt
 // from an RLP stream.
 func (r *Receipt) DecodeRLP(s *rlp.Stream) error {
-	var receipt struct {
-		PostState         []byte
-		CumulativeGasUsed *big.Int
-		Bloom             Bloom
-		Logs              []*Log
-	}
-	if err := s.Decode(&receipt); err != nil {
+	// Load the raw bytes since we have multiple possible formats
+	raw, err := s.Raw()
+	if err != nil {
 		return err
 	}
-	r.PostState, r.CumulativeGasUsed, r.Bloom, r.Logs = receipt.PostState, receipt.CumulativeGasUsed, receipt.Bloom, receipt.Logs
-	return nil
+	content, _, err := rlp.SplitList(raw)
+	if err != nil {
+		return err
+	}
+	kind, cnt, _, err := rlp.Split(content)
+	if err != nil {
+		return err
+	}
+	// Deserialize based on the first component type.
+	switch {
+	case kind == rlp.Byte || (kind == rlp.String && len(cnt) == 0):
+		// The first component of metropolis receipts is Byte (0x01), or the empty
+		// string (0x80, decoded as a byte with 0x00 value).
+		var metro metropolisReceiptRLP
+		if err := rlp.DecodeBytes(raw, &metro); err != nil {
+			return err
+		}
+		switch metro.Status {
+		case receiptStatusSuccessful:
+			r.Failed = false
+		case receiptStatusFailed:
+			r.Failed = true
+		default:
+			return fmt.Errorf("invalid status byte: 0x%x", metro.Status)
+		}
+		r.CumulativeGasUsed = metro.CumulativeGasUsed
+		r.Bloom = metro.Bloom
+		r.Logs = metro.Logs
+		return nil
+
+	case kind == rlp.String:
+		// The first component of homestead receipts is non-empty String.
+		var home homesteadReceiptRLP
+		if err := rlp.DecodeBytes(raw, &home); err != nil {
+			return err
+		}
+		r.PostState = home.PostState[:]
+		r.CumulativeGasUsed = home.CumulativeGasUsed
+		r.Bloom = home.Bloom
+		r.Logs = home.Logs
+		return nil
+
+	default:
+		return fmt.Errorf("invalid first receipt component: %v", kind)
+	}
 }
 
 // String implements the Stringer interface.
 func (r *Receipt) String() string {
+	if r.PostState == nil {
+		return fmt.Sprintf("receipt{failed=%t cgas=%v bloom=%x logs=%v}", r.Failed, r.CumulativeGasUsed, r.Bloom, r.Logs)
+	}
 	return fmt.Sprintf("receipt{med=%x cgas=%v bloom=%x logs=%v}", r.PostState, r.CumulativeGasUsed, r.Bloom, r.Logs)
 }
 
@@ -91,7 +164,7 @@ func (r *ReceiptForStorage) EncodeRLP(w io.Writer) error {
 	for i, log := range r.Logs {
 		logs[i] = (*LogForStorage)(log)
 	}
-	return rlp.Encode(w, []interface{}{r.PostState, r.CumulativeGasUsed, r.Bloom, r.TxHash, r.ContractAddress, logs, r.GasUsed})
+	return rlp.Encode(w, []interface{}{r.PostState, r.Failed, r.CumulativeGasUsed, r.Bloom, r.TxHash, r.ContractAddress, logs, r.GasUsed})
 }
 
 // DecodeRLP implements rlp.Decoder, and loads both consensus and implementation
@@ -99,6 +172,7 @@ func (r *ReceiptForStorage) EncodeRLP(w io.Writer) error {
 func (r *ReceiptForStorage) DecodeRLP(s *rlp.Stream) error {
 	var receipt struct {
 		PostState         []byte
+		Failed            bool
 		CumulativeGasUsed *big.Int
 		Bloom             Bloom
 		TxHash            common.Hash
@@ -110,7 +184,7 @@ func (r *ReceiptForStorage) DecodeRLP(s *rlp.Stream) error {
 		return err
 	}
 	// Assign the consensus fields
-	r.PostState, r.CumulativeGasUsed, r.Bloom = receipt.PostState, receipt.CumulativeGasUsed, receipt.Bloom
+	r.PostState, r.Failed, r.CumulativeGasUsed, r.Bloom = receipt.PostState, receipt.Failed, receipt.CumulativeGasUsed, receipt.Bloom
 	r.Logs = make([]*Log, len(receipt.Logs))
 	for i, log := range receipt.Logs {
 		r.Logs[i] = (*Log)(log)

@@ -13,21 +13,9 @@ spec:
   clusterIP: {{ .Values.service.staticIP | quote }}
   {{- end }}
   ports:
-  - port: {{ .Values.service.externalPeerPort }}
+  - port: {{ .Values.ethereum.port }}
     targetPort: {{ .Values.ethereum.port }}
     protocol: TCP
-    name: peer
-  {{- if .Values.ethereum.rpc.enabled }}
-  - port: {{ .Values.service.externalRPCPort }}
-    targetPort: {{ .Values.ethereum.rpc.port }}
-    protocol: TCP
-    name: rpc
-  {{- end }}
-  {{- if .Values.ethereum.ws.enabled }}
-  - port: {{ .Values.service.externalWSPort }}
-    targetPort: {{ .Values.ethereum.ws.port }}
-    protocol: TCP
-    name: ws
-  {{- end }}
+    name: p2p
   selector:
     app: {{ template "fullname" . }}

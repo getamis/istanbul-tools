@@ -3,4 +3,5 @@
 from subprocess import call
 
 for v in range(0, 26, 1):
+  call(["helm" ,"install", "-n", "validator-svc-{}".format(v), "-f", "values.validator-{}.yaml".format(v), "validator-service"])
   call(["helm" ,"install", "-n", "validator-{}".format(v), "-f", "values.validator-{}.yaml".format(v), "validator"])

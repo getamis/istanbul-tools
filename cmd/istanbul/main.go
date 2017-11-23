@@ -20,20 +20,22 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/getamis/istanbul-tools/cmd/utils"
 	"github.com/urfave/cli"
+
+	"github.com/getamis/istanbul-tools/cmd/istanbul/extra"
+	"github.com/getamis/istanbul-tools/cmd/istanbul/setup"
+	"github.com/getamis/istanbul-tools/cmd/utils"
 )
 
 func main() {
 	app := utils.NewApp()
 	app.Usage = "the istanbul-tools command line interface"
 
-	app.HideVersion = true // we have a command to print the version
-	app.Copyright = "Copyright 2017 The Amis Authors"
-
+	app.Version = "v1.0.0"
+	app.Copyright = "Copyright 2017 The AMIS Authors"
 	app.Commands = []cli.Command{
-		decodeCommand,
-		encodeCommand,
+		extra.ExtraCommand,
+		setup.SetupCommand,
 	}
 
 	if err := app.Run(os.Args); err != nil {

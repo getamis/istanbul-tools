@@ -28,9 +28,9 @@ spec:
                 "image": "{{ .Values.image.repository }}:{{ .Values.image.tag }}",
                 "imagePullPolicy": "{{ .Values.image.pullPolicy }}",
                 "command": [
-                    "geth", 
-                    "--datadir", 
-                    "{{ .Values.volumes.chaindir.mountPath }}", 
+                    "geth",
+                    "--datadir",
+                    "{{ .Values.volumes.chaindir.mountPath }}",
                     "init",
                     "{{ .Values.genesis.mountPath }}/{{ .Values.genesis.fileName }}"
                 ],
@@ -53,7 +53,7 @@ spec:
                     "sh",
                     "-c",
                     "cp {{ .Values.ethereum.staticNodes.mountPath }}/static-nodes.json {{ .Values.volumes.chaindir.mountPath }}/ &&
-                     mkdir -p {{ .Values.volumes.chaindir.mountPath }}/keystore && 
+                     mkdir -p {{ .Values.volumes.chaindir.mountPath }}/keystore &&
                      cp {{ .Values.ethereum.account.mountPath }}/{{ .Values.ethereum.account.address }} {{ .Values.volumes.chaindir.mountPath }}/keystore/"
                 ],
                 "volumeMounts": [
@@ -90,7 +90,6 @@ spec:
           - "{{ .Values.ethereum.port }}"
           - --nat
           - any
-          - --fast
           - --nodiscover
           - --identity
           - "{{ default "$(POD_NAME)" .Values.ethereum.identity }}"
@@ -178,7 +177,9 @@ spec:
           - --maxpeers
           - "100"
           - --verbosity
-          - "4"
+          - "{{ .Values.ethereum.verbosity }}"
+          - --syncmode
+          - "full"
         ports:
         - containerPort: {{ .Values.ethereum.port }}
           name: peer
@@ -231,6 +232,10 @@ spec:
         - name: nodekey
           mountPath: "{{ .Values.ethereum.nodekey.mountPath }}"
       volumes:
+      {{- if .Values.testing.enabled }}
+      - name: data
+        emptyDir: {}
+      {{- end }}
       - name: genesis
         configMap:
           name: {{ .Values.genesis.config }}
@@ -243,6 +248,8 @@ spec:
       - name: static-nodes
         configMap:
           name: {{ .Values.ethereum.staticNodes.config }}
+{{- if .Values.testing.enabled }}
+{{- else }}
   volumeClaimTemplates:
   - metadata:
       name: data
@@ -252,3 +259,4 @@ spec:
       resources:
         requests:
           storage: {{ .Values.volumes.chaindir.size }}
+{{- end }}

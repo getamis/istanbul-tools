@@ -17,6 +17,9 @@
 package core
 
 import (
+	"bytes"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math/big"
@@ -44,24 +47,42 @@ type Genesis struct {
 	Config     *params.ChainConfig `json:"config"`
 	Nonce      uint64              `json:"nonce"`
 	Timestamp  uint64              `json:"timestamp"`
-	ParentHash common.Hash         `json:"parentHash"`
 	ExtraData  []byte              `json:"extraData"`
 	GasLimit   uint64              `json:"gasLimit"   gencodec:"required"`
 	Difficulty *big.Int            `json:"difficulty" gencodec:"required"`
 	Mixhash    common.Hash         `json:"mixHash"`
 	Coinbase   common.Address      `json:"coinbase"`
 	Alloc      GenesisAlloc        `json:"alloc"      gencodec:"required"`
+
+	// These fields are used for consensus tests. Please don't use them
+	// in actual genesis blocks.
+	Number     uint64      `json:"number"`
+	GasUsed    uint64      `json:"gasUsed"`
+	ParentHash common.Hash `json:"parentHash"`
 }
 
 // GenesisAlloc specifies the initial state that is part of the genesis block.
 type GenesisAlloc map[common.Address]GenesisAccount
 
+func (ga *GenesisAlloc) UnmarshalJSON(data []byte) error {
+	m := make(map[common.UnprefixedAddress]GenesisAccount)
+	if err := json.Unmarshal(data, &m); err != nil {
+		return err
+	}
+	*ga = make(GenesisAlloc)
+	for addr, a := range m {
+		(*ga)[common.Address(addr)] = a
+	}
+	return nil
+}
+
 // GenesisAccount is an account in the state of the genesis block.
 type GenesisAccount struct {
-	Code    []byte                      `json:"code,omitempty"`
-	Storage map[common.Hash]common.Hash `json:"storage,omitempty"`
-	Balance *big.Int                    `json:"balance" gencodec:"required"`
-	Nonce   uint64                      `json:"nonce,omitempty"`
+	Code       []byte                      `json:"code,omitempty"`
+	Storage    map[common.Hash]common.Hash `json:"storage,omitempty"`
+	Balance    *big.Int                    `json:"balance" gencodec:"required"`
+	Nonce      uint64                      `json:"nonce,omitempty"`
+	PrivateKey []byte                      `json:"secretKey,omitempty"` // for tests
 }
 
 // field type overrides for gencodec
@@ -70,13 +91,39 @@ type genesisSpecMarshaling struct {
 	Timestamp  math.HexOrDecimal64
 	ExtraData  hexutil.Bytes
 	GasLimit   math.HexOrDecimal64
+	GasUsed    math.HexOrDecimal64
+	Number     math.HexOrDecimal64
 	Difficulty *math.HexOrDecimal256
 	Alloc      map[common.UnprefixedAddress]GenesisAccount
 }
+
 type genesisAccountMarshaling struct {
-	Code    hexutil.Bytes
-	Balance *math.HexOrDecimal256
-	Nonce   math.HexOrDecimal64
+	Code       hexutil.Bytes
+	Balance    *math.HexOrDecimal256
+	Nonce      math.HexOrDecimal64
+	Storage    map[storageJSON]storageJSON
+	PrivateKey hexutil.Bytes
+}
+
+// storageJSON represents a 256 bit byte array, but allows less than 256 bits when
+// unmarshaling from hex.
+type storageJSON common.Hash
+
+func (h *storageJSON) UnmarshalText(text []byte) error {
+	text = bytes.TrimPrefix(text, []byte("0x"))
+	if len(text) > 64 {
+		return fmt.Errorf("too many hex characters in storage key/value %q", text)
+	}
+	offset := len(h) - len(text)/2 // pad on the left
+	if _, err := hex.Decode(h[offset:], text); err != nil {
+		fmt.Println(err)
+		return fmt.Errorf("invalid hex storage key/value %q", text)
+	}
+	return nil
+}
+
+func (h storageJSON) MarshalText() ([]byte, error) {
+	return hexutil.Bytes(h[:]).MarshalText()
 }
 
 // GenesisMismatchError is raised when trying to overwrite an existing
@@ -143,7 +190,7 @@ func SetupGenesisBlock(db ethdb.Database, genesis *Genesis) (*params.ChainConfig
 	// Special case: don't change the existing config of a non-mainnet chain if no new
 	// config is supplied. These chains would get AllProtocolChanges (and a compat error)
 	// if we just continued here.
-	if genesis == nil && stored != params.MainNetGenesisHash {
+	if genesis == nil && stored != params.MainnetGenesisHash {
 		return storedcfg, stored, nil
 	}
 
@@ -164,9 +211,9 @@ func (g *Genesis) configOrDefault(ghash common.Hash) *params.ChainConfig {
 	switch {
 	case g != nil:
 		return g.Config
-	case ghash == params.MainNetGenesisHash:
+	case ghash == params.MainnetGenesisHash:
 		return params.MainnetChainConfig
-	case ghash == params.TestNetGenesisHash:
+	case ghash == params.TestnetGenesisHash:
 		return params.TestnetChainConfig
 	default:
 		return params.AllProtocolChanges
@@ -176,7 +223,7 @@ func (g *Genesis) configOrDefault(ghash common.Hash) *params.ChainConfig {
 // ToBlock creates the block and state of a genesis specification.
 func (g *Genesis) ToBlock() (*types.Block, *state.StateDB) {
 	db, _ := ethdb.NewMemDatabase()
-	statedb, _ := state.New(common.Hash{}, db)
+	statedb, _ := state.New(common.Hash{}, state.NewDatabase(db))
 	for addr, account := range g.Alloc {
 		statedb.AddBalance(addr, account.Balance)
 		statedb.SetCode(addr, account.Code)
@@ -187,11 +234,13 @@ func (g *Genesis) ToBlock() (*types.Block, *state.StateDB) {
 	}
 	root := statedb.IntermediateRoot(false)
 	head := &types.Header{
+		Number:     new(big.Int).SetUint64(g.Number),
 		Nonce:      types.EncodeNonce(g.Nonce),
 		Time:       new(big.Int).SetUint64(g.Timestamp),
 		ParentHash: g.ParentHash,
 		Extra:      g.ExtraData,
 		GasLimit:   new(big.Int).SetUint64(g.GasLimit),
+		GasUsed:    new(big.Int).SetUint64(g.GasUsed),
 		Difficulty: g.Difficulty,
 		MixDigest:  g.Mixhash,
 		Coinbase:   g.Coinbase,
@@ -210,6 +259,9 @@ func (g *Genesis) ToBlock() (*types.Block, *state.StateDB) {
 // The block is committed as the canonical head block.
 func (g *Genesis) Commit(db ethdb.Database) (*types.Block, error) {
 	block, statedb := g.ToBlock()
+	if block.Number().Sign() != 0 {
+		return nil, fmt.Errorf("can't commit genesis block with number > 0")
+	}
 	if _, err := statedb.CommitTo(db, false); err != nil {
 		return nil, fmt.Errorf("cannot write state: %v", err)
 	}
@@ -287,6 +339,19 @@ func DefaultRinkebyGenesisBlock() *Genesis {
 		GasLimit:   4700000,
 		Difficulty: big.NewInt(1),
 		Alloc:      decodePrealloc(rinkebyAllocData),
+	}
+}
+
+// DefaultOttomanGenesisBlock returns the Ottoman network genesis block.
+func DefaultOttomanGenesisBlock() *Genesis {
+	return &Genesis{
+		Config:     params.OttomanChainConfig,
+		Timestamp:  1496993285,
+		ExtraData:  hexutil.MustDecode("0x0000000000000000000000000000000000000000000000000000000000000000f89af85494475cc98b5521ab2a1335683e7567c8048bfe79ed9407d8299de61faed3686ba4c4e6c3b9083d7e2371944fe035ce99af680d89e2c4d73aca01dbfc1bd2fd94dc421209441a754f79c4a4ecd2b49c935aad0312b8410000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c0"),
+		GasLimit:   4700000,
+		Difficulty: big.NewInt(1),
+		Mixhash:    common.HexToHash("0x63746963616c2062797a616e74696e65206661756c7420746f6c6572616e6365"),
+		Alloc:      decodePrealloc(ottomanAllocData),
 	}
 }
 
