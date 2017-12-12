@@ -25,7 +25,7 @@ type Option func(*ethereum)
 
 func ImageRepository(repository string) Option {
 	return func(eth *ethereum) {
-		eth.args = append(eth.args, fmt.Sprintf("image.respository=%s", repository))
+		eth.args = append(eth.args, fmt.Sprintf("image.repository=%s", repository))
 	}
 }
 
