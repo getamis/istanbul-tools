@@ -230,6 +230,6 @@ OPTIONS:
 
 ### Load tests
 
-[Test specification](https://github.com/getamis/istanbul-tools/wiki/Istanbul-BFT-Benchmarking)
+[Istanbul-BFT-Benchmarking](https://github.com/getamis/istanbul-tools/wiki/Istanbul-BFT-Benchmarking)
 
 </details>
