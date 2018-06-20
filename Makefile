@@ -1,9 +1,10 @@
 CURDIR = $(shell pwd)
+GOPATH= $(dir $(abspath $(dir $(abspath $(dir ${CURDIR})))))
 GOBIN = $(CURDIR)/build/bin
 GO ?= latest
 
 istanbul:
-	go build -v -o ./build/bin/istanbul ./cmd/istanbul
+	@GOPATH=$(GOPATH) go build -v -o ./build/bin/istanbul ./cmd/istanbul
 	@echo "Done building."
 	@echo "Run \"$(GOBIN)/istanbul\" to launch istanbul."
 

@@ -29,9 +29,9 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/p2p/discover"
-	istcommon "github.com/getamis/istanbul-tools/common"
-	"github.com/getamis/istanbul-tools/docker/compose"
-	"github.com/getamis/istanbul-tools/genesis"
+	istcommon "github.com/istanbul-tools/common"
+	"github.com/istanbul-tools/docker/compose"
+	"github.com/istanbul-tools/genesis"
 	"github.com/urfave/cli"
 )
 

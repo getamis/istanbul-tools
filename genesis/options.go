@@ -23,7 +23,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core"
 
-	"github.com/getamis/istanbul-tools/cmd/istanbul/extra"
+	"github.com/istanbul-tools/cmd/istanbul/extra"
 )
 
 type Option func(*core.Genesis)

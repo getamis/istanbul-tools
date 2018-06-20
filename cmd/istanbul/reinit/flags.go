@@ -14,10 +14,30 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-package genesis
+package reinit
 
 import (
-	logging "github.com/istanbul-tools/log"
+  "strings"
+
+  "github.com/urfave/cli"
 )
 
-var log = logging.New()
+var (
+  nodeKeyFlag = cli.StringFlag{
+    Name:  "nodekey",
+    Usage: "String of comma separated nodekey values",
+  }
+
+  quorumFlag = cli.BoolFlag{
+    Name:  "quorum",
+    Usage: "Use Quorum",
+  }
+)
+
+func splitAndTrim(input string) []string {
+  result := strings.Split(input, ",")
+  for i, r := range result {
+    result[i] = strings.TrimSpace(r)
+  }
+  return result
+}
