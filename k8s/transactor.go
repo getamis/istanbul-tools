@@ -25,8 +25,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/crypto"
 
-	"github.com/getamis/istanbul-tools/client"
-	istcommon "github.com/getamis/istanbul-tools/common"
+	"github.com/jpmorganchase/istanbul-tools/client"
+	istcommon "github.com/jpmorganchase/istanbul-tools/common"
 )
 
 type Transactor interface {

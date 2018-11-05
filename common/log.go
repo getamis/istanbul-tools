@@ -17,7 +17,7 @@
 package common
 
 import (
-	logging "github.com/istanbul-tools/log"
+	logging "github.com/jpmorganchase/istanbul-tools/log"
 )
 
 var log = logging.New()

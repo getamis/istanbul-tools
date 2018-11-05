@@ -1,4 +1,4 @@
-package: github.com/getamis/istanbul-tools
+package: github.com/jpmorganchase/istanbul-tools
 import:
 - package: github.com/ethereum/go-ethereum
   version: istanbul/develop

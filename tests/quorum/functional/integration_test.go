@@ -17,19 +17,21 @@
 package functional
 
 import (
+	"fmt"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/getamis/istanbul-tools/container"
+	"github.com/jpmorganchase/istanbul-tools/container"
+	"github.com/jpmorganchase/istanbul-tools/docker/service"
 )
 
 var dockerNetwork *container.DockerNetwork
 
 func TestQuorumIstanbul(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Quorum Istanbul Test Suite")
+	RunSpecs(t, fmt.Sprintf("Quorum Istanbul Test Suite\nUsing %s:%s and %s:%s", service.QuorumDockerImage, service.QuorumDockerImageTag, service.ConstellationDockerImage, service.ConstellationDockerImageTag))
 }
 
 var _ = BeforeSuite(func() {

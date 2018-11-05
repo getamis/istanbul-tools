@@ -22,10 +22,10 @@ import (
 
 	"github.com/urfave/cli"
 
-	"github.com/istanbul-tools/cmd/istanbul/extra"
-	"github.com/istanbul-tools/cmd/istanbul/setup"
-  "github.com/istanbul-tools/cmd/istanbul/reinit"
-	"github.com/istanbul-tools/cmd/utils"
+	"github.com/jpmorganchase/istanbul-tools/cmd/istanbul/extra"
+	"github.com/jpmorganchase/istanbul-tools/cmd/istanbul/reinit"
+	"github.com/jpmorganchase/istanbul-tools/cmd/istanbul/setup"
+	"github.com/jpmorganchase/istanbul-tools/cmd/utils"
 )
 
 func main() {
@@ -37,7 +37,7 @@ func main() {
 	app.Commands = []cli.Command{
 		extra.ExtraCommand,
 		setup.SetupCommand,
-    reinit.ReinitCommand,
+		reinit.ReinitCommand,
 	}
 
 	if err := app.Run(os.Args); err != nil {

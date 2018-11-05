@@ -30,8 +30,8 @@ import (
   "github.com/ethereum/go-ethereum/core/types"
   "github.com/ethereum/go-ethereum/crypto"
   "github.com/ethereum/go-ethereum/rlp"
-  "github.com/istanbul-tools/genesis"
-	"github.com/urfave/cli"
+  "github.com/jpmorganchase/istanbul-tools/genesis"
+  "github.com/urfave/cli"
 )
 
 var (

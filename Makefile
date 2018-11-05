@@ -1,5 +1,5 @@
 CURDIR = $(shell pwd)
-GOPATH= $(dir $(abspath $(dir $(abspath $(dir ${CURDIR})))))
+#GOPATH= $(dir $(abspath $(dir $(abspath $(dir ${CURDIR})))))
 GOBIN = $(CURDIR)/build/bin
 GO ?= latest
 
@@ -10,7 +10,7 @@ istanbul:
 
 load-testing:
 	@echo "Run load testing"
-	@CURDIR=$(CURDIR) go test -v github.com/getamis/istanbul-tools/tests/load/... --timeout 1h
+	@CURDIR=$(CURDIR) go test -v github.com/jpmorganchase/istanbul-tools/tests/load/... --timeout 1h
 
 clean:
 	rm -rf build/bin/

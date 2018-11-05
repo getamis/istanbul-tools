@@ -23,7 +23,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	istcommon "github.com/getamis/istanbul-tools/common"
+	istcommon "github.com/jpmorganchase/istanbul-tools/common"
 )
 
 type RichMan interface {

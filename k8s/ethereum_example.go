@@ -17,9 +17,9 @@
 package k8s
 
 import (
-	"github.com/getamis/istanbul-tools/charts"
-	"github.com/getamis/istanbul-tools/common"
-	"github.com/getamis/istanbul-tools/genesis"
+	"github.com/jpmorganchase/istanbul-tools/charts"
+	"github.com/jpmorganchase/istanbul-tools/common"
+	"github.com/jpmorganchase/istanbul-tools/genesis"
 )
 
 func ExampleK8SEthereum() {

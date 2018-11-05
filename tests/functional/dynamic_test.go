@@ -25,8 +25,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/getamis/istanbul-tools/container"
-	"github.com/getamis/istanbul-tools/tests"
+	"github.com/jpmorganchase/istanbul-tools/container"
+	"github.com/jpmorganchase/istanbul-tools/tests"
 )
 
 var _ = Describe("TFS-02: Dynamic validators addition/removal testing", func() {

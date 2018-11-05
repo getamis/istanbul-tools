@@ -42,9 +42,9 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/p2p/discover"
 
-	"github.com/getamis/istanbul-tools/client"
-	istcommon "github.com/getamis/istanbul-tools/common"
-	"github.com/getamis/istanbul-tools/genesis"
+	"github.com/jpmorganchase/istanbul-tools/client"
+	istcommon "github.com/jpmorganchase/istanbul-tools/common"
+	"github.com/jpmorganchase/istanbul-tools/genesis"
 )
 
 const (

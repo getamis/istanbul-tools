@@ -28,7 +28,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
 
-	"github.com/istanbul-tools/common"
+	"github.com/jpmorganchase/istanbul-tools/common"
 )
 
 const (
