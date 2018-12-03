@@ -45,10 +45,3 @@ jobs:
         skip_cleanup: true
         on:
           tags: true
-
-notifications:
-  webhooks:
-    urls:
-      - https://webhooks.gitter.im/e/250f433972aaec17b964
-    on_success: always
-    on_failure: always
