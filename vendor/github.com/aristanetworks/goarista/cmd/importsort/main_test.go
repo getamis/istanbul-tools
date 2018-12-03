@@ -1,4 +1,4 @@
-// Copyright (C) 2017  Arista Networks, Inc.
+// Copyright (c) 2017 Arista Networks, Inc.
 // Use of this source code is governed by the Apache License 2.0
 // that can be found in the COPYING file.
 
@@ -24,11 +24,17 @@ func TestImportSort(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	sections.Set("foobar/,cvshub.com/foobar/")
-	if out := genFile(gold); !bytes.Equal(out, gold) {
-		t.Fatal("importsort on test.go.gold file produced a change")
+	sections := []string{"foobar", "cvshub.com/foobar"}
+	if out, err := genFile(gold, sections); err != nil {
+		t.Fatal(err)
+	} else if !bytes.Equal(out, gold) {
+		t.Errorf("importsort on %s file produced a change", goldFile)
+		t.Log(string(out))
 	}
-	if out := genFile(in); !bytes.Equal(out, gold) {
-		t.Fatal("importsort on test.go.in different than gold")
+	if out, err := genFile(in, sections); err != nil {
+		t.Fatal(err)
+	} else if !bytes.Equal(out, gold) {
+		t.Errorf("importsort on %s different than gold", inFile)
+		t.Log(string(out))
 	}
 }

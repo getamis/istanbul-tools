@@ -34,13 +34,17 @@ const (
 var startTime = time.Now()
 
 var (
-	autoCertDomain      = flag.String("autocert", "", "if non-empty, listen on port 443 and serve a LetsEncrypt cert for this hostname")
+	autoCertDomain      = flag.String("autocert", "", "if non-empty, listen on port 443 and serve a LetsEncrypt cert for this hostname or hostnames (comma-separated)")
 	autoCertCacheBucket = flag.String("autocert-bucket", "", "if non-empty, the Google Cloud Storage bucket in which to store the LetsEncrypt cache")
 )
 
-// runHTTPS, if non-nil, specifies the function to serve HTTPS.
-// It is set non-nil in cert.go with the "autocert" build tag.
-var runHTTPS func(http.Handler) error
+// Hooks that are set non-nil in cert.go if the "autocert" build tag
+// is used.
+var (
+	certInit    func()
+	runHTTPS    func(http.Handler) error
+	wrapHTTPMux func(http.Handler) http.Handler
+)
 
 func main() {
 	flag.Parse()
@@ -56,6 +60,10 @@ func main() {
 		log.Fatalf("Unknown %v value: %q", k, os.Getenv(k))
 	}
 
+	if certInit != nil {
+		certInit()
+	}
+
 	p := &Proxy{builder: b}
 	go p.run()
 	mux := newServeMux(p)
@@ -65,7 +73,11 @@ func main() {
 	errc := make(chan error, 1)
 
 	go func() {
-		errc <- http.ListenAndServe(":8080", mux)
+		var httpMux http.Handler = mux
+		if wrapHTTPMux != nil {
+			httpMux = wrapHTTPMux(httpMux)
+		}
+		errc <- http.ListenAndServe(":8080", httpMux)
 	}()
 	if *autoCertDomain != "" {
 		if runHTTPS == nil {
@@ -106,6 +118,18 @@ type Builder interface {
 func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path == "/_tipstatus" {
 		p.serveStatus(w, r)
+		return
+	}
+	// Redirect the old beta.golang.org URL to tip.golang.org,
+	// just in case there are old links out there to
+	// beta.golang.org. (We used to run a "temporary" beta.golang.org
+	// GCE VM running godoc where "temporary" lasted two years.
+	// So it lasted so long, there are probably links to it out there.)
+	if r.Host == "beta.golang.org" {
+		u := *r.URL
+		u.Scheme = "https"
+		u.Host = "tip.golang.org"
+		http.Redirect(w, r, u.String(), http.StatusFound)
 		return
 	}
 	p.mu.Lock()
@@ -396,7 +420,7 @@ func (h httpsOnlyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Header.Get("X-Appengine-Https") == "on" || r.Header.Get("X-Forwarded-Proto") == "https" ||
 		(!isProxiedReq(r) && r.TLS != nil) {
 		// Only set this header when we're actually in production.
-		w.Header().Set("Strict-Transport-Security", "max-age=31536000; preload")
+		w.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload")
 	}
 	h.h.ServeHTTP(w, r)
 }

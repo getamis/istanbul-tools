@@ -1,4 +1,4 @@
-// Copyright (C) 2017  Arista Networks, Inc.
+// Copyright (c) 2017 Arista Networks, Inc.
 // Use of this source code is governed by the Apache License 2.0
 // that can be found in the COPYING file.
 
@@ -73,13 +73,14 @@ func SplitPaths(paths []string) [][]string {
 // StrPath builds a human-readable form of a gnmi path.
 // e.g. /a/b/c[e=f]
 func StrPath(path *pb.Path) string {
-	if len(path.Elem) != 0 {
+	if path == nil {
+		return "/"
+	} else if len(path.Elem) != 0 {
 		return strPathV04(path)
 	} else if len(path.Element) != 0 {
 		return strPathV03(path)
-	} else {
-		return "/"
 	}
+	return "/"
 }
 
 // strPathV04 handles the v0.4 gnmi and later path.Elem member.
@@ -124,16 +125,19 @@ func writeSafeString(buf *bytes.Buffer, s string, esc rune) {
 }
 
 // ParseGNMIElements builds up a gnmi path, from user-supplied text
-func ParseGNMIElements(elms []string) ([]*pb.PathElem, error) {
-	var ret []*pb.PathElem
+func ParseGNMIElements(elms []string) (*pb.Path, error) {
+	var parsed []*pb.PathElem
 	for _, e := range elms {
 		n, keys, err := parseElement(e)
 		if err != nil {
 			return nil, err
 		}
-		ret = append(ret, &pb.PathElem{Name: n, Key: keys})
+		parsed = append(parsed, &pb.PathElem{Name: n, Key: keys})
 	}
-	return ret, nil
+	return &pb.Path{
+		Element: elms, // Backwards compatibility with pre-v0.4 gnmi
+		Elem:    parsed,
+	}, nil
 }
 
 // parseElement parses a path element, according to the gNMI specification. See

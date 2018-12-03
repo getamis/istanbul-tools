@@ -49,7 +49,7 @@ func TestSpec(t *testing.T) {
 		{
 			"NoConfig",
 			Options{
-			// Intentionally left blank.
+				// Intentionally left blank.
 			},
 			"GET",
 			map[string]string{},
@@ -83,7 +83,7 @@ func TestSpec(t *testing.T) {
 			},
 			map[string]string{
 				"Vary": "Origin",
-				"Access-Control-Allow-Origin":      "http://foobar.com",
+				"Access-Control-Allow-Origin":      "*",
 				"Access-Control-Allow-Credentials": "true",
 			},
 		},
@@ -158,15 +158,33 @@ func TestSpec(t *testing.T) {
 			},
 		},
 		{
-			"AllowedOriginFuncNotMatch",
+			"AllowOriginRequestFuncMatch",
 			Options{
-				AllowOriginFunc: func(o string) bool {
-					return regexp.MustCompile("^http://foo").MatchString(o)
+				AllowOriginRequestFunc: func(r *http.Request, o string) bool {
+					return regexp.MustCompile("^http://foo").MatchString(o) && r.Header.Get("Authorization") == "secret"
 				},
 			},
 			"GET",
 			map[string]string{
-				"Origin": "http://barfoo.com",
+				"Origin":        "http://foobar.com",
+				"Authorization": "secret",
+			},
+			map[string]string{
+				"Vary": "Origin",
+				"Access-Control-Allow-Origin": "http://foobar.com",
+			},
+		},
+		{
+			"AllowOriginRequestFuncNotMatch",
+			Options{
+				AllowOriginRequestFunc: func(r *http.Request, o string) bool {
+					return regexp.MustCompile("^http://foo").MatchString(o) && r.Header.Get("Authorization") == "secret"
+				},
+			},
+			"GET",
+			map[string]string{
+				"Origin":        "http://foobar.com",
+				"Authorization": "not-secret",
 			},
 			map[string]string{
 				"Vary": "Origin",
@@ -240,6 +258,25 @@ func TestSpec(t *testing.T) {
 				"Access-Control-Allow-Origin":  "http://foobar.com",
 				"Access-Control-Allow-Methods": "GET",
 				"Access-Control-Allow-Headers": "X-Header-2, X-Header-1",
+			},
+		},
+		{
+			"DefaultAllowedHeaders",
+			Options{
+				AllowedOrigins: []string{"http://foobar.com"},
+				AllowedHeaders: []string{},
+			},
+			"OPTIONS",
+			map[string]string{
+				"Origin":                         "http://foobar.com",
+				"Access-Control-Request-Method":  "GET",
+				"Access-Control-Request-Headers": "X-Requested-With",
+			},
+			map[string]string{
+				"Vary": "Origin, Access-Control-Request-Method, Access-Control-Request-Headers",
+				"Access-Control-Allow-Origin":  "http://foobar.com",
+				"Access-Control-Allow-Methods": "GET",
+				"Access-Control-Allow-Headers": "X-Requested-With",
 			},
 		},
 		{
@@ -411,7 +448,7 @@ func TestDefault(t *testing.T) {
 	}
 }
 
-func TestHandlePreflightInvlaidOriginAbortion(t *testing.T) {
+func TestHandlePreflightInvalidOriginAbortion(t *testing.T) {
 	s := New(Options{
 		AllowedOrigins: []string{"http://foo.com"},
 	})
@@ -428,7 +465,7 @@ func TestHandlePreflightInvlaidOriginAbortion(t *testing.T) {
 
 func TestHandlePreflightNoOptionsAbortion(t *testing.T) {
 	s := New(Options{
-	// Intentionally left blank.
+		// Intentionally left blank.
 	})
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "http://example.com/foo", nil)
@@ -451,7 +488,7 @@ func TestHandleActualRequestAbortsOptionsMethod(t *testing.T) {
 	assertHeaders(t, res.Header(), map[string]string{})
 }
 
-func TestHandleActualRequestInvlaidOriginAbortion(t *testing.T) {
+func TestHandleActualRequestInvalidOriginAbortion(t *testing.T) {
 	s := New(Options{
 		AllowedOrigins: []string{"http://foo.com"},
 	})
@@ -466,7 +503,7 @@ func TestHandleActualRequestInvlaidOriginAbortion(t *testing.T) {
 	})
 }
 
-func TestHandleActualRequestInvlaidMethodAbortion(t *testing.T) {
+func TestHandleActualRequestInvalidMethodAbortion(t *testing.T) {
 	s := New(Options{
 		AllowedMethods:   []string{"POST"},
 		AllowCredentials: true,
@@ -484,7 +521,7 @@ func TestHandleActualRequestInvlaidMethodAbortion(t *testing.T) {
 
 func TestIsMethodAllowedReturnsFalseWithNoMethods(t *testing.T) {
 	s := New(Options{
-	// Intentionally left blank.
+		// Intentionally left blank.
 	})
 	s.allowedMethods = []string{}
 	if s.isMethodAllowed("") {
@@ -494,7 +531,7 @@ func TestIsMethodAllowedReturnsFalseWithNoMethods(t *testing.T) {
 
 func TestIsMethodAllowedReturnsTrueWithOptions(t *testing.T) {
 	s := New(Options{
-	// Intentionally left blank.
+		// Intentionally left blank.
 	})
 	if !s.isMethodAllowed("OPTIONS") {
 		t.Error("IsMethodAllowed should return true when c.allowedMethods is nil.")

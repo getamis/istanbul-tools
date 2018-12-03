@@ -1,4 +1,4 @@
-// Copyright (C) 2016  Arista Networks, Inc.
+// Copyright (c) 2016 Arista Networks, Inc.
 // Use of this source code is governed by the Apache License 2.0
 // that can be found in the COPYING file.
 
@@ -8,10 +8,11 @@ import (
 	"os"
 	"sync"
 
-	"github.com/Shopify/sarama"
-	"github.com/aristanetworks/glog"
 	"github.com/aristanetworks/goarista/kafka"
 	"github.com/aristanetworks/goarista/kafka/openconfig"
+
+	"github.com/Shopify/sarama"
+	"github.com/aristanetworks/glog"
 	"github.com/golang/protobuf/proto"
 )
 
@@ -115,7 +116,7 @@ func (p *producer) produceNotifications(protoMessage proto.Message) error {
 		case <-p.done:
 			return nil
 		case p.kafkaProducer.Input() <- m:
-			glog.V(9).Infof("Message produced to Kafka: %s", m)
+			glog.V(9).Infof("Message produced to Kafka: %v", m)
 		}
 	}
 	return nil

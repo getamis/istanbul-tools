@@ -1,4 +1,4 @@
-// Copyright (C) 2015  Arista Networks, Inc.
+// Copyright (c) 2015 Arista Networks, Inc.
 // Use of this source code is governed by the Apache License 2.0
 // that can be found in the COPYING file.
 
@@ -42,6 +42,16 @@ func (c customKey) ToBuiltin() interface{} {
 	return c.i
 }
 
+var (
+	nilIntf = interface{}(nil)
+	nilMap  = map[string]interface{}(nil)
+	nilArr  = []interface{}(nil)
+	nilPath = Path(nil)
+
+	nilPtr Pointer
+	nilVal value.Value
+)
+
 func TestKeyEqual(t *testing.T) {
 	tests := []struct {
 		a      Key
@@ -55,6 +65,34 @@ func TestKeyEqual(t *testing.T) {
 		a:      New("foo"),
 		b:      New("bar"),
 		result: false,
+	}, {
+		a:      New([]interface{}{}),
+		b:      New("bar"),
+		result: false,
+	}, {
+		a:      New([]interface{}{}),
+		b:      New([]interface{}{}),
+		result: true,
+	}, {
+		a:      New([]interface{}{"a", "b"}),
+		b:      New([]interface{}{"a"}),
+		result: false,
+	}, {
+		a:      New([]interface{}{"a", "b"}),
+		b:      New([]interface{}{"b", "a"}),
+		result: false,
+	}, {
+		a:      New([]interface{}{"a", "b"}),
+		b:      New([]interface{}{"a", "b"}),
+		result: true,
+	}, {
+		a:      New([]interface{}{"a", map[string]interface{}{"b": "c"}}),
+		b:      New([]interface{}{"a", map[string]interface{}{"c": "b"}}),
+		result: false,
+	}, {
+		a:      New([]interface{}{"a", map[string]interface{}{"b": "c"}}),
+		b:      New([]interface{}{"a", map[string]interface{}{"b": "c"}}),
+		result: true,
 	}, {
 		a:      New(map[string]interface{}{}),
 		b:      New("bar"),
@@ -111,6 +149,46 @@ func TestKeyEqual(t *testing.T) {
 		a:      New(customKey{i: 42}),
 		b:      New(customKey{i: 42}),
 		result: true,
+	}, {
+		a:      New(nil),
+		b:      New(nil),
+		result: true,
+	}, {
+		a:      New(nil),
+		b:      New(nilIntf),
+		result: true,
+	}, {
+		a:      New(nil),
+		b:      New(nilPtr),
+		result: true,
+	}, {
+		a:      New(nil),
+		b:      New(nilVal),
+		result: true,
+	}, {
+		a:      New(nil),
+		b:      New(nilMap),
+		result: false,
+	}, {
+		a:      New(nilMap),
+		b:      New(map[string]interface{}{}),
+		result: true,
+	}, {
+		a:      New(nil),
+		b:      New(nilArr),
+		result: false,
+	}, {
+		a:      New(nilArr),
+		b:      New([]interface{}{}),
+		result: true,
+	}, {
+		a:      New(nil),
+		b:      New(nilPath),
+		result: false,
+	}, {
+		a:      New(nilPath),
+		b:      New(Path{}),
+		result: true,
 	}}
 
 	for _, tcase := range tests {
@@ -134,6 +212,11 @@ func TestGetFromMap(t *testing.T) {
 		v     interface{}
 		found bool
 	}{{
+		k:     New(nil),
+		m:     map[Key]interface{}{New(nil): nil},
+		v:     nil,
+		found: true,
+	}, {
 		k:     New("a"),
 		m:     map[Key]interface{}{New("a"): "b"},
 		v:     "b",
@@ -150,6 +233,32 @@ func TestGetFromMap(t *testing.T) {
 	}, {
 		k:     New(uint32(37)),
 		m:     map[Key]interface{}{},
+		found: false,
+	}, {
+		k: New([]interface{}{"a", "b"}),
+		m: map[Key]interface{}{
+			New([]interface{}{"a", "b"}): "foo",
+		},
+		v:     "foo",
+		found: true,
+	}, {
+		k: New([]interface{}{"a", "b"}),
+		m: map[Key]interface{}{
+			New([]interface{}{"a", "b", "c"}): "foo",
+		},
+		found: false,
+	}, {
+		k: New([]interface{}{"a", map[string]interface{}{"b": "c"}}),
+		m: map[Key]interface{}{
+			New([]interface{}{"a", map[string]interface{}{"b": "c"}}): "foo",
+		},
+		v:     "foo",
+		found: true,
+	}, {
+		k: New([]interface{}{"a", map[string]interface{}{"b": "c"}}),
+		m: map[Key]interface{}{
+			New([]interface{}{"a", map[string]interface{}{"c": "b"}}): "foo",
+		},
 		found: false,
 	}, {
 		k: New(map[string]interface{}{"a": "b", "c": uint64(4)}),
@@ -392,6 +501,56 @@ func TestSetToMap(t *testing.T) {
 	}
 }
 
+func TestGoString(t *testing.T) {
+	tcases := []struct {
+		in  Key
+		out string
+	}{{
+		in:  New(nil),
+		out: "key.New(nil)",
+	}, {
+		in:  New(uint8(1)),
+		out: "key.New(uint8(1))",
+	}, {
+		in:  New(uint16(1)),
+		out: "key.New(uint16(1))",
+	}, {
+		in:  New(uint32(1)),
+		out: "key.New(uint32(1))",
+	}, {
+		in:  New(uint64(1)),
+		out: "key.New(uint64(1))",
+	}, {
+		in:  New(int8(1)),
+		out: "key.New(int8(1))",
+	}, {
+		in:  New(int16(1)),
+		out: "key.New(int16(1))",
+	}, {
+		in:  New(int32(1)),
+		out: "key.New(int32(1))",
+	}, {
+		in:  New(int64(1)),
+		out: "key.New(int64(1))",
+	}, {
+		in:  New(float32(1)),
+		out: "key.New(float32(1))",
+	}, {
+		in:  New(float64(1)),
+		out: "key.New(float64(1))",
+	}, {
+		in:  New(map[string]interface{}{"foo": true}),
+		out: `key.New(map[string]interface {}{"foo":true})`,
+	}}
+	for i, tcase := range tcases {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			if out := fmt.Sprintf("%#v", tcase.in); out != tcase.out {
+				t.Errorf("Wanted Go representation %q but got %q", tcase.out, out)
+			}
+		})
+	}
+}
+
 func TestMisc(t *testing.T) {
 	k := New(map[string]interface{}{"foo": true})
 	js, err := json.Marshal(k)
@@ -399,11 +558,6 @@ func TestMisc(t *testing.T) {
 		t.Error("JSON encoding failed:", err)
 	} else if expected := `{"foo":true}`; string(js) != expected {
 		t.Errorf("Wanted JSON %q but got %q", expected, js)
-	}
-	expected := `key.New(map[string]interface {}{"foo":true})`
-	gostr := fmt.Sprintf("%#v", k)
-	if expected != gostr {
-		t.Errorf("Wanted Go representation %q but got %q", expected, gostr)
 	}
 
 	test.ShouldPanic(t, func() { New(42) })
@@ -586,6 +740,9 @@ func BenchmarkBuiltInType(b *testing.B) {
 				// create the key.Key and call some function here
 				if k = New(bench.val); k == nil {
 					b.Fatalf("expect to get key.Key, but got nil")
+				}
+				if !k.Equal(New(bench.val)) {
+					b.Fatalf("k is not equal to itself: %v", bench.val)
 				}
 			}
 		})

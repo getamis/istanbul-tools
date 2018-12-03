@@ -1,8 +1,7 @@
 package: github.com/jpmorganchase/istanbul-tools
 import:
 - package: github.com/ethereum/go-ethereum
-  version: istanbul/develop
-  repo: git@github.com:getamis/go-ethereum
+  repo: https://github.com/jpmorganchase/quorum.git
   vcs: git
   subpackages:
   - cmd/utils
@@ -46,3 +45,7 @@ import:
   version: v1.0.3
 - package: github.com/inconshreveable/log15
   version: ^2.11.0
+- package: github.com/prometheus/prometheus
+  version: 70f3d1e9f95ad6611be2e76fad44f07b0a2579ca
+  subpackages:
+  - util/flock

@@ -33,7 +33,7 @@ type blobWriter struct {
 	id        string
 	startedAt time.Time
 	digester  digest.Digester
-	written   int64 // track the contiguous write
+	written   int64 // track the write to digester
 
 	fileWriter storagedriver.FileWriter
 	driver     storagedriver.StorageDriver
@@ -104,11 +104,7 @@ func (bw *blobWriter) Cancel(ctx context.Context) error {
 		dcontext.GetLogger(ctx).Errorf("error closing blobwriter: %s", err)
 	}
 
-	if err := bw.removeResources(ctx); err != nil {
-		return err
-	}
-
-	return nil
+	return bw.removeResources(ctx)
 }
 
 func (bw *blobWriter) Size() int64 {
@@ -123,7 +119,12 @@ func (bw *blobWriter) Write(p []byte) (int, error) {
 		return 0, err
 	}
 
-	n, err := io.MultiWriter(bw.fileWriter, bw.digester.Hash()).Write(p)
+	_, err := bw.fileWriter.Write(p)
+	if err != nil {
+		return 0, err
+	}
+
+	n, err := bw.digester.Hash().Write(p)
 	bw.written += int64(n)
 
 	return n, err
@@ -137,7 +138,11 @@ func (bw *blobWriter) ReadFrom(r io.Reader) (n int64, err error) {
 		return 0, err
 	}
 
-	nn, err := io.Copy(io.MultiWriter(bw.fileWriter, bw.digester.Hash()), r)
+	// Using a TeeReader instead of MultiWriter ensures Copy returns
+	// the amount written to the digester as well as ensuring that we
+	// write to the fileWriter first
+	tee := io.TeeReader(r, bw.fileWriter)
+	nn, err := io.Copy(bw.digester.Hash(), tee)
 	bw.written += nn
 
 	return nn, err

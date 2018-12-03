@@ -48,6 +48,8 @@ func TestGeneratedFiles(t *testing.T) {
 			env = append(env, envVar)
 		}
 	}
+	// gorename currently requires GOPATH mode.
+	env = append(env, "GO111MODULE=off")
 
 	// Testing renaming in packages that include cgo files:
 	for iter, renameTest := range []test{
@@ -370,7 +372,7 @@ func modifiedFiles(t *testing.T, dir string, packages map[string][]string) (resu
 			file := filepath.Join(pkgDir, strconv.Itoa(i)+".go")
 			// read file contents and compare to val
 			if contents, err := ioutil.ReadFile(file); err != nil {
-				t.Fatal("File missing: %s", err)
+				t.Fatalf("File missing: %s", err)
 			} else if string(contents) != val {
 				results = append(results, strings.TrimPrefix(dir, file))
 			}

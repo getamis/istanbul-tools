@@ -1,4 +1,4 @@
-// Copyright (C) 2016  Arista Networks, Inc.
+// Copyright (c) 2016 Arista Networks, Inc.
 // Use of this source code is governed by the Apache License 2.0
 // that can be found in the COPYING file.
 
@@ -23,7 +23,7 @@ func ParseFlags() (username string, password string, subscriptions, addrs []stri
 	opts []grpc.DialOption) {
 
 	var (
-		addrsFlag = flag.String("addrs", "localhost:6042",
+		addrsFlag = flag.String("addrs", "localhost:6030",
 			"Comma-separated list of addresses of OpenConfig gRPC servers")
 
 		caFileFlag = flag.String("cafile", "",

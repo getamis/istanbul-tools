@@ -1,4 +1,4 @@
-// Copyright (C) 2016  Arista Networks, Inc.
+// Copyright (c) 2016 Arista Networks, Inc.
 // Use of this source code is governed by the Apache License 2.0
 // that can be found in the COPYING file.
 
@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/aristanetworks/goarista/test"
+
 	"github.com/openconfig/reference/rpc/openconfig"
 )
 
@@ -79,11 +80,11 @@ func TestNotificationToMap(t *testing.T) {
 				},
 			},
 			Delete: []*openconfig.Path{
-				&openconfig.Path{
+				{
 					Element: []string{
 						"route", "237.255.255.250_0.0.0.0",
 					}},
-				&openconfig.Path{
+				{
 					Element: []string{
 						"route", "238.255.255.250_0.0.0.0",
 					},

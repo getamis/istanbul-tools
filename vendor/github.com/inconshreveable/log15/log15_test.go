@@ -112,6 +112,35 @@ func TestJson(t *testing.T) {
 	validate("msg", "some message")
 	validate("x", float64(1)) // all numbers are floats in JSON land
 	validate("y", 3.2)
+	validate("lvl", "eror")
+}
+
+func TestJSONMap(t *testing.T) {
+	m := map[string]interface{}{
+		"name":     "gopher",
+		"age":      float64(5),
+		"language": "go",
+	}
+
+	l, buf := testFormatter(JsonFormat())
+	l.Error("logging structs", "struct", m)
+
+	var v map[string]interface{}
+	decoder := json.NewDecoder(buf)
+	if err := decoder.Decode(&v); err != nil {
+		t.Fatalf("Error decoding JSON: %v", v)
+	}
+
+	checkMap := func(key string, expected interface{}) {
+		if m[key] != expected {
+			t.Fatalf("Got %v expected %v for %v", m[key], expected, key)
+		}
+	}
+
+	mv := v["struct"].(map[string]interface{})
+	checkMap("name", mv["name"])
+	checkMap("age", mv["age"])
+	checkMap("language", mv["language"])
 }
 
 type testtype struct {
@@ -128,11 +157,12 @@ func TestLogfmt(t *testing.T) {
 	var nilVal *testtype
 
 	l, buf := testFormatter(LogfmtFormat())
-	l.Error("some message", "x", 1, "y", 3.2, "equals", "=", "quote", "\"", "nil", nilVal)
+	l.Error("some message", "x", 1, "y", 3.2, "equals", "=", "quote", "\"",
+		"nil", nilVal, "carriage_return", "bang"+string('\r')+"foo", "tab", "bar	baz", "newline", "foo\nbar")
 
 	// skip timestamp in comparison
 	got := buf.Bytes()[27:buf.Len()]
-	expected := []byte(`lvl=eror msg="some message" x=1 y=3.200 equals="=" quote="\"" nil=nil` + "\n")
+	expected := []byte(`lvl=eror msg="some message" x=1 y=3.200 equals="=" quote="\"" nil=nil carriage_return="bang\rfoo" tab="bar\tbaz" newline="foo\nbar"` + "\n")
 	if !bytes.Equal(got, expected) {
 		t.Fatalf("Got %s, expected %s", got, expected)
 	}
@@ -253,14 +283,15 @@ func TestNetHandler(t *testing.T) {
 	go func() {
 		c, err := l.Accept()
 		if err != nil {
-			t.Errorf("Failed to accept conneciton: %v", err)
+			errs <- fmt.Errorf("Failed to accept connection: %v", err)
 			return
 		}
 
 		rd := bufio.NewReader(c)
 		s, err := rd.ReadString('\n')
 		if err != nil {
-			t.Errorf("Failed to read string: %v", err)
+			errs <- fmt.Errorf("Failed to read string: %v", err)
+			return
 		}
 
 		got := s[27:]
@@ -283,8 +314,10 @@ func TestNetHandler(t *testing.T) {
 	select {
 	case <-time.After(time.Second):
 		t.Fatalf("Test timed out!")
-	case <-errs:
-		// ok
+	case err := <-errs:
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
 }
 
@@ -346,9 +379,8 @@ type failingWriter struct {
 func (w *failingWriter) Write(buf []byte) (int, error) {
 	if w.fail {
 		return 0, errors.New("fail")
-	} else {
-		return len(buf), nil
 	}
+	return len(buf), nil
 }
 
 func TestFailoverHandler(t *testing.T) {

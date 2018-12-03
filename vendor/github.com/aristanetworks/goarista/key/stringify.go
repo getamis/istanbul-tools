@@ -1,15 +1,16 @@
-// Copyright (C) 2015  Arista Networks, Inc.
+// Copyright (c) 2015 Arista Networks, Inc.
 // Use of this source code is governed by the Apache License 2.0
 // that can be found in the COPYING file.
 
 package key
 
 import (
-	"errors"
+	"encoding/base64"
 	"fmt"
 	"math"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/aristanetworks/goarista/value"
 )
@@ -19,11 +20,10 @@ import (
 // representation of their keys as their names.
 // Note: this API is deprecated and will be removed.
 func StringifyInterface(key interface{}) (string, error) {
-	if key == nil {
-		return "", errors.New("Unable to stringify nil")
-	}
 	var str string
 	switch key := key.(type) {
+	case nil:
+		return "<nil>", nil
 	case bool:
 		str = strconv.FormatBool(key)
 	case uint8:
@@ -67,7 +67,16 @@ func StringifyInterface(key interface{}) (string, error) {
 			keys[i] = stringify(k) + "=" + stringify(m[k])
 		}
 		str = strings.Join(keys, "_")
-
+	case []interface{}:
+		elements := make([]string, len(key))
+		for i, element := range key {
+			elements[i] = stringify(element)
+		}
+		str = strings.Join(elements, ",")
+	case Pointer:
+		return "{" + key.Pointer().String() + "}", nil
+	case Path:
+		return "[" + key.String() + "]", nil
 	case value.Value:
 		return key.String(), nil
 
@@ -78,15 +87,14 @@ func StringifyInterface(key interface{}) (string, error) {
 	return str, nil
 }
 
+// escape checks if the string is a valid utf-8 string.
+// If it is, it will return the string as is.
+// If it is not, it will return the base64 representation of the byte array string
 func escape(str string) string {
-	for i := 0; i < len(str); i++ {
-		if chr := str[i]; chr < 0x20 || chr > 0x7E {
-			str = strconv.QuoteToASCII(str)
-			str = str[1 : len(str)-1] // Drop the leading and trailing quotes.
-			break
-		}
+	if utf8.ValidString(str) {
+		return str
 	}
-	return str
+	return base64.StdEncoding.EncodeToString([]byte(str))
 }
 
 func stringify(key interface{}) string {

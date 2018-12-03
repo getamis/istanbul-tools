@@ -122,7 +122,7 @@ func (c *Compiler) next() token {
 }
 
 // compile line compiles a single line instruction e.g.
-// "push 1", "jump @labal".
+// "push 1", "jump @label".
 func (c *Compiler) compileLine() error {
 	n := c.next()
 	if n.typ != lineStart {
@@ -237,10 +237,7 @@ func (c *Compiler) pushBin(v interface{}) {
 // isPush returns whether the string op is either any of
 // push(N).
 func isPush(op string) bool {
-	if op == "push" {
-		return true
-	}
-	return false
+	return op == "push"
 }
 
 // isJump returns whether the string op is jump(i)

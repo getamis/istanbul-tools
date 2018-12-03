@@ -1,4 +1,4 @@
-// Copyright (C) 2015  Arista Networks, Inc.
+// Copyright (c) 2015 Arista Networks, Inc.
 // Use of this source code is governed by the Apache License 2.0
 // that can be found in the COPYING file.
 
@@ -17,7 +17,7 @@ func TestStringify(t *testing.T) {
 	}{{
 		name:   "nil",
 		input:  nil,
-		output: "Unable to stringify nil",
+		output: "<nil>",
 	}, {
 		name:   "struct{}",
 		input:  struct{}{},
@@ -27,9 +27,21 @@ func TestStringify(t *testing.T) {
 		input:  "foobar",
 		output: "foobar",
 	}, {
-		name:   "non-ASCII string",
+		name:   "valid non-ASCII UTF-8 string",
 		input:  "日本語",
-		output: `\u65e5\u672c\u8a9e`,
+		output: "日本語",
+	}, {
+		name:   "invalid UTF-8 string 1",
+		input:  string([]byte{0xef, 0xbf, 0xbe, 0xbe, 0xbe, 0xbe, 0xbe}),
+		output: "77++vr6+vg==",
+	}, {
+		name:   "invalid UTF-8 string 2",
+		input:  string([]byte{0xef, 0xbf, 0xbe, 0xbe, 0xbe, 0xbe, 0xbe, 0x23}),
+		output: "77++vr6+viM=",
+	}, {
+		name:   "invalid UTF-8 string 3",
+		input:  string([]byte{0xef, 0xbf, 0xbe, 0xbe, 0xbe, 0xbe, 0xbe, 0x23, 0x24}),
+		output: "77++vr6+viMk",
 	}, {
 		name:   "uint8",
 		input:  uint8(43),
@@ -106,7 +118,23 @@ func TestStringify(t *testing.T) {
 		input: map[string]interface{}{
 			"n": nil,
 		},
-		output: "Unable to stringify nil",
+		output: "<nil>",
+	}, {
+		name: "[]interface{}",
+		input: []interface{}{
+			uint32(42),
+			true,
+			"foo",
+			map[Key]interface{}{
+				New("a"): "b",
+				New("b"): "c",
+			},
+		},
+		output: "42,true,foo,a=b_b=c",
+	}, {
+		name:   "pointer",
+		input:  NewPointer(Path{New("foo"), New("bar")}),
+		output: "{/foo/bar}",
 	}}
 
 	for _, tcase := range testcases {

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
@@ -10,7 +11,6 @@ import (
 	"github.com/docker/distribution/registry/api/v2"
 	"github.com/docker/distribution/registry/auth"
 	"github.com/opencontainers/go-digest"
-	"golang.org/x/net/context"
 )
 
 // Context should contain the request specific context for use in across
@@ -24,6 +24,9 @@ type Context struct {
 	// Repository is the repository for the current request. All requests
 	// should be scoped to a single repository. This field may be nil.
 	Repository distribution.Repository
+
+	// RepositoryRemover provides method to delete a repository
+	RepositoryRemover distribution.RepositoryRemover
 
 	// Errors is a collection of errors encountered during the request to be
 	// returned to the client API. If errors are added to the collection, the

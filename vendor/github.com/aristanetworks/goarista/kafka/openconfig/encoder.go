@@ -1,4 +1,4 @@
-// Copyright (C) 2016  Arista Networks, Inc.
+// Copyright (c) 2016 Arista Networks, Inc.
 // Use of this source code is governed by the Apache License 2.0
 // that can be found in the COPYING file.
 
@@ -9,13 +9,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Shopify/sarama"
-	"github.com/aristanetworks/glog"
 	"github.com/aristanetworks/goarista/elasticsearch"
 	"github.com/aristanetworks/goarista/kafka"
 	"github.com/aristanetworks/goarista/openconfig"
-	"github.com/golang/protobuf/proto"
 
+	"github.com/Shopify/sarama"
+	"github.com/aristanetworks/glog"
+	"github.com/golang/protobuf/proto"
 	pb "github.com/openconfig/reference/rpc/openconfig"
 )
 
@@ -79,7 +79,7 @@ func (e *elasticsearchMessageEncoder) Encode(message proto.Message) ([]*sarama.P
 	}
 	glog.V(9).Infof("kafka: %s", updateJSON)
 	return []*sarama.ProducerMessage{
-		&sarama.ProducerMessage{
+		{
 			Topic:    e.topic,
 			Key:      e.key,
 			Value:    sarama.ByteEncoder(updateJSON),

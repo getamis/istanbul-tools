@@ -2,7 +2,7 @@ package ext
 
 import (
 	"errors"
-	log "gopkg.in/inconshreveable/log15.v2"
+	log "github.com/inconshreveable/log15"
 	"math"
 	"testing"
 )

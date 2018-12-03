@@ -1,4 +1,4 @@
-// Copyright (C) 2016  Arista Networks, Inc.
+// Copyright (c) 2016 Arista Networks, Inc.
 // Use of this source code is governed by the Apache License 2.0
 // that can be found in the COPYING file.
 
@@ -19,7 +19,7 @@ type unhashable struct {
 func TestBadComposite(t *testing.T) {
 	test.ShouldPanicWith(t, "use of unhashable type in a map", func() {
 		m := map[interface{}]struct{}{
-			unhashable{func() {}, 0x42}: struct{}{},
+			unhashable{func() {}, 0x42}: {},
 		}
 		// Use Key here to make sure init() is called.
 		if _, ok := m[New("foo")]; ok {

@@ -1,7 +1,9 @@
 language: go
 
 go:
- - 1.7.5
+ - 1.10.x
+ - 1.11.x
+ - master
 
 os:
  - linux
@@ -13,6 +15,8 @@ matrix:
      go: 1.7.5
      env:
       - GOFLAGS="-tags kqueue"
+  allow_failures:
+   - go: tip
 
 env:
   global:
@@ -25,4 +29,4 @@ install:
 script:
  - "(go version | grep -q 1.4) || go tool vet -all ."
  - go install $GOFLAGS ./...
- - go test -v -race $GOFLAGS ./...
+ - go test -v -timeout 60s -race $GOFLAGS ./...

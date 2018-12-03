@@ -1,4 +1,4 @@
-// Copyright (C) 2016  Arista Networks, Inc.
+// Copyright (c) 2016 Arista Networks, Inc.
 // Use of this source code is governed by the Apache License 2.0
 // that can be found in the COPYING file.
 
@@ -12,12 +12,13 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/Shopify/sarama"
-	"github.com/aristanetworks/glog"
 	"github.com/aristanetworks/goarista/kafka"
 	"github.com/aristanetworks/goarista/kafka/openconfig"
 	"github.com/aristanetworks/goarista/kafka/producer"
 	"github.com/aristanetworks/goarista/openconfig/client"
+
+	"github.com/Shopify/sarama"
+	"github.com/aristanetworks/glog"
 	"github.com/golang/protobuf/proto"
 )
 
@@ -25,13 +26,12 @@ var keysFlag = flag.String("kafkakeys", "",
 	"Keys for kafka messages (comma-separated, default: the value of -addrs")
 
 func newProducer(addresses []string, topic, key, dataset string) (producer.Producer, error) {
-
-	glog.Infof("Connected to Kafka brokers at %s", addresses)
 	encodedKey := sarama.StringEncoder(key)
 	p, err := producer.New(openconfig.NewEncoder(topic, encodedKey, dataset), addresses, nil)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create Kafka producer: %s", err)
+		return nil, fmt.Errorf("Failed to create Kafka brokers: %s", err)
 	}
+	glog.Infof("Connected to Kafka brokers at %s", addresses)
 	return p, nil
 }
 

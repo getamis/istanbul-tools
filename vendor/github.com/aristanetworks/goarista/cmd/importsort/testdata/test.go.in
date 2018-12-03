@@ -1,4 +1,4 @@
-// Copyright (C) 2017  Arista Networks, Inc.
+// Copyright (c) 2017 Arista Networks, Inc.
 // Use of this source code is governed by the Apache License 2.0
 // that can be found in the COPYING file.
 
@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"strings"
 
+	"foobar"
 	"foobar/baz"
 
 	"cvshub.com/foobar/import"
@@ -16,6 +17,7 @@ import (
 import (
 	"bytes"
 	"strings"
+	"foobar"
 	"foobar/baz"
 	"cvshub.com/foobar/import"
 	"cvshub.com/other/import"
@@ -28,6 +30,7 @@ import (
 	"cvshub.com/foobar/import"
 	"strings"
 	_ "foobar/baz" // in line comment
+	"foobar"
 	z "bytes"
 	. "foobar/qux" // in line comment
 )

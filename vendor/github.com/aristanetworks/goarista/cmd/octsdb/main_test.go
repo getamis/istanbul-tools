@@ -1,4 +1,4 @@
-// Copyright (C) 2016  Arista Networks, Inc.
+// Copyright (c) 2016 Arista Networks, Inc.
 // Use of this source code is governed by the Apache License 2.0
 // that can be found in the COPYING file.
 
@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/aristanetworks/goarista/test"
-	"github.com/openconfig/reference/rpc/openconfig"
+	pb "github.com/openconfig/gnmi/proto/gnmi"
 )
 
 func TestParseValue(t *testing.T) { // Because parsing JSON sucks.
@@ -34,8 +34,8 @@ func TestParseValue(t *testing.T) { // Because parsing JSON sucks.
 		},
 	}
 	for i, tcase := range testcases {
-		actual := parseValue(&openconfig.Update{
-			Value: &openconfig.Value{
+		actual := parseValue(&pb.Update{
+			Value: &pb.Value{
 				Value: []byte(tcase.input),
 			},
 		})

@@ -1,4 +1,4 @@
-// Copyright (C) 2016  Arista Networks, Inc.
+// Copyright (c) 2016 Arista Networks, Inc.
 // Use of this source code is governed by the Apache License 2.0
 // that can be found in the COPYING file.
 
@@ -18,7 +18,7 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-const defaultPort = "6042"
+const defaultPort = "6030"
 
 // PublishFunc is the method to publish responses
 type PublishFunc func(addr string, message proto.Message)
@@ -36,6 +36,9 @@ func New(username, password, addr string, opts []grpc.DialOption) *Client {
 	if !strings.ContainsRune(addr, ':') {
 		addr += ":" + defaultPort
 	}
+	// Make sure we don't move past the grpc.Dial() call until we actually
+	// established an HTTP/2 connection successfully.
+	opts = append(opts, grpc.WithBlock(), grpc.WithWaitForHandshake())
 	conn, err := grpc.Dial(addr, opts...)
 	if err != nil {
 		glog.Fatalf("Failed to dial: %s", err)
@@ -93,7 +96,7 @@ func (c *Client) Subscribe(wg *sync.WaitGroup, subscriptions []string,
 			Request: &openconfig.SubscribeRequest_Subscribe{
 				Subscribe: &openconfig.SubscriptionList{
 					Subscription: []*openconfig.Subscription{
-						&openconfig.Subscription{
+						{
 							Path: &openconfig.Path{Element: strings.Split(path, "/")},
 						},
 					},

@@ -1,4 +1,4 @@
-// Copyright (C) 2016  Arista Networks, Inc.
+// Copyright (c) 2016 Arista Networks, Inc.
 // Use of this source code is governed by the Apache License 2.0
 // that can be found in the COPYING file.
 
@@ -16,6 +16,9 @@ func TestConfig(t *testing.T) {
 		t.Fatal("Managed to load a nonexistent config!")
 	}
 	cfg, err = loadConfig("sampleconfig.json")
+	if err != nil {
+		t.Fatal("Failed to load config:", err)
+	}
 
 	testcases := []struct {
 		path   string

@@ -47,11 +47,11 @@ func newBlockChain(n int) (*core.BlockChain, *backend) {
 	// Use the first key as private key
 	b, _ := New(config, nodeKeys[0], memDB).(*backend)
 	genesis.MustCommit(memDB)
-	blockchain, err := core.NewBlockChain(memDB, genesis.Config, b, vm.Config{})
+	blockchain, err := core.NewBlockChain(memDB, nil, genesis.Config, b, vm.Config{})
 	if err != nil {
 		panic(err)
 	}
-	b.Start(blockchain, blockchain.InsertChain)
+	b.Start(blockchain, blockchain.CurrentBlock, blockchain.HasBadBlock)
 	snap, err := b.snapshot(blockchain, 0, common.Hash{}, nil)
 	if err != nil {
 		panic(err)
@@ -121,7 +121,7 @@ func makeHeader(parent *types.Block, config *istanbul.Config) *types.Header {
 		ParentHash: parent.Hash(),
 		Number:     parent.Number().Add(parent.Number(), common.Big1),
 		GasLimit:   core.CalcGasLimit(parent),
-		GasUsed:    new(big.Int),
+		GasUsed:    0,
 		Extra:      parent.Extra(),
 		Time:       new(big.Int).Add(parent.Time(), new(big.Int).SetUint64(config.BlockPeriod)),
 		Difficulty: defaultDifficulty,
@@ -163,14 +163,12 @@ func TestSealStopChannel(t *testing.T) {
 	stop := make(chan struct{}, 1)
 	eventSub := engine.EventMux().Subscribe(istanbul.RequestEvent{})
 	eventLoop := func() {
-		select {
-		case ev := <-eventSub.Chan():
-			_, ok := ev.Data.(istanbul.RequestEvent)
-			if !ok {
-				t.Errorf("unexpected event comes: %v", reflect.TypeOf(ev.Data))
-			}
-			stop <- struct{}{}
+		ev := <-eventSub.Chan()
+		_, ok := ev.Data.(istanbul.RequestEvent)
+		if !ok {
+			t.Errorf("unexpected event comes: %v", reflect.TypeOf(ev.Data))
 		}
+		stop <- struct{}{}
 		eventSub.Unsubscribe()
 	}
 	go eventLoop()
@@ -189,14 +187,12 @@ func TestSealCommittedOtherHash(t *testing.T) {
 	otherBlock := makeBlockWithoutSeal(chain, engine, block)
 	eventSub := engine.EventMux().Subscribe(istanbul.RequestEvent{})
 	eventLoop := func() {
-		select {
-		case ev := <-eventSub.Chan():
-			_, ok := ev.Data.(istanbul.RequestEvent)
-			if !ok {
-				t.Errorf("unexpected event comes: %v", reflect.TypeOf(ev.Data))
-			}
-			engine.Commit(otherBlock, [][]byte{})
+		ev := <-eventSub.Chan()
+		_, ok := ev.Data.(istanbul.RequestEvent)
+		if !ok {
+			t.Errorf("unexpected event comes: %v", reflect.TypeOf(ev.Data))
 		}
+		engine.Commit(otherBlock, [][]byte{})
 		eventSub.Unsubscribe()
 	}
 	go eventLoop()
@@ -208,10 +204,8 @@ func TestSealCommittedOtherHash(t *testing.T) {
 
 	const timeoutDura = 2 * time.Second
 	timeout := time.NewTimer(timeoutDura)
-	select {
-	case <-timeout.C:
-		// wait 2 seconds to ensure we cannot get any blocks from Istanbul
-	}
+	<-timeout.C
+	// wait 2 seconds to ensure we cannot get any blocks from Istanbul
 }
 
 func TestSealCommitted(t *testing.T) {
