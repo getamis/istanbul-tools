@@ -29,7 +29,7 @@ script:
     fi'
 branches:
   only:
-    - develop
+    - master
 
 jobs:
   include:
