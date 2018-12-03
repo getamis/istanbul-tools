@@ -32,7 +32,7 @@ func main() {
 	app := utils.NewApp()
 	app.Usage = "the istanbul-tools command line interface"
 
-	app.Version = "v1.0.0"
+	app.Version = "v1.0.1"
 	app.Copyright = "Copyright 2017 The AMIS Authors"
 	app.Commands = []cli.Command{
 		extra.ExtraCommand,

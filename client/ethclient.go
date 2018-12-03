@@ -188,7 +188,11 @@ func (c *client) SuggestGasPrice(ctx context.Context) (*big.Int, error) {
 // the true gas limit requirement as other transactions may be added or removed by miners,
 // but it should provide a basis for setting a reasonable default.
 func (c *client) EstimateGas(ctx context.Context, msg ethereum.CallMsg) (*big.Int, error) {
-	return c.ethClient.EstimateGas(ctx, msg)
+	gas, err := c.ethClient.EstimateGas(ctx, msg)
+	if err != nil {
+		return nil, err
+	}
+	return big.NewInt(0).SetUint64(gas), nil
 }
 
 // SendRawTransaction injects a signed transaction into the pending pool for execution.
