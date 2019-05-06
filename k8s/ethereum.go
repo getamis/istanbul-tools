@@ -31,7 +31,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
-	"github.com/getamis/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/jpmorganchase/istanbul-tools/charts"
 	"github.com/jpmorganchase/istanbul-tools/client"
 	istcommon "github.com/jpmorganchase/istanbul-tools/common"

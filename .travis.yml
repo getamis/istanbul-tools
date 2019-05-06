@@ -1,9 +1,8 @@
 language: go
 sudo: required
 go:
-  - 1.7
-  - 1.8
-  - 1.9
+  - 1.11.5
+  - 1.12.4
 env:
   - TEST=unit
   - TEST=istanbul
@@ -13,12 +12,12 @@ services:
   - docker
 
 install:
-  - go get github.com/Masterminds/glide
   - go get github.com/onsi/ginkgo/ginkgo
+  - unset GOPATH
 
 script:
   - 'if [ ${TEST} = "unit" ]; then
-      travis_wait 30 go test -v $(glide novendor | grep -v "\.\/tests\/\.\.\.") --timeout 30m;
+      travis_wait 30 go test -v ./... --timeout 30m;
     elif [ ${TEST} = "istanbul" ]; then
       cd ${TRAVIS_BUILD_DIR}/tests/functional && travis_wait 120 ginkgo -r --progress;
     elif [ ${TEST} = "quorum" ]; then
@@ -34,7 +33,7 @@ branches:
 jobs:
   include:
     - stage: release
-      go: 1.9
+      go: 1.11
       if: tag =~ ^v
       env:
         - TEST=none

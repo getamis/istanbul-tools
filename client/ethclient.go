@@ -20,7 +20,7 @@ import (
 	"context"
 	"math/big"
 
-	ethereum "github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 )
@@ -192,7 +192,7 @@ func (c *client) EstimateGas(ctx context.Context, msg ethereum.CallMsg) (*big.In
 	if err != nil {
 		return nil, err
 	}
-	return big.NewInt(0).SetUint64(gas), nil
+	return gas, nil
 }
 
 // SendRawTransaction injects a signed transaction into the pending pool for execution.

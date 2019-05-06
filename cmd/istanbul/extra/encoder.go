@@ -21,8 +21,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	atypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rlp"
-	atypes "github.com/getamis/go-ethereum/core/types"
 )
 
 func Encode(vanity string, validators []common.Address) (string, error) {

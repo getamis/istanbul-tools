@@ -1,6 +1,6 @@
 # istanbul-tools
 
-[![Test Status](https://travis-ci.org/getamis/istanbul-tools.svg?branch=feature%2Fadd-travis-yml)](https://travis-ci.org/getamis/istanbul-tools)
+[![Build Status](https://travis-ci.com/jpmorganchase/istanbul-tools.svg?branch=master)](https://travis-ci.com/jpmorganchase/istanbul-tools)
 
 `istanbul-tools` contains tools for configuring Istanbul BFT (IBFT) network, integration tests for both IBFT Geth and Quorum, and load testing utilities for IBFT Geth.
 
@@ -11,7 +11,7 @@ $ go get -u github.com/jpmorganchase/istanbul-tools/cmd/istanbul
 Note: ensure that your go lang bin's are in the path
 
 ## Build istanbul command line interface
-
+* Go 1.11+
 ```
 $ make
 $ ./build/bin/istanbul --help
