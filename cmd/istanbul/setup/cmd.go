@@ -28,7 +28,7 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/p2p/discover"
+	"github.com/ethereum/go-ethereum/p2p/discv5"
 	istcommon "github.com/jpmorganchase/istanbul-tools/common"
 	"github.com/jpmorganchase/istanbul-tools/docker/compose"
 	"github.com/jpmorganchase/istanbul-tools/genesis"
@@ -79,8 +79,8 @@ func gen(ctx *cli.Context) error {
 		v := &validatorInfo{
 			Address: addrs[i],
 			Nodekey: nodekeys[i],
-			NodeInfo: discover.NewNode(
-				discover.PubkeyID(&keys[i].PublicKey),
+			NodeInfo: discv5.NewNode(
+				discv5.PubkeyID(&keys[i].PublicKey),
 				net.ParseIP("0.0.0.0"),
 				0,
 				uint16(30303)).String(),
