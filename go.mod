@@ -1,6 +1,6 @@
 module github.com/jpmorganchase/istanbul-tools
 
-replace github.com/ethereum/go-ethereum => github.com/jpmorganchase/quorum v2.1.1+incompatible
+replace github.com/ethereum/go-ethereum => github.com/jpmorganchase/quorum v2.2.4+incompatible
 
 replace github.com/Sirupsen/logrus => github.com/sirupsen/logrus v1.1.1
 
@@ -13,6 +13,7 @@ require (
 	github.com/aristanetworks/goarista v0.0.0-20181130030053-f7cbe917ef62 // indirect
 	github.com/btcsuite/btcd v0.0.0-20181130015935-7d2daa5bfef2 // indirect
 	github.com/cespare/cp v1.1.1 // indirect
+	github.com/deckarep/golang-set v1.7.1 // indirect
 	github.com/docker/distribution v0.0.0-20181129231500-d9e12182359e // indirect
 	github.com/docker/docker v0.0.0-20170504205632-89658bed64c2
 	github.com/docker/go-connections v0.4.0

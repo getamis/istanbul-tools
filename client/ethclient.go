@@ -192,7 +192,7 @@ func (c *client) EstimateGas(ctx context.Context, msg ethereum.CallMsg) (*big.In
 	if err != nil {
 		return nil, err
 	}
-	return gas, nil
+	return new(big.Int).SetUint64(gas), nil
 }
 
 // SendRawTransaction injects a signed transaction into the pending pool for execution.
