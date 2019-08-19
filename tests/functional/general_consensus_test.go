@@ -67,8 +67,8 @@ var _ = Describe("TFS-01: General consensus", func() {
 					return
 				}
 
-				if header.GasLimit.Int64() != genesis.InitGasLimit {
-					errStr := fmt.Sprintf("Invalid genesis gas limit. want:%v, got:%v", genesis.InitGasLimit, header.GasLimit.Int64())
+				if uint64(header.GasLimit) != genesis.InitGasLimit {
+					errStr := fmt.Sprintf("Invalid genesis gas limit. want:%v, got:%v", genesis.InitGasLimit, uint64(header.GasLimit))
 					errc <- errors.New(errStr)
 					return
 				}

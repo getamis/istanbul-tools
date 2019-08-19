@@ -20,9 +20,11 @@ require (
 	github.com/docker/go-units v0.3.3 // indirect
 	github.com/docker/libtrust v0.0.0-20160708172513-aabc10ec26b7 // indirect
 	github.com/edsrzf/mmap-go v0.0.0-20170320065105-0bce6a688712 // indirect
+	github.com/elastic/gosigar v0.10.4 // indirect
 	github.com/emicklei/go-restful v0.0.0-20170410110728-ff4f55a20633 // indirect
 	github.com/emicklei/go-restful-swagger12 v0.0.0-20170208215640-dcef7f557305 // indirect
 	github.com/ethereum/go-ethereum v1.8.27
+	github.com/fjl/memsize v0.0.0-20190710130421-bcb5799ab5e5 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-openapi/analysis v0.0.0-20160815203709-b44dc874b601 // indirect
 	github.com/go-openapi/jsonpointer v0.0.0-20160704185906-46af16f9f7b1 // indirect
@@ -41,6 +43,7 @@ require (
 	github.com/huin/goupnp v1.0.0 // indirect
 	github.com/imdario/mergo v0.3.6 // indirect
 	github.com/inconshreveable/log15 v0.0.0-20180818164646-67afb5ed74ec
+	github.com/influxdata/influxdb v1.7.7 // indirect
 	github.com/jackpal/go-nat-pmp v0.0.0-20181021192511-d89d09f6f332 // indirect
 	github.com/juju/ratelimit v0.0.0-20170523012141-5b9ff8664717 // indirect
 	github.com/karalabe/hid v0.0.0-20181128192157-d815e0c1a2e2 // indirect
@@ -49,6 +52,7 @@ require (
 	github.com/mailru/easyjson v0.0.0-20160728113105-d5b7844b561a // indirect
 	github.com/mattn/go-colorable v0.1.0 // indirect
 	github.com/mattn/go-isatty v0.0.4 // indirect
+	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
 	github.com/naoina/go-stringutil v0.1.0 // indirect
 	github.com/naoina/toml v0.0.0-20170918210437-9fafd6967416
 	github.com/onsi/ginkgo v1.7.0
@@ -80,6 +84,7 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/karalabe/cookiejar.v2 v2.0.0-20150724131613-8dcd6a7f4951 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
+	gopkg.in/olebedev/go-duktape.v3 v3.0.0-20190709231704-1e4459ed25ff // indirect
 	gopkg.in/sourcemap.v1 v1.0.5 // indirect
 	gopkg.in/urfave/cli.v1 v1.20.0 // indirect
 	k8s.io/apimachinery v0.0.0-20170728134514-1fd2e63a9a37
