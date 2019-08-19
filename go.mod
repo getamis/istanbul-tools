@@ -65,7 +65,6 @@ require (
 	github.com/prometheus/prometheus v0.0.0-20170904111044-70f3d1e9f95a // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a
 	github.com/rjeczalik/notify v0.0.0-20181126183243-629144ba06a1 // indirect
-	github.com/robertkrimen/otto v0.0.0-20180617131154-15f95af6e78d // indirect
 	github.com/rs/cors v0.0.0-20181011182759-a3460e445dd3 // indirect
 	github.com/satori/go.uuid v1.2.0
 	github.com/sirupsen/logrus v1.4.1 // indirect
@@ -78,14 +77,11 @@ require (
 	golang.org/x/net v0.0.0-20181023162649-9b4f9f5ad519 // indirect
 	golang.org/x/sync v0.0.0-20181108010431-42b317875d0f // indirect
 	golang.org/x/sys v0.0.0-20181023152157-44b849a8bc13 // indirect
-	golang.org/x/tools v0.0.0-20181201035826-d0ca3933b724 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
-	gopkg.in/fatih/set.v0 v0.1.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/karalabe/cookiejar.v2 v2.0.0-20150724131613-8dcd6a7f4951 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 	gopkg.in/olebedev/go-duktape.v3 v3.0.0-20190709231704-1e4459ed25ff // indirect
-	gopkg.in/sourcemap.v1 v1.0.5 // indirect
 	gopkg.in/urfave/cli.v1 v1.20.0 // indirect
 	k8s.io/apimachinery v0.0.0-20170728134514-1fd2e63a9a37
 	k8s.io/client-go v4.0.0+incompatible
