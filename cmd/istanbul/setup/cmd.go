@@ -61,6 +61,9 @@ var (
 			quorumFlag,
 			dockerComposeFlag,
 			saveFlag,
+			nodeIpFlag,
+			nodePortBaseFlag,
+			nodePortIncrementFlag,
 		},
 	}
 )
@@ -75,16 +78,21 @@ func gen(ctx *cli.Context) error {
 		fmt.Println("validators")
 	}
 
+	nodeIp := ctx.String(nodeIpFlag.Name)
+	nodePort := ctx.Int(nodePortBaseFlag.Name)
+	nodePortIncrement := ctx.Int(nodePortIncrementFlag.Name)
+
 	for i := 0; i < num; i++ {
 		v := &validatorInfo{
 			Address: addrs[i],
 			Nodekey: nodekeys[i],
 			NodeInfo: discv5.NewNode(
 				discv5.PubkeyID(&keys[i].PublicKey),
-				net.ParseIP("0.0.0.0"),
+				net.ParseIP(nodeIp),
 				0,
-				uint16(30303)).String(),
+				uint16(nodePort)).String(),
 		}
+		nodePort = nodePort + nodePortIncrement
 
 		nodes = append(nodes, string(v.NodeInfo))
 

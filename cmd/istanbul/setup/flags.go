@@ -39,6 +39,7 @@ var (
 		Usage: "Print docker compose file",
 	}
 
+	//Should quorumFlag be removed as the value now appears to be hardcoded to 'true' in genesis.go?
 	quorumFlag = cli.BoolFlag{
 		Name:  "quorum",
 		Usage: "Use Quorum",
@@ -47,5 +48,23 @@ var (
 	saveFlag = cli.BoolFlag{
 		Name:  "save",
 		Usage: "Save to files",
+	}
+
+	nodeIpFlag = cli.StringFlag{
+		Name:  "nodeIp",
+		Usage: "IP address of node",
+		Value: "0.0.0.0",
+	}
+
+	nodePortBaseFlag = cli.UintFlag{
+		Name:  "nodePortBase",
+		Usage: "Base port number to use on node",
+		Value: 30303,
+	}
+
+	nodePortIncrementFlag = cli.UintFlag{
+		Name:  "nodePortIncrement",
+		Usage: "Value to increment port number by, for each node",
+		Value: 0,
 	}
 )
