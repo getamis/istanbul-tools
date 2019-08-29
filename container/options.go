@@ -127,7 +127,7 @@ func DataDir(dir string) Option {
 
 func Etherbase(etherbase string) Option {
 	return func(eth *ethereum) {
-		eth.flags = append(eth.flags, "--"+utils.EtherbaseFlag.Name)
+		eth.flags = append(eth.flags, "--"+utils.MinerEtherbaseFlag.Name)
 		eth.flags = append(eth.flags, etherbase)
 	}
 }

@@ -140,7 +140,7 @@ func sendTx(conn *ethclient.Client, tx *types.Transaction) error {
 
 func sendEther(prv *ecdsa.PrivateKey, to common.Address, amount *big.Int, nonce uint64) (*types.Transaction, error) {
 	signer := types.FrontierSigner{}
-	tx := types.NewTransaction(nonce, to, amount, big.NewInt(GAS_LIMIT), big.NewInt(GAS_PRICE), []byte{})
+	tx := types.NewTransaction(nonce, to, amount, uint64(GAS_LIMIT), big.NewInt(GAS_PRICE), []byte{})
 	//	return tx, nil
 	signedTx, err := types.SignTx(tx, signer, prv)
 	if err != nil {
@@ -227,12 +227,12 @@ func writeAccounts(accs []*Account) {
 
 	b, err := json.Marshal(keys)
 	if err != nil {
-		fmt.Println("Failed to json Marshal accounts, err:%v", err)
+		fmt.Println("Failed to json Marshal accounts, err: ", err)
 		return
 	}
 	err = ioutil.WriteFile("accs", b, 0644)
 	if err != nil {
-		fmt.Println("Failed to write file, err:%v", err)
+		fmt.Println("Failed to write file, err: ", err)
 		return
 	}
 	return
