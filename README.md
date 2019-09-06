@@ -101,42 +101,43 @@ seal: 0x000000000000000000000000000000000000000000000000000000000000000000000000
 
 When `--nodes --verbose` flags are given, a `static-nodes.json` template as well as the validators' node keys, public keys, and addresses are generated. When `--docker-compose` is given, a `docker-compose.yml` for the validators is generated. When `--save` flag is given, all generated configs will be saved. Use Quorum when `--quorum` flag is given.
 
-**Note**: the generated `static-nodes.json` template are set with IP `0.0.0.0`, please make according change to match your environment.
+**Note**: the generated `static-nodes.json` file has the IP and port values defined using the flags `--nodeIp`, `--nodePortBase`, and `--nodePortIncrement`.
+ If these flags are not provided then the IP `0.0.0.0` and port `30303` will be used; in which case, the `static-nodes.json` will require manual changes to match your environment.
 
 #### `setup` examples
 
 ```
-$ ./build/bin/istanbul setup --num 4 --nodes --verbose
+$ ./build/bin/istanbul setup --num 4 --nodes --verbose --nodeIp 127.0.0.1 --nodePortBase 21000 --nodePortIncrement 1
 validators
 {
     "Address": "0x5e5d0e2b80005a7e1f93044ddd64b2df0f8e488d",
     "Nodekey": "e5f9b868651ea8f4883744f2753ead9dfcdf7b1d8a96de0e733f406938dca1eb",
-    "NodeInfo": "enode://8759a8a6921be78ec4e66ec77ae26ba9b3b1a51d1f83b16683c6f25e5a1d95a4de2c5bf4c2c05e1b984fae440236d96063efe933425df72659ee9de824cda6e1@0.0.0.0:30303?discport=0"
+    "NodeInfo": "enode://8759a8a6921be78ec4e66ec77ae26ba9b3b1a51d1f83b16683c6f25e5a1d95a4de2c5bf4c2c05e1b984fae440236d96063efe933425df72659ee9de824cda6e1@127.0.0.1:21000?discport=0"
 }
 {
     "Address": "0x1b706dd850229813ee7c4002cd2fedc91380bb5a",
     "Nodekey": "2c13ee666b2ce617bf1e0d7fe7c8f058be27ea3a1aaabbfc63570a65f0bdae38",
-    "NodeInfo": "enode://40dd1e7ba45e5bcd242420986d9d03133ce49399c6197e43254d523e94f547532d4c47c8aaba4b000c5a718568a48013b035c86f3ed8b13248888a15a76761c1@0.0.0.0:30303?discport=0"
+    "NodeInfo": "enode://40dd1e7ba45e5bcd242420986d9d03133ce49399c6197e43254d523e94f547532d4c47c8aaba4b000c5a718568a48013b035c86f3ed8b13248888a15a76761c1@127.0.0.1:21001?discport=0"
 }
 {
     "Address": "0xdfdf27987b042bb3706d3a7c4b60e80a645744de",
     "Nodekey": "8bbf54eace8738f9d3ee90d5b949951f43d89acdb4b883d9188a141bdcd0153e",
-    "NodeInfo": "enode://d188378b3eef56584b8ebd3da3ad579d39d23511943573cdeae5b8a37b5df22c369bf8900c4f42a9d4d5e55bc3cd357f319de8f833db3232295be22c8accc006@0.0.0.0:30303?discport=0"
+    "NodeInfo": "enode://d188378b3eef56584b8ebd3da3ad579d39d23511943573cdeae5b8a37b5df22c369bf8900c4f42a9d4d5e55bc3cd357f319de8f833db3232295be22c8accc006@127.0.0.1:21002?discport=0"
 }
 {
     "Address": "0x5950b8f849daf1a78e119648c79111721353df59",
     "Nodekey": "9179c038483a2547c39f77f121065231d84a9c8d9bd044e1ddc19f653a23c751",
-    "NodeInfo": "enode://d855be48593e6f2dd6201334e9381a2f01dac4a847385a393b1f664503b7b7020326e9f3f84f2d5713bf360d16566ed2b84d7df0b8b8313a7a4c4cf087ccfe27@0.0.0.0:30303?discport=0"
+    "NodeInfo": "enode://d855be48593e6f2dd6201334e9381a2f01dac4a847385a393b1f664503b7b7020326e9f3f84f2d5713bf360d16566ed2b84d7df0b8b8313a7a4c4cf087ccfe27@127.0.0.1:21003?discport=0"
 }
 
 
 
 static-nodes.json
 [
-    "enode://8759a8a6921be78ec4e66ec77ae26ba9b3b1a51d1f83b16683c6f25e5a1d95a4de2c5bf4c2c05e1b984fae440236d96063efe933425df72659ee9de824cda6e1@0.0.0.0:30303?discport=0",
-    "enode://40dd1e7ba45e5bcd242420986d9d03133ce49399c6197e43254d523e94f547532d4c47c8aaba4b000c5a718568a48013b035c86f3ed8b13248888a15a76761c1@0.0.0.0:30303?discport=0",
-    "enode://d188378b3eef56584b8ebd3da3ad579d39d23511943573cdeae5b8a37b5df22c369bf8900c4f42a9d4d5e55bc3cd357f319de8f833db3232295be22c8accc006@0.0.0.0:30303?discport=0",
-    "enode://d855be48593e6f2dd6201334e9381a2f01dac4a847385a393b1f664503b7b7020326e9f3f84f2d5713bf360d16566ed2b84d7df0b8b8313a7a4c4cf087ccfe27@0.0.0.0:30303?discport=0"
+    "enode://8759a8a6921be78ec4e66ec77ae26ba9b3b1a51d1f83b16683c6f25e5a1d95a4de2c5bf4c2c05e1b984fae440236d96063efe933425df72659ee9de824cda6e1@127.0.0.1:21000?discport=0",
+    "enode://40dd1e7ba45e5bcd242420986d9d03133ce49399c6197e43254d523e94f547532d4c47c8aaba4b000c5a718568a48013b035c86f3ed8b13248888a15a76761c1@127.0.0.1:21001?discport=0",
+    "enode://d188378b3eef56584b8ebd3da3ad579d39d23511943573cdeae5b8a37b5df22c369bf8900c4f42a9d4d5e55bc3cd357f319de8f833db3232295be22c8accc006@127.0.0.1:21002?discport=0",
+    "enode://d855be48593e6f2dd6201334e9381a2f01dac4a847385a393b1f664503b7b7020326e9f3f84f2d5713bf360d16566ed2b84d7df0b8b8313a7a4c4cf087ccfe27@127.0.0.1:21003?discport=0"
 ]
 
 
@@ -145,15 +146,19 @@ genesis.json
 {
     "config": {
         "chainId": 2017,
-        "homesteadBlock": 1,
-        "eip150Block": 2,
+        "homesteadBlock": 0,
+        "eip150Block": 0,
         "eip150Hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
-        "eip155Block": 3,
-        "eip158Block": 3,
+        "eip155Block": 0,
+        "eip158Block": 0,
+        "byzantiumBlock": 0,
+        "constantinopleBlock": 0,
         "istanbul": {
             "epoch": 30000,
             "policy": 0
-        }
+        },
+        "isQuorum": true,
+        "txnSizeLimit": 64
     },
     "nonce": "0x0",
     "timestamp": "0x5a093aac",
