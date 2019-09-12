@@ -1,6 +1,6 @@
 # istanbul-tools
 
-[![Build Status](https://travis-ci.com/jpmorganchase/istanbul-tools.svg?branch=master)](https://travis-ci.com/jpmorganchase/istanbul-tools)
+[![Build Status](https://travis-ci.com/jpmorganchase/istanbul-tools.svg?branch=master)](https://travis-ci.com/jpmorganchase/istanbul-tools) [![Download](https://api.bintray.com/packages/quorumengineering/istanbul-tools/istanbul/images/download.svg)](https://bintray.com/quorumengineering/istanbul-tools/istanbul/_latestVersion)
 
 `istanbul-tools` contains tools for configuring Istanbul BFT (IBFT) network, integration tests for both IBFT Geth and Quorum, and load testing utilities for IBFT Geth.
 
