@@ -21,6 +21,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 )
@@ -200,5 +201,5 @@ func (c *client) EstimateGas(ctx context.Context, msg ethereum.CallMsg) (*big.In
 // If the transaction was a contract creation use the TransactionReceipt method to get the
 // contract address after the transaction has been mined.
 func (c *client) SendRawTransaction(ctx context.Context, tx *types.Transaction) error {
-	return c.ethClient.SendTransaction(ctx, tx)
+	return c.ethClient.SendTransaction(ctx, tx, bind.PrivateTxArgs{})
 }
