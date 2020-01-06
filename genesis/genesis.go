@@ -55,6 +55,7 @@ func New(options ...Option) *core.Genesis {
 			Istanbul: &params.IstanbulConfig{
 				ProposerPolicy: uint64(istanbul.DefaultConfig.ProposerPolicy),
 				Epoch:          istanbul.DefaultConfig.Epoch,
+				Ceil2Nby3Block: istanbul.DefaultConfig.Ceil2Nby3Block,
 			},
 			IsQuorum: true,
 		},

@@ -24,7 +24,7 @@ import (
 
 var (
 	QuorumDockerImage    = "quorumengineering/quorum"
-	QuorumDockerImageTag = "2.1.1"
+	QuorumDockerImageTag = "2.4.0"
 )
 
 type Quorum struct {

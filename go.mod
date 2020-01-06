@@ -1,6 +1,6 @@
 module github.com/jpmorganchase/istanbul-tools
 
-replace github.com/ethereum/go-ethereum => github.com/jpmorganchase/quorum v2.2.4+incompatible
+replace github.com/ethereum/go-ethereum => github.com/jpmorganchase/quorum v2.4.0+incompatible
 
 replace github.com/Sirupsen/logrus => github.com/sirupsen/logrus v1.1.1
 
@@ -86,3 +86,5 @@ require (
 	k8s.io/apimachinery v0.0.0-20170728134514-1fd2e63a9a37
 	k8s.io/client-go v4.0.0+incompatible
 )
+
+go 1.13
