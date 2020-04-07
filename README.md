@@ -5,7 +5,7 @@
 `istanbul-tools` contains tools for configuring Istanbul BFT (IBFT) network, integration tests for both IBFT Geth and Quorum, and load testing utilities for IBFT Geth.
 
 ## Build istanbul command line interface
-* Go 1.11+
+* Go 1.13+
 ```
 $ make
 $ ./build/bin/istanbul --help

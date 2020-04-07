@@ -20,12 +20,12 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/urfave/cli"
-
+	"github.com/jpmorganchase/istanbul-tools/cmd/istanbul/address"
 	"github.com/jpmorganchase/istanbul-tools/cmd/istanbul/extra"
 	"github.com/jpmorganchase/istanbul-tools/cmd/istanbul/reinit"
 	"github.com/jpmorganchase/istanbul-tools/cmd/istanbul/setup"
 	"github.com/jpmorganchase/istanbul-tools/cmd/utils"
+	"github.com/urfave/cli"
 )
 
 func main() {
@@ -38,6 +38,7 @@ func main() {
 		extra.ExtraCommand,
 		setup.SetupCommand,
 		reinit.ReinitCommand,
+		address.AddressCommand,
 	}
 
 	if err := app.Run(os.Args); err != nil {
