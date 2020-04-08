@@ -16,16 +16,22 @@ NAME:
 USAGE:
    istanbul [global options] command [command options] [arguments...]
 
+VERSION:
+   v1.0.2
+
 COMMANDS:
      extra    Istanbul extraData manipulation
      setup    Setup your Istanbul network in seconds
-     help, h  Print this message
+     reinit   Reinitialize a genesis block using previous node info
+     address  Extract validator address
+     help, h  Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
-   --help, -h  show help
+   --help, -h     show help
+   --version, -v  print the version
 
 COPYRIGHT:
-   Copyright 2017 The AMIS Authors
+   Copyright 2017 The AMIS Authors                        
 ```
 
 ### `extra` subcommand
@@ -215,6 +221,21 @@ OPTIONS:
 ```
 
 </details>
+
+### `address` subcommand
+
+<details>
+<summary>Click here to expand</summary>
+
+This command is to extract Validator Address (ID) from node key hex which is the node private key in hex
+
+E.g.: 
+```
+$ ./build/bin/istanbul address --nodekeyhex 1be3b50b31734be48452c29d714941ba165ef0cbf3ccea8ca16c45e3d8d45fb0
+0xd8dba507e85f116b1f7e231ca8525fc9008a6966
+```
+</details>
+
 
 ## Testing
 
