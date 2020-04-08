@@ -1,10 +1,5 @@
-name: Release
-on:
-  push:
-    tags:
-      - 'v*'
-env:
-  BINTRAY_PACKAGE: istanbul
+name: Build
+on: [push, pull_request]
 jobs:
   build:
     name: Build on ${{ matrix.vm }}
@@ -28,69 +23,11 @@ jobs:
       - name: Build
         id: build
         run: |
-          make dist VERSION=${{ steps.meta.outputs.version }}
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v1
-        with:
-          name: artifacts-${{ steps.meta.outputs.os-arch }}
-          path: build
-  predeploy:
-    name: Prepare Bintray
-    runs-on: ubuntu-latest
-    steps:
-      - name: Setup jfrog CLI
-        uses: jfrog/setup-jfrog-cli@v1
-      - name: Extract metadata
-        id: meta
-        run: |
-          echo "::set-output name=version::${GITHUB_REF##*/}"
-          echo "::set-output name=package::${{ env.BINTRAY_PACKAGE }}"
-      - name: Prepare ${{ steps.meta.outputs.package }}@${{ steps.meta.outputs.version }} in Bintray
-        run: |
-          CHECK_PACKAGE="${{ secrets.BINTRAY_ORGANIZATION }}/${{ secrets.BINTRAY_REPOSITORY }}/${{ steps.meta.outputs.package }}"
-          CHECK_VERSION="$CHECK_PACKAGE/${{ steps.meta.outputs.version }}"
-          echo "Checking $CHECK_PACKAGE"
-          jfrog bt package-show --key ${{ secrets.BINTRAY_API_KEY }} --user ${{ secrets.BINTRAY_USER }} $CHECK_PACKAGE
-          echo "Checking $CHECK_VERSION"
-          jfrog bt version-show --key ${{ secrets.BINTRAY_API_KEY }} --user ${{ secrets.BINTRAY_USER }} $CHECK_VERSION && x=0 || x=1
-          if [ $x -eq 0 ]; then
-            echo "$CHECK_VERSION already exists"
-          else
-            jfrog bt version-create --key ${{ secrets.BINTRAY_API_KEY }} --user ${{ secrets.BINTRAY_USER }} \
-                  --vcs-tag ${{ steps.meta.outputs.version }} --released $(date -u +"%Y-%m-%dT%H:%M:%SZ") \
-                  $CHECK_VERSION
-          fi
-  deploy:
-    name: Deploy ${{ matrix.os-arch }} dist to Bintray
-    runs-on: ubuntu-latest
-    needs:
-      - build
-      - predeploy
-    strategy:
-      matrix:
-        os-arch: ["linux_amd64", "darwin_amd64"]
-    steps:
-      - name: Setup jfrog CLI
-        uses: jfrog/setup-jfrog-cli@v1
-      - name: Download artifacts
-        uses: actions/download-artifact@v1
-        with:
-          name: artifacts-${{ matrix.os-arch }}
-      - name: Extract metadata
-        id: meta
-        run: |
-          echo "::set-output name=version::${GITHUB_REF##*/}"
-          echo "::set-output name=package::${{ env.BINTRAY_PACKAGE }}"
-      - name: Upload to Bintray
-        run: |
-          jfrog bt upload --key ${{ secrets.BINTRAY_API_KEY }} --user ${{ secrets.BINTRAY_USER }} --publish --override \
-                "artifacts-${{ matrix.os-arch }}/*.*" \
-                ${{ secrets.BINTRAY_ORGANIZATION }}/${{ secrets.BINTRAY_REPOSITORY }}/${{ steps.meta.outputs.package }}/${{ steps.meta.outputs.version }}
+          make dist
   notify:
     name: Notify Slack
     needs:
       - build
-      - deploy
     if: always()
     runs-on: ubuntu-latest
     steps:
