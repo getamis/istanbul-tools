@@ -215,4 +215,4 @@ jobs:
       - name: Send to Slack
         if: success()
         run: |
-          curl -X POST ${{ secrets.SLACK_WEBHOOK }} -H "Content-type: application/json" --data '${{ steps.status.outputs.result }}'
+          curl -X POST ${{ secrets.SLACK_WEBHOOK_URL }} -H "Content-type: application/json" --data '${{ steps.status.outputs.result }}'

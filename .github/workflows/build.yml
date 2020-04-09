@@ -10,16 +10,20 @@ jobs:
     runs-on: ${{ matrix.vm }}
     steps:
       - name: Setup Go 1.13
-        uses: actions/setup-go@v1
+        uses: actions/setup-go@v2.0.3
         with:
           go-version: 1.13
-      - name: Extract version metadata
-        id: meta
+      - name: Prepare environment
+        id: prepare
         run: |
-          echo "::set-output name=os-arch::$(go env GOOS)_$(go env GOARCH)"
-          echo "::set-output name=version::${GITHUB_REF##*/}"
+          echo "::set-output name=gopath::$(go env GOPATH)"
       - name: Check out project files
         uses: actions/checkout@v2
+      - name: Cache vendor
+        uses: actions/cache@v1
+        with:
+          key: ${{ runner.os }}-vendor-${{ hashFiles('go.mod') }}-${{ hashFiles('go.sum') }}
+          path: ${{ steps.prepare.outputs.gopath }}/pkg
       - name: Build
         id: build
         run: |
@@ -28,7 +32,7 @@ jobs:
     name: Notify Slack
     needs:
       - build
-    if: always()
+    if: always() && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Prepare Slack message
@@ -152,4 +156,4 @@ jobs:
       - name: Send to Slack
         if: success()
         run: |
-          curl -X POST ${{ secrets.SLACK_WEBHOOK }} -H "Content-type: application/json" --data '${{ steps.status.outputs.result }}'
+          curl -X POST ${{ secrets.SLACK_WEBHOOK_URL }} -H "Content-type: application/json" --data '${{ steps.status.outputs.result }}'
