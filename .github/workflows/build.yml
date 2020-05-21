@@ -1,5 +1,7 @@
 name: Build
 on: [push, pull_request]
+env:
+  DEVELOPER_DIR: /Applications/Xcode_10.3.app/Contents/Developer # fix issue with macos 10.13.x
 jobs:
   build:
     name: Build on ${{ matrix.vm }}
@@ -28,6 +30,11 @@ jobs:
         id: build
         run: |
           make dist
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: istanbul-${{ matrix.vm }}
+          path: build/bin/istanbul
   notify:
     name: Notify Slack
     needs:
