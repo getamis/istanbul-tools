@@ -45,8 +45,9 @@ var _ = Describe("TPS-01: Large amount of transactions", func() {
 								func(rate int) {
 									runTests(numberOfValidators, gaslimit, txpoolSize, rate)
 								},
-								// only preload txs if send rare is 0
-								tests.Case("150ms", 150),
+								// only preload txs if send rate is 0
+								// tests.Case("preload", 0),
+								tests.Case("300ms", 300),
 							)
 						},
 
@@ -84,8 +85,9 @@ func runTests(numberOfValidators int, gaslimit int, txpoolSize int, sendRate int
 				numberOfValidators,
 				accountsPerGeth,
 				uint64(gaslimit),
-				k8s.ImageRepository("quay.io/amis/geth"),
-				k8s.ImageTag("istanbul_develop"),
+				true,
+				k8s.ImageRepository("quay.io/amis/quorum"),
+				k8s.ImageTag("latest"),
 				k8s.Mine(false),
 				k8s.TxPoolSize(txpoolSize),
 			)

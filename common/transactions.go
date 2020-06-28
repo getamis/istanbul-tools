@@ -28,13 +28,13 @@ import (
 )
 
 var (
-	DefaultGasPrice int64 = 20000000000
+	DefaultGasPrice int64 = 0
 	DefaultGasLimit int64 = 21000 // the gas of ether tx should be 21000
 )
 
 func SendEther(client client.Client, from *ecdsa.PrivateKey, to common.Address, amount *big.Int, nonce uint64) error {
 	tx := types.NewTransaction(nonce, to, amount, big.NewInt(DefaultGasLimit), big.NewInt(DefaultGasPrice), []byte{})
-	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(big.NewInt(2017)), from)
+	signedTx, err := types.SignTx(tx, types.HomesteadSigner{}, from)
 	if err != nil {
 		log.Error("Failed to sign transaction", "tx", tx, "err", err)
 		return err

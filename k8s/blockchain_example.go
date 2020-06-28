@@ -25,6 +25,7 @@ func ExampleK8SBlockchain() {
 		4,
 		0,
 		21000*1000,
+		false,
 		ImageRepository("quay.io/amis/geth"),
 		ImageTag("istanbul_develop"),
 		ServiceType("LoadBalancer"),
