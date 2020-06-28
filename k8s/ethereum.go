@@ -31,11 +31,11 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
-	"github.com/getamis/go-ethereum/crypto"
-	"github.com/getamis/istanbul-tools/charts"
-	"github.com/getamis/istanbul-tools/client"
-	istcommon "github.com/getamis/istanbul-tools/common"
-	"github.com/getamis/istanbul-tools/container"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/jpmorganchase/istanbul-tools/charts"
+	"github.com/jpmorganchase/istanbul-tools/client"
+	istcommon "github.com/jpmorganchase/istanbul-tools/common"
+	"github.com/jpmorganchase/istanbul-tools/container"
 )
 
 func NewEthereum(options ...Option) *ethereum {
@@ -77,8 +77,6 @@ func (eth *ethereum) Start() error {
 	if err := eth.chart.Install(false); err != nil {
 		return err
 	}
-
-	<-time.After(3 * time.Minute)
 
 	eth.k8sClient = k8sClient(eth.chart.Name() + "-0")
 	return nil

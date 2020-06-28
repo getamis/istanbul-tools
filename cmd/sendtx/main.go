@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/getamis/istanbul-tools/cmd/utils"
+	"github.com/jpmorganchase/istanbul-tools/cmd/utils"
 	"github.com/urfave/cli"
 )
 

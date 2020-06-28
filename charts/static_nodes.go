@@ -22,7 +22,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/getamis/istanbul-tools/common"
+	"github.com/jpmorganchase/istanbul-tools/common"
 )
 
 type StaticNodesChart struct {

@@ -19,14 +19,18 @@ package tests
 import (
 	"sync"
 
-	"github.com/getamis/istanbul-tools/container"
+	"github.com/jpmorganchase/istanbul-tools/container"
+	"github.com/onsi/ginkgo"
 )
 
 func WaitFor(geths []container.Ethereum, waitFn func(eth container.Ethereum, wg *sync.WaitGroup)) {
 	wg := new(sync.WaitGroup)
 	for _, g := range geths {
 		wg.Add(1)
-		go waitFn(g, wg)
+		go func(_g container.Ethereum) {
+			defer ginkgo.GinkgoRecover()
+			waitFn(_g, wg)
+		}(g)
 	}
 	wg.Wait()
 }

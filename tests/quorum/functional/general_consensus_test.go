@@ -28,9 +28,9 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/getamis/istanbul-tools/container"
-	"github.com/getamis/istanbul-tools/genesis"
-	"github.com/getamis/istanbul-tools/tests"
+	"github.com/jpmorganchase/istanbul-tools/container"
+	"github.com/jpmorganchase/istanbul-tools/genesis"
+	"github.com/jpmorganchase/istanbul-tools/tests"
 )
 
 var _ = Describe("QFS-01: General consensus", func() {
@@ -72,8 +72,8 @@ var _ = Describe("QFS-01: General consensus", func() {
 					return
 				}
 
-				if header.GasLimit.Int64() != genesis.InitGasLimit {
-					errStr := fmt.Sprintf("Invalid genesis gas limit. want:%v, got:%v", genesis.InitGasLimit, header.GasLimit.Int64())
+				if uint64(header.GasLimit) != genesis.InitGasLimit {
+					errStr := fmt.Sprintf("Invalid genesis gas limit. want:%v, got:%v", genesis.InitGasLimit, uint64(header.GasLimit))
 					errc <- errors.New(errStr)
 					return
 				}

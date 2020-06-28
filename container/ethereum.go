@@ -40,11 +40,11 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/p2p/discover"
+	"github.com/ethereum/go-ethereum/p2p/discv5"
 
-	"github.com/getamis/istanbul-tools/client"
-	istcommon "github.com/getamis/istanbul-tools/common"
-	"github.com/getamis/istanbul-tools/genesis"
+	"github.com/jpmorganchase/istanbul-tools/client"
+	istcommon "github.com/jpmorganchase/istanbul-tools/common"
+	"github.com/jpmorganchase/istanbul-tools/genesis"
 )
 
 const (
@@ -133,7 +133,7 @@ type ethereum struct {
 	wsPort      string
 	hostName    string
 	containerID string
-	node        *discover.Node
+	node        *discv5.Node
 	accounts    []common.Address
 	password    string
 
@@ -308,8 +308,8 @@ func (eth *ethereum) Start() error {
 	}
 
 	if eth.key != nil {
-		eth.node = discover.NewNode(
-			discover.PubkeyID(&eth.key.PublicKey),
+		eth.node = discv5.NewNode(
+			discv5.PubkeyID(&eth.key.PublicKey),
 			net.ParseIP(containerIP),
 			0,
 			uint16(utils.ListenPortFlag.Value))

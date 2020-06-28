@@ -29,7 +29,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/p2p/discover"
+	"github.com/ethereum/go-ethereum/p2p/discv5"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -129,8 +129,8 @@ func GenerateStaticNodesAt(dir string, nodekeys []string, ipAddrs []string) (fil
 			log.Error("Failed to create key from hex", "hex", nodekey, "err", err)
 			return ""
 		}
-		node := discover.NewNode(
-			discover.PubkeyID(&key.PublicKey),
+		node := discv5.NewNode(
+			discv5.PubkeyID(&key.PublicKey),
 			net.ParseIP(ipAddrs[i]),
 			0,
 			uint16(30303))

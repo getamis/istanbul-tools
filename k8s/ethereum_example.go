@@ -17,14 +17,14 @@
 package k8s
 
 import (
-	"github.com/getamis/istanbul-tools/charts"
-	"github.com/getamis/istanbul-tools/common"
-	"github.com/getamis/istanbul-tools/genesis"
+	"github.com/jpmorganchase/istanbul-tools/charts"
+	"github.com/jpmorganchase/istanbul-tools/common"
+	"github.com/jpmorganchase/istanbul-tools/genesis"
 )
 
 func ExampleK8SEthereum() {
 	_, nodekeys, addrs := common.GenerateKeys(1)
-	genesisChart := charts.NewGenesisChart(addrs, nil, genesis.InitGasLimit)
+	genesisChart := charts.NewGenesisChart(addrs, nil, genesis.InitGasLimit, false)
 	if err := genesisChart.Install(false); err != nil {
 		log.Error("Failed to install genesis chart", "err", err)
 		return

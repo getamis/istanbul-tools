@@ -25,7 +25,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/getamis/istanbul-tools/genesis"
+	"github.com/jpmorganchase/istanbul-tools/genesis"
 )
 
 type GenesisChart struct {
@@ -35,7 +35,7 @@ type GenesisChart struct {
 	args        []string
 }
 
-func NewGenesisChart(validators []common.Address, allocs []common.Address, gasLimit uint64) *GenesisChart {
+func NewGenesisChart(validators []common.Address, allocs []common.Address, gasLimit uint64, isQuorum bool) *GenesisChart {
 	chartPath := filepath.Join(chartBasePath, "genesis-block")
 	genesisPath := filepath.Join(chartPath, ".genesis")
 	err := os.MkdirAll(genesisPath, 0700)
@@ -49,7 +49,7 @@ func NewGenesisChart(validators []common.Address, allocs []common.Address, gasLi
 		chartPath: chartPath,
 		genesisFile: genesis.NewFileAt(
 			genesisPath,
-			false,
+			isQuorum,
 			genesis.Validators(validators...),
 			genesis.GasLimit(gasLimit),
 			genesis.Alloc(append(validators, allocs...), new(big.Int).Exp(big.NewInt(10), big.NewInt(50), nil)),

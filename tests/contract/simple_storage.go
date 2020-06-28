@@ -87,7 +87,7 @@ type SimplestorageTransactorRaw struct {
 
 // NewSimplestorage creates a new instance of Simplestorage, bound to a specific deployed contract.
 func NewSimplestorage(address common.Address, backend bind.ContractBackend) (*Simplestorage, error) {
-	contract, err := bindSimplestorage(address, backend, backend)
+	contract, err := bindSimplestorage(address, backend, backend, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +96,7 @@ func NewSimplestorage(address common.Address, backend bind.ContractBackend) (*Si
 
 // NewSimplestorageCaller creates a new read-only instance of Simplestorage, bound to a specific deployed contract.
 func NewSimplestorageCaller(address common.Address, caller bind.ContractCaller) (*SimplestorageCaller, error) {
-	contract, err := bindSimplestorage(address, caller, nil)
+	contract, err := bindSimplestorage(address, caller, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +105,7 @@ func NewSimplestorageCaller(address common.Address, caller bind.ContractCaller) 
 
 // NewSimplestorageTransactor creates a new write-only instance of Simplestorage, bound to a specific deployed contract.
 func NewSimplestorageTransactor(address common.Address, transactor bind.ContractTransactor) (*SimplestorageTransactor, error) {
-	contract, err := bindSimplestorage(address, nil, transactor)
+	contract, err := bindSimplestorage(address, nil, transactor, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -113,12 +113,12 @@ func NewSimplestorageTransactor(address common.Address, transactor bind.Contract
 }
 
 // bindSimplestorage binds a generic wrapper to an already deployed contract.
-func bindSimplestorage(address common.Address, caller bind.ContractCaller, transactor bind.ContractTransactor) (*bind.BoundContract, error) {
+func bindSimplestorage(address common.Address, caller bind.ContractCaller, transactor bind.ContractTransactor, filterer bind.ContractFilterer) (*bind.BoundContract, error) {
 	parsed, err := abi.JSON(strings.NewReader(SimplestorageABI))
 	if err != nil {
 		return nil, err
 	}
-	return bind.NewBoundContract(address, parsed, caller, transactor), nil
+	return bind.NewBoundContract(address, parsed, caller, transactor, filterer), nil
 }
 
 // Call invokes the (constant) contract method with params as input values and

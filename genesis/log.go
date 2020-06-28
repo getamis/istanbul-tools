@@ -17,7 +17,7 @@
 package genesis
 
 import (
-	logging "github.com/getamis/istanbul-tools/log"
+	logging "github.com/jpmorganchase/istanbul-tools/log"
 )
 
 var log = logging.New()

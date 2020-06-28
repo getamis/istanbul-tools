@@ -28,8 +28,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/getamis/istanbul-tools/client"
-	"github.com/getamis/istanbul-tools/container"
+	"github.com/jpmorganchase/istanbul-tools/client"
+	"github.com/jpmorganchase/istanbul-tools/container"
 )
 
 const (

@@ -27,11 +27,11 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	istcommon "github.com/getamis/istanbul-tools/common"
-	"github.com/getamis/istanbul-tools/container"
-	"github.com/getamis/istanbul-tools/k8s"
-	"github.com/getamis/istanbul-tools/metrics"
-	"github.com/getamis/istanbul-tools/tests"
+	istcommon "github.com/jpmorganchase/istanbul-tools/common"
+	"github.com/jpmorganchase/istanbul-tools/container"
+	"github.com/jpmorganchase/istanbul-tools/k8s"
+	"github.com/jpmorganchase/istanbul-tools/metrics"
+	"github.com/jpmorganchase/istanbul-tools/tests"
 )
 
 var _ = Describe("TPS-01: Large amount of transactions", func() {
@@ -45,8 +45,9 @@ var _ = Describe("TPS-01: Large amount of transactions", func() {
 								func(rate int) {
 									runTests(numberOfValidators, gaslimit, txpoolSize, rate)
 								},
-								// only preload txs if send rare is 0
-								tests.Case("150ms", 150),
+								// only preload txs if send rate is 0
+								// tests.Case("preload", 0),
+								tests.Case("300ms", 300),
 							)
 						},
 
@@ -84,8 +85,9 @@ func runTests(numberOfValidators int, gaslimit int, txpoolSize int, sendRate int
 				numberOfValidators,
 				accountsPerGeth,
 				uint64(gaslimit),
-				k8s.ImageRepository("quay.io/amis/geth"),
-				k8s.ImageTag("istanbul_develop"),
+				true,
+				k8s.ImageRepository("quay.io/amis/quorum"),
+				k8s.ImageTag("latest"),
 				k8s.Mine(false),
 				k8s.TxPoolSize(txpoolSize),
 			)

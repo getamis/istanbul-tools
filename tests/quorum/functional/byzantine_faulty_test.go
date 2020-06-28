@@ -23,8 +23,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/getamis/istanbul-tools/container"
-	"github.com/getamis/istanbul-tools/tests"
+	"github.com/jpmorganchase/istanbul-tools/container"
+	"github.com/jpmorganchase/istanbul-tools/tests"
 )
 
 var _ = Describe("QFS-05: Byzantine Faulty", func() {
@@ -112,7 +112,7 @@ var _ = Describe("QFS-05: Byzantine Faulty", func() {
 				})
 			})
 			close(done)
-		}, 60)
+		}, 120)
 	})
 
 })

@@ -24,12 +24,12 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/getamis/istanbul-tools/charts"
-	istcommon "github.com/getamis/istanbul-tools/common"
-	"github.com/getamis/istanbul-tools/container"
+	"github.com/jpmorganchase/istanbul-tools/charts"
+	istcommon "github.com/jpmorganchase/istanbul-tools/common"
+	"github.com/jpmorganchase/istanbul-tools/container"
 )
 
-func NewBlockchain(numOfValidators int, numOfExtraAccounts int, gaslimit uint64, options ...Option) (bc *blockchain) {
+func NewBlockchain(numOfValidators int, numOfExtraAccounts int, gaslimit uint64, isQourum bool, options ...Option) (bc *blockchain) {
 	_, nodekeys, addrs := istcommon.GenerateKeys(numOfValidators)
 	ips := istcommon.GenerateIPs(len(nodekeys))
 
@@ -45,7 +45,7 @@ func NewBlockchain(numOfValidators int, numOfExtraAccounts int, gaslimit uint64,
 	}
 
 	bc = &blockchain{
-		genesis:     charts.NewGenesisChart(addrs, allocAddrs, uint64(gaslimit)),
+		genesis:     charts.NewGenesisChart(addrs, allocAddrs, uint64(gaslimit), isQourum),
 		staticNodes: charts.NewStaticNodesChart(nodekeys, ips),
 	}
 
