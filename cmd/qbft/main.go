@@ -21,8 +21,8 @@ import (
 	"os"
 
 	"github.com/jpmorganchase/istanbul-tools/cmd/istanbul/address"
-	"github.com/jpmorganchase/istanbul-tools/cmd/istanbul/reinit"
 	"github.com/jpmorganchase/istanbul-tools/cmd/qbft/extra"
+	"github.com/jpmorganchase/istanbul-tools/cmd/qbft/reinit"
 	"github.com/jpmorganchase/istanbul-tools/cmd/qbft/setup"
 	"github.com/jpmorganchase/istanbul-tools/cmd/utils"
 	"github.com/urfave/cli"

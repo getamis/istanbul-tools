@@ -17,27 +17,17 @@
 package reinit
 
 import (
-  "strings"
-
-  "github.com/urfave/cli"
+	"github.com/urfave/cli"
 )
 
 var (
-  nodeKeyFlag = cli.StringFlag{
-    Name:  "nodekey",
-    Usage: "String of comma separated nodekey values",
-  }
+	nodeKeyFlag = cli.StringFlag{
+		Name:  "nodekey",
+		Usage: "String of comma separated nodekey values",
+	}
 
-  quorumFlag = cli.BoolFlag{
-    Name:  "quorum",
-    Usage: "Use Quorum",
-  }
+	quorumFlag = cli.BoolFlag{
+		Name:  "quorum",
+		Usage: "Use Quorum",
+	}
 )
-
-func splitAndTrim(input string) []string {
-  result := strings.Split(input, ",")
-  for i, r := range result {
-    result[i] = strings.TrimSpace(r)
-  }
-  return result
-}
