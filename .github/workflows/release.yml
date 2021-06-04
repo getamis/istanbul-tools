@@ -4,6 +4,7 @@ on:
     tags:
       - 'v*'
 env:
+  GO_VERSION: 1.15.5
   BINTRAY_PACKAGE: istanbul
   DEVELOPER_DIR: /Applications/Xcode_10.3.app/Contents/Developer # fix issue with macos 10.13.x
 jobs:
@@ -15,10 +16,10 @@ jobs:
         vm: ["ubuntu-latest", "macos-latest"]
     runs-on: ${{ matrix.vm }}
     steps:
-      - name: Setup Go 1.13
+      - name: 'Setup Go ${{ env.GO_VERSION }}'
         uses: actions/setup-go@v1
         with:
-          go-version: 1.13
+          go-version: ${{ env.GO_VERSION }}
       - name: Extract version metadata
         id: meta
         run: |

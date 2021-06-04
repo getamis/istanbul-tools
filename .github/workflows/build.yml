@@ -1,6 +1,7 @@
 name: Build
 on: [push, pull_request]
 env:
+  GO_VERSION: 1.15.5
   DEVELOPER_DIR: /Applications/Xcode_10.3.app/Contents/Developer # fix issue with macos 10.13.x
 jobs:
   build:
@@ -11,10 +12,10 @@ jobs:
         vm: ["ubuntu-latest", "macos-latest"]
     runs-on: ${{ matrix.vm }}
     steps:
-      - name: Setup Go 1.13
-        uses: actions/setup-go@v2.0.3
+      - name: 'Setup Go ${{ env.GO_VERSION }}'
+        uses: actions/setup-go@v1
         with:
-          go-version: 1.13
+          go-version: ${{ env.GO_VERSION }}
       - name: Prepare environment
         id: prepare
         run: |
