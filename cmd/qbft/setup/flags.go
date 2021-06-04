@@ -34,11 +34,6 @@ var (
 		Usage: "Print static nodes template",
 	}
 
-	dockerComposeFlag = cli.BoolFlag{
-		Name:  "docker-compose",
-		Usage: "Print docker compose file",
-	}
-
 	//Should quorumFlag be removed as the value now appears to be hardcoded to 'true' in genesis.go?
 	quorumFlag = cli.BoolFlag{
 		Name:  "quorum",

@@ -30,7 +30,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/p2p/discv5"
 	istcommon "github.com/jpmorganchase/istanbul-tools/common"
-	"github.com/jpmorganchase/istanbul-tools/docker/compose"
 	"github.com/jpmorganchase/istanbul-tools/genesis"
 	"github.com/urfave/cli"
 )
@@ -59,7 +58,6 @@ var (
 			staticNodesFlag,
 			verboseFlag,
 			quorumFlag,
-			dockerComposeFlag,
 			saveFlag,
 			nodeIpFlag,
 			nodePortBaseFlag,
@@ -143,24 +141,6 @@ func gen(ctx *cli.Context) error {
 
 	if ctx.Bool(saveFlag.Name) {
 		ioutil.WriteFile("genesis.json", jsonBytes, os.ModePerm)
-	}
-
-	if ctx.Bool(dockerComposeFlag.Name) {
-		fmt.Print("\n\n\n")
-		compose := compose.New(
-			"172.16.239",
-			num,
-			"bb98a0b6442386d0cdf8a31b267892c1",
-			nodekeys,
-			removeSpacesAndLines(jsonBytes),
-			removeSpacesAndLines(staticNodes),
-			isQuorum)
-		fmt.Println("docker-compose.yml")
-		fmt.Println(compose.String())
-
-		if ctx.Bool(saveFlag.Name) {
-			ioutil.WriteFile("docker-compose.yml", []byte(compose.String()), os.ModePerm)
-		}
 	}
 
 	return nil
