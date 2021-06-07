@@ -14,40 +14,22 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-package container
+package extra
 
 import (
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/consensus/istanbul"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/rlp"
-	"golang.org/x/crypto/sha3"
-
-	"github.com/jpmorganchase/istanbul-tools/cmd/istanbul/extra"
 )
 
-func sigHash(header *types.Header) (hash common.Hash) {
-	hasher := sha3.NewLegacyKeccak256()
-
-	// Clean seal is required for calculating proposer seal.
-	rlp.Encode(hasher, types.IstanbulFilteredHeader(header, false))
-	hasher.Sum(hash[:0])
-	return hash
-}
-
-func GetProposer(header *types.Header) common.Address {
-	if header == nil {
-		return common.Address{}
-	}
-
-	_, istanbulExtra, err := extra.Decode(common.ToHex(header.Extra))
+func Decode(extraData string) (*types.QbftExtra, error) {
+	extra, err := hexutil.Decode(extraData)
 	if err != nil {
-		return common.Address{}
+		return nil, err
 	}
 
-	addr, err := istanbul.GetSignatureAddress(sigHash(header).Bytes(), istanbulExtra.Seal)
+	qbftExtra, err := types.ExtractQbftExtra(&types.Header{Extra: extra})
 	if err != nil {
-		return common.Address{}
+		return nil, err
 	}
-	return addr
+	return qbftExtra, nil
 }

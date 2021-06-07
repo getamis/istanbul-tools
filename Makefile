@@ -15,11 +15,10 @@ istanbul:
 	@echo "Done building."
 	@echo "Run \"$(GOBIN)/istanbul\" to launch istanbul."
 
-dist: clean
-	@GOPATH=$(GOPATH) go build -ldflags='$(LDFLAGS)' -o ./build/bin/istanbul ./cmd/istanbul
-	@tar cfvz ./build/istanbul-tools_$(VERSION)_$(OS)_$(ARCH).tar.gz -C ./build/bin istanbul
-	@echo "Distribution file created."
-	@ls -lh ./build
+qbft:
+	@GOPATH=$(GOPATH) go build -v -o ./build/bin/qbft ./cmd/qbft
+	@echo "Done building."
+	@echo "Run \"$(GOBIN)/qbft\" to launch qbft."
 
 load-testing:
 	@echo "Run load testing"

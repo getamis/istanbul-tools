@@ -14,40 +14,38 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-package container
+package extra
 
 import (
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/consensus/istanbul"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/rlp"
-	"golang.org/x/crypto/sha3"
+	"bytes"
 
-	"github.com/jpmorganchase/istanbul-tools/cmd/istanbul/extra"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	atypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/rlp"
 )
 
-func sigHash(header *types.Header) (hash common.Hash) {
-	hasher := sha3.NewLegacyKeccak256()
-
-	// Clean seal is required for calculating proposer seal.
-	rlp.Encode(hasher, types.IstanbulFilteredHeader(header, false))
-	hasher.Sum(hash[:0])
-	return hash
-}
-
-func GetProposer(header *types.Header) common.Address {
-	if header == nil {
-		return common.Address{}
-	}
-
-	_, istanbulExtra, err := extra.Decode(common.ToHex(header.Extra))
+func Encode(vanity string, validators []common.Address) (string, error) {
+	newVanity, err := hexutil.Decode(vanity)
 	if err != nil {
-		return common.Address{}
+		return "", err
 	}
 
-	addr, err := istanbul.GetSignatureAddress(sigHash(header).Bytes(), istanbulExtra.Seal)
-	if err != nil {
-		return common.Address{}
+	if len(newVanity) < atypes.IstanbulExtraVanity {
+		newVanity = append(newVanity, bytes.Repeat([]byte{0x00}, atypes.IstanbulExtraVanity-len(newVanity))...)
 	}
-	return addr
+	newVanity = newVanity[:atypes.IstanbulExtraVanity]
+
+	ist := &atypes.QbftExtra{
+		VanityData:    newVanity,
+		Validators:    validators,
+		CommittedSeal: [][]byte{},
+	}
+
+	payload, err := rlp.EncodeToBytes(&ist)
+	if err != nil {
+		return "", err
+	}
+
+	return "0x" + common.Bytes2Hex(payload), nil
 }
