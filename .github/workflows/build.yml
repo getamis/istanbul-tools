@@ -2,7 +2,6 @@ name: Build
 on: [push, pull_request]
 env:
   GO_VERSION: 1.15.5
-  DEVELOPER_DIR: /Applications/Xcode_10.3.app/Contents/Developer # fix issue with macos 10.13.x
 jobs:
   build:
     name: Build on ${{ matrix.vm }}
@@ -20,6 +19,8 @@ jobs:
         id: prepare
         run: |
           echo "::set-output name=gopath::$(go env GOPATH)"
+          echo "::set-output name=key::$(go env GOOS)_$(go env GOARCH)"
+          echo "::set-output name=version::${GITHUB_REF##*/}"
       - name: Check out project files
         uses: actions/checkout@v2
       - name: Cache vendor
@@ -28,14 +29,26 @@ jobs:
           key: ${{ runner.os }}-vendor-${{ hashFiles('go.mod') }}-${{ hashFiles('go.sum') }}
           path: ${{ steps.prepare.outputs.gopath }}/pkg
       - name: Build
+        # For MacOS, We use gtar and run purge command to workaround issue
+        # https://github.com/actions/virtual-environments/issues/2619
         id: build
         run: |
-          make dist
+          make istanbul qbft
+          tar_file=build/istanbul-tools_${{ steps.prepare.outputs.version }}_${{ steps.prepare.outputs.key }}.tar.gz
+
+          if [ "${{ matrix.vm }}" == "macos-latest" ]; then
+            sudo /usr/sbin/purge
+            gtar cfvz ${tar_file} -C build/bin istanbul qbft
+          else
+            tar cfvz ${tar_file} -C build/bin istanbul qbft
+          fi
+
+          echo "::set-output name=tar_file::${tar_file}"
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
         with:
           name: istanbul-${{ matrix.vm }}
-          path: build/bin/istanbul
+          path: build/bin
   notify:
     name: Notify Slack
     needs:

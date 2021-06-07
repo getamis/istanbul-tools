@@ -20,12 +20,6 @@ qbft:
 	@echo "Done building."
 	@echo "Run \"$(GOBIN)/qbft\" to launch qbft."
 
-dist: clean
-	@GOPATH=$(GOPATH) go build -ldflags='$(LDFLAGS)' -o ./build/bin/istanbul ./cmd/istanbul
-	@tar cfvz ./build/istanbul-tools_$(VERSION)_$(OS)_$(ARCH).tar.gz -C ./build/bin istanbul
-	@echo "Distribution file created."
-	@ls -lh ./build
-
 load-testing:
 	@echo "Run load testing"
 	@CURDIR=$(CURDIR) go test -v github.com/jpmorganchase/istanbul-tools/tests/load/... --timeout 1h
