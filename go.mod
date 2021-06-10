@@ -51,7 +51,7 @@ require (
 	github.com/prometheus/client_golang v1.5.1 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a
 	github.com/rs/cors v0.0.0-20181011182759-a3460e445dd3 // indirect
-	github.com/satori/go.uuid v1.2.0
+	github.com/satori/go.uuid v1.1.0
 	github.com/spf13/pflag v1.0.3 // indirect
 	github.com/ugorji/go v0.0.0-20170107133203-ded73eae5db7 // indirect
 	github.com/urfave/cli v1.22.1
