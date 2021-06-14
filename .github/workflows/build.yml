@@ -34,7 +34,8 @@ jobs:
         id: build
         run: |
           make istanbul qbft
-          tar_file=build/istanbul-tools_${{ steps.prepare.outputs.version }}_${{ steps.prepare.outputs.key }}.tar.gz
+          mkdir -p build/artifact
+          tar_file=build/artifact/istanbul-tools_${{ steps.meta.outputs.version }}_${{ steps.meta.outputs.os-arch }}.tar.gz
 
           if [ "${{ matrix.vm }}" == "macos-latest" ]; then
             sudo /usr/sbin/purge
@@ -48,7 +49,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: istanbul-${{ matrix.vm }}
-          path: build/bin
+          path: build/artifact
   notify:
     name: Notify Slack
     needs:
