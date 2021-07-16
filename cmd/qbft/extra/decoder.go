@@ -21,13 +21,13 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
-func Decode(extraData string) (*types.QbftExtra, error) {
+func Decode(extraData string) (*types.QBFTExtra, error) {
 	extra, err := hexutil.Decode(extraData)
 	if err != nil {
 		return nil, err
 	}
 
-	qbftExtra, err := types.ExtractQbftExtra(&types.Header{Extra: extra})
+	qbftExtra, err := types.ExtractQBFTExtra(&types.Header{Extra: extra})
 	if err != nil {
 		return nil, err
 	}

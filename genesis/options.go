@@ -68,6 +68,6 @@ func Alloc(addrs []common.Address, balance *big.Int) Option {
 
 func AddQbftBlock() Option {
 	return func(genesis *core.Genesis) {
-		genesis.Config.Istanbul.QbftBlock = common.Big0
+		genesis.Config.Istanbul.TestQBFTBlock = common.Big0
 	}
 }

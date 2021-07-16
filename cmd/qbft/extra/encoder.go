@@ -36,7 +36,7 @@ func Encode(vanity string, validators []common.Address) (string, error) {
 	}
 	newVanity = newVanity[:atypes.IstanbulExtraVanity]
 
-	ist := &atypes.QbftExtra{
+	ist := &atypes.QBFTExtra{
 		VanityData:    newVanity,
 		Validators:    validators,
 		CommittedSeal: [][]byte{},
