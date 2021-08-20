@@ -1,8 +1,8 @@
 module github.com/jpmorganchase/istanbul-tools
 
 replace (
-	github.com/ethereum/go-ethereum => github.com/jbhurat/quorum v1.2.2-0.20210715145259-9eca71c721df
-	github.com/ethereum/go-ethereum/crypto/secp256k1 => github.com/ConsenSys/quorum/crypto/secp256k1 v0.0.0-20210518093622-1d7926a19a1e
+	github.com/ethereum/go-ethereum => github.com/Consensys/quorum v1.2.2-0.20210819085930-d5ef77cafd90
+	github.com/ethereum/go-ethereum/crypto/secp256k1 => github.com/ConsenSys/quorum/crypto/secp256k1 v0.0.0-20210819085930-d5ef77cafd90
 )
 
 replace github.com/Sirupsen/logrus => github.com/sirupsen/logrus v1.1.1
