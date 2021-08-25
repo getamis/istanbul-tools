@@ -83,7 +83,7 @@ jobs:
     name: Notify Slack
     needs:
       - build
-      - deploy
+      - deploy-cloudsmith
     if: always()
     runs-on: ubuntu-latest
     steps:
