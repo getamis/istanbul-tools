@@ -44,7 +44,7 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v1
         with:
-          name: ${{ steps.env.outputs.os-arch }}
+          name: ${{ steps.meta.outputs.os-arch }}
           path: build/artifact
   deploy-cloudsmith:
     name: 'Deploy binary to Cloudsmith for ${{ matrix.goarch }}'
