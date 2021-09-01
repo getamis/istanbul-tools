@@ -23,7 +23,7 @@ import (
 	"github.com/ethereum/go-ethereum/rlp"
 	"golang.org/x/crypto/sha3"
 
-	"github.com/jpmorganchase/istanbul-tools/cmd/istanbul/extra"
+	"github.com/Consensys/istanbul-tools/cmd/istanbul/extra"
 )
 
 func sigHash(header *types.Header) (hash common.Hash) {

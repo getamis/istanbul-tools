@@ -33,7 +33,7 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 
-	"github.com/jpmorganchase/istanbul-tools/common"
+	"github.com/Consensys/istanbul-tools/common"
 )
 
 //TODO: refactor this with ethereum options?

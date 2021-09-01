@@ -22,9 +22,9 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/jpmorganchase/istanbul-tools/client"
-	"github.com/jpmorganchase/istanbul-tools/container"
-	"github.com/jpmorganchase/istanbul-tools/k8s"
+	"github.com/Consensys/istanbul-tools/client"
+	"github.com/Consensys/istanbul-tools/container"
+	"github.com/Consensys/istanbul-tools/k8s"
 )
 
 type metricEthereum struct {

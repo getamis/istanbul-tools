@@ -26,7 +26,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/jpmorganchase/istanbul-tools/genesis"
+	"github.com/Consensys/istanbul-tools/genesis"
 	"github.com/urfave/cli"
 )
 

@@ -22,7 +22,7 @@ qbft:
 
 load-testing:
 	@echo "Run load testing"
-	@CURDIR=$(CURDIR) go test -v github.com/jpmorganchase/istanbul-tools/tests/load/... --timeout 1h
+	@CURDIR=$(CURDIR) go test -v github.com/Consensys/istanbul-tools/tests/load/... --timeout 1h
 
 clean:
 	rm -rf build

@@ -32,10 +32,10 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/jpmorganchase/istanbul-tools/charts"
-	"github.com/jpmorganchase/istanbul-tools/client"
-	istcommon "github.com/jpmorganchase/istanbul-tools/common"
-	"github.com/jpmorganchase/istanbul-tools/container"
+	"github.com/Consensys/istanbul-tools/charts"
+	"github.com/Consensys/istanbul-tools/client"
+	istcommon "github.com/Consensys/istanbul-tools/common"
+	"github.com/Consensys/istanbul-tools/container"
 )
 
 func NewEthereum(options ...Option) *ethereum {

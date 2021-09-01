@@ -17,7 +17,7 @@
 package metrics
 
 import (
-	logging "github.com/jpmorganchase/istanbul-tools/log"
+	logging "github.com/Consensys/istanbul-tools/log"
 )
 
 var log = logging.New()

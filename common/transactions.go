@@ -24,7 +24,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 
-	"github.com/jpmorganchase/istanbul-tools/client"
+	"github.com/Consensys/istanbul-tools/client"
 )
 
 var (
