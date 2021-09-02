@@ -17,120 +17,120 @@
 package reinit
 
 import (
-  "fmt"
-  "strings"
-  "sort"
-  "bytes"
-  "math/big"
-  "encoding/json"
-  "crypto/ecdsa"
+	"bytes"
+	"crypto/ecdsa"
+	"encoding/json"
+	"fmt"
+	"math/big"
+	"sort"
+	"strings"
 
-  "github.com/ethereum/go-ethereum/common"
-  "github.com/ethereum/go-ethereum/core"
-  "github.com/ethereum/go-ethereum/core/types"
-  "github.com/ethereum/go-ethereum/crypto"
-  "github.com/ethereum/go-ethereum/rlp"
-  "github.com/jpmorganchase/istanbul-tools/genesis"
-  "github.com/urfave/cli"
+	"github.com/Consensys/istanbul-tools/genesis"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/urfave/cli"
 )
 
 var (
-  ReinitCommand = cli.Command{
-    Name:  "reinit",
-    Action: reinit,
-    Usage: "Reinitialize a genesis block using previous node info",
-    ArgsUsage: "\"nodekey1,nodekey2,...\"",
-    Flags: []cli.Flag{
-      nodeKeyFlag,
-      quorumFlag,
-    },
-    Description: `This tool helps generate a genesis block`,
-  }
+	ReinitCommand = cli.Command{
+		Name:      "reinit",
+		Action:    reinit,
+		Usage:     "Reinitialize a genesis block using previous node info",
+		ArgsUsage: "\"nodekey1,nodekey2,...\"",
+		Flags: []cli.Flag{
+			nodeKeyFlag,
+			quorumFlag,
+		},
+		Description: `This tool helps generate a genesis block`,
+	}
 )
 
 func reinit(ctx *cli.Context) error {
-  if !ctx.IsSet(nodeKeyFlag.Name) {
-    return cli.NewExitError("Must supply nodekeys", 10);
-  }
+	if !ctx.IsSet(nodeKeyFlag.Name) {
+		return cli.NewExitError("Must supply nodekeys", 10)
+	}
 
-  nodeKeyString := ctx.String(nodeKeyFlag.Name);
-  nodekeys := strings.Split(nodeKeyString, ",");
+	nodeKeyString := ctx.String(nodeKeyFlag.Name)
+	nodekeys := strings.Split(nodeKeyString, ",")
 
-  isQuorum := ctx.Bool(quorumFlag.Name);
+	isQuorum := ctx.Bool(quorumFlag.Name)
 
-  var stringAddrs []string;
-  _, _, addr := generateKeysWithNodeKey(nodekeys);
-  // Convert to String to sort
-  for i := 0; i < len(addr); i++ {
-    addrString, _ := json.Marshal(addr[i]);
-    stringAddrs = append(stringAddrs, string(addrString));
-  }
-  sort.Strings(stringAddrs);
+	var stringAddrs []string
+	_, _, addr := generateKeysWithNodeKey(nodekeys)
+	// Convert to String to sort
+	for i := 0; i < len(addr); i++ {
+		addrString, _ := json.Marshal(addr[i])
+		stringAddrs = append(stringAddrs, string(addrString))
+	}
+	sort.Strings(stringAddrs)
 
-  // Convert back to address
-  var addrs []common.Address;
-  for i := 0; i < len(stringAddrs); i++ {
-    var address common.Address;
-    json.Unmarshal([]byte(stringAddrs[i]), &address);
-    addrs = append(addrs, address);
-  }
-  // Generate Genesis block
-  genesisString, _ := getGenesisWithAddrs(addrs, isQuorum);
-  // genesisS, _ := json.Marshal(genesis);
-  fmt.Println(string(genesisString));
-  return nil;
+	// Convert back to address
+	var addrs []common.Address
+	for i := 0; i < len(stringAddrs); i++ {
+		var address common.Address
+		json.Unmarshal([]byte(stringAddrs[i]), &address)
+		addrs = append(addrs, address)
+	}
+	// Generate Genesis block
+	genesisString, _ := getGenesisWithAddrs(addrs, isQuorum)
+	// genesisS, _ := json.Marshal(genesis);
+	fmt.Println(string(genesisString))
+	return nil
 }
 
 func generateKeysWithNodeKey(nodekeysIn []string) (keys []*ecdsa.PrivateKey, nodekeys []string, addrs []common.Address) {
-  for i := 0; i < len(nodekeysIn); i++ {
-    nodekey := nodekeysIn[i]
-    nodekeys = append(nodekeys, nodekey)
+	for i := 0; i < len(nodekeysIn); i++ {
+		nodekey := nodekeysIn[i]
+		nodekeys = append(nodekeys, nodekey)
 
-    key, err := crypto.HexToECDSA(nodekey)
-    if err != nil {
-      fmt.Println("Failed to generate key", "err", err)
-      return nil, nil, nil
-    }
-    keys = append(keys, key)
+		key, err := crypto.HexToECDSA(nodekey)
+		if err != nil {
+			fmt.Println("Failed to generate key", "err", err)
+			return nil, nil, nil
+		}
+		keys = append(keys, key)
 
-    addr := crypto.PubkeyToAddress(key.PublicKey)
-    addrs = append(addrs, addr)
-  }
-  return keys, nodekeys, addrs
+		addr := crypto.PubkeyToAddress(key.PublicKey)
+		addrs = append(addrs, addr)
+	}
+	return keys, nodekeys, addrs
 }
 
 func getGenesisWithAddrs(addrs []common.Address, isQuorum bool) ([]byte, error) {
-  // generate genesis block
-  istanbulGenesis := genesis.New(
-    genesis.Validators(addrs...),
-    genesis.Alloc(addrs, new(big.Int).Exp(big.NewInt(10), big.NewInt(50), nil)),
-  )
-  var jsonBytes []byte
-  var err error
-  if isQuorum {
-    jsonBytes, err = json.MarshalIndent(genesis.ToQuorum(istanbulGenesis, true), "", "    ")
-  } else {
-    jsonBytes, err = json.MarshalIndent(istanbulGenesis, "", "    ")
-  }
-  return jsonBytes, err
+	// generate genesis block
+	istanbulGenesis := genesis.New(
+		genesis.Validators(addrs...),
+		genesis.Alloc(addrs, new(big.Int).Exp(big.NewInt(10), big.NewInt(50), nil)),
+	)
+	var jsonBytes []byte
+	var err error
+	if isQuorum {
+		jsonBytes, err = json.MarshalIndent(genesis.ToQuorum(istanbulGenesis, true), "", "    ")
+	} else {
+		jsonBytes, err = json.MarshalIndent(istanbulGenesis, "", "    ")
+	}
+	return jsonBytes, err
 }
 
 func appendValidators(genesis *core.Genesis, addrs []common.Address) {
 
-  if len(genesis.ExtraData) < types.IstanbulExtraVanity {
-    genesis.ExtraData = append(genesis.ExtraData, bytes.Repeat([]byte{0x00}, types.IstanbulExtraVanity)...)
-  }
-  genesis.ExtraData = genesis.ExtraData[:types.IstanbulExtraVanity]
+	if len(genesis.ExtraData) < types.IstanbulExtraVanity {
+		genesis.ExtraData = append(genesis.ExtraData, bytes.Repeat([]byte{0x00}, types.IstanbulExtraVanity)...)
+	}
+	genesis.ExtraData = genesis.ExtraData[:types.IstanbulExtraVanity]
 
-  ist := &types.IstanbulExtra{
-    Validators:    addrs,
-    Seal:          []byte{},
-    CommittedSeal: [][]byte{},
-  }
+	ist := &types.IstanbulExtra{
+		Validators:    addrs,
+		Seal:          []byte{},
+		CommittedSeal: [][]byte{},
+	}
 
-  istPayload, err := rlp.EncodeToBytes(&ist)
-  if err != nil {
-    panic("failed to encode istanbul extra")
-  }
-  genesis.ExtraData = append(genesis.ExtraData, istPayload...)
+	istPayload, err := rlp.EncodeToBytes(&ist)
+	if err != nil {
+		panic("failed to encode istanbul extra")
+	}
+	genesis.ExtraData = append(genesis.ExtraData, istPayload...)
 }

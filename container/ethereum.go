@@ -30,6 +30,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Consensys/istanbul-tools/client"
+	istcommon "github.com/Consensys/istanbul-tools/common"
+	"github.com/Consensys/istanbul-tools/genesis"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
@@ -41,10 +44,6 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/p2p/discv5"
-
-	"github.com/jpmorganchase/istanbul-tools/client"
-	istcommon "github.com/jpmorganchase/istanbul-tools/common"
-	"github.com/jpmorganchase/istanbul-tools/genesis"
 )
 
 const (

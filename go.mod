@@ -1,4 +1,4 @@
-module github.com/jpmorganchase/istanbul-tools
+module github.com/Consensys/istanbul-tools
 
 replace (
 	github.com/ethereum/go-ethereum => github.com/Consensys/quorum v1.2.2-0.20210819085930-d5ef77cafd90

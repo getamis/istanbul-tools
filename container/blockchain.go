@@ -27,15 +27,14 @@ import (
 	"path/filepath"
 	"time"
 
+	istcommon "github.com/Consensys/istanbul-tools/common"
+	"github.com/Consensys/istanbul-tools/docker/service"
+	"github.com/Consensys/istanbul-tools/genesis"
 	"github.com/docker/docker/client"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/phayes/freeport"
-
-	istcommon "github.com/jpmorganchase/istanbul-tools/common"
-	"github.com/jpmorganchase/istanbul-tools/docker/service"
-	"github.com/jpmorganchase/istanbul-tools/genesis"
 )
 
 const (

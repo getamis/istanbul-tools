@@ -19,8 +19,8 @@ package container
 import (
 	"testing"
 
+	"github.com/Consensys/istanbul-tools/docker/service"
 	"github.com/docker/docker/client"
-	"github.com/jpmorganchase/istanbul-tools/docker/service"
 	"github.com/phayes/freeport"
 )
 
