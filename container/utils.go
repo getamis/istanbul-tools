@@ -17,13 +17,12 @@
 package container
 
 import (
+	"github.com/Consensys/istanbul-tools/cmd/istanbul/extra"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/consensus/istanbul"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rlp"
 	"golang.org/x/crypto/sha3"
-
-	"github.com/Consensys/istanbul-tools/cmd/istanbul/extra"
 )
 
 func sigHash(header *types.Header) (hash common.Hash) {

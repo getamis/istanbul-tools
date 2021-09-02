@@ -21,9 +21,8 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
-
 	istcommon "github.com/Consensys/istanbul-tools/common"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 type RichMan interface {

@@ -26,11 +26,11 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/Consensys/istanbul-tools/container"
 	"github.com/Consensys/istanbul-tools/genesis"
 	"github.com/Consensys/istanbul-tools/tests"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 )
 
 var _ = Describe("QFS-01: General consensus", func() {

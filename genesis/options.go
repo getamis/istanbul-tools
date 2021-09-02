@@ -19,11 +19,11 @@ package genesis
 import (
 	"math/big"
 
+	"github.com/Consensys/istanbul-tools/cmd/istanbul/extra"
+	qbftExtra "github.com/Consensys/istanbul-tools/cmd/qbft/extra"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core"
-	"github.com/Consensys/istanbul-tools/cmd/istanbul/extra"
-	qbftExtra "github.com/Consensys/istanbul-tools/cmd/qbft/extra"
 )
 
 type Option func(*core.Genesis)

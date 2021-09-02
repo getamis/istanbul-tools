@@ -27,10 +27,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/p2p/discv5"
 	istcommon "github.com/Consensys/istanbul-tools/common"
 	"github.com/Consensys/istanbul-tools/genesis"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/p2p/discv5"
 	"github.com/urfave/cli"
 )
 

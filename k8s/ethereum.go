@@ -28,14 +28,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/ethereum/go-ethereum/common"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
-
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/Consensys/istanbul-tools/charts"
 	"github.com/Consensys/istanbul-tools/client"
 	istcommon "github.com/Consensys/istanbul-tools/common"
 	"github.com/Consensys/istanbul-tools/container"
+	"github.com/ethereum/go-ethereum/common"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 )
 
 func NewEthereum(options ...Option) *ethereum {

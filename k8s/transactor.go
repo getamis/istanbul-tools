@@ -23,10 +23,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/crypto"
-
 	"github.com/Consensys/istanbul-tools/client"
 	istcommon "github.com/Consensys/istanbul-tools/common"
+	"github.com/ethereum/go-ethereum/crypto"
 )
 
 type Transactor interface {

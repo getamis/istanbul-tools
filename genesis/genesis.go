@@ -23,12 +23,11 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/Consensys/istanbul-tools/common"
 	"github.com/ethereum/go-ethereum/consensus/istanbul"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
-
-	"github.com/Consensys/istanbul-tools/common"
 )
 
 const (
