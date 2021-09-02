@@ -22,6 +22,11 @@ import (
 	"text/template"
 )
 
+var (
+	QuorumDockerImage    = "quorumengineering/quorum"
+	QuorumDockerImageTag = "2.4.0"
+)
+
 type Quorum struct {
 	*Validator
 	Constellation *Constellation
@@ -50,9 +55,9 @@ func (q Quorum) String() string {
 	return result.String()
 }
 
-var quorumTemplate = `{{ .Name }}:
+var quorumTemplate = fmt.Sprintf(`{{ .Name }}:
     hostname: {{ .Name }}
-    image: quay.io/amis/quorum:feature_istanbul
+    image: %s:%s
     ports:
       - '{{ .Port }}:30303'
       - '{{ .RPCPort }}:8545'
@@ -92,4 +97,4 @@ var quorumTemplate = `{{ .Name }}:
       app_net:
         ipv4_address: {{ .IP }}
     restart: always
-  {{ .Constellation }}`
+  {{ .Constellation }}`, QuorumDockerImage, QuorumDockerImageTag)

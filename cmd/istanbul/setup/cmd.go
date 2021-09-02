@@ -28,10 +28,10 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/p2p/discover"
-	istcommon "github.com/getamis/istanbul-tools/common"
-	"github.com/getamis/istanbul-tools/docker/compose"
-	"github.com/getamis/istanbul-tools/genesis"
+	"github.com/ethereum/go-ethereum/p2p/discv5"
+	istcommon "github.com/Consensys/istanbul-tools/common"
+	"github.com/Consensys/istanbul-tools/docker/compose"
+	"github.com/Consensys/istanbul-tools/genesis"
 	"github.com/urfave/cli"
 )
 
@@ -61,6 +61,9 @@ var (
 			quorumFlag,
 			dockerComposeFlag,
 			saveFlag,
+			nodeIpFlag,
+			nodePortBaseFlag,
+			nodePortIncrementFlag,
 		},
 	}
 )
@@ -75,16 +78,21 @@ func gen(ctx *cli.Context) error {
 		fmt.Println("validators")
 	}
 
+	nodeIp := ctx.String(nodeIpFlag.Name)
+	nodePort := ctx.Int(nodePortBaseFlag.Name)
+	nodePortIncrement := ctx.Int(nodePortIncrementFlag.Name)
+
 	for i := 0; i < num; i++ {
 		v := &validatorInfo{
 			Address: addrs[i],
 			Nodekey: nodekeys[i],
-			NodeInfo: discover.NewNode(
-				discover.PubkeyID(&keys[i].PublicKey),
-				net.ParseIP("0.0.0.0"),
+			NodeInfo: discv5.NewNode(
+				discv5.PubkeyID(&keys[i].PublicKey),
+				net.ParseIP(nodeIp),
 				0,
-				uint16(30303)).String(),
+				uint16(nodePort)).String(),
 		}
+		nodePort = nodePort + nodePortIncrement
 
 		nodes = append(nodes, string(v.NodeInfo))
 

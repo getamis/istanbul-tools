@@ -27,14 +27,14 @@ import (
 	"path/filepath"
 	"time"
 
+	istcommon "github.com/Consensys/istanbul-tools/common"
+	"github.com/Consensys/istanbul-tools/docker/service"
+	"github.com/Consensys/istanbul-tools/genesis"
 	"github.com/docker/docker/client"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/phayes/freeport"
-
-	istcommon "github.com/getamis/istanbul-tools/common"
-	"github.com/getamis/istanbul-tools/genesis"
 )
 
 const (
@@ -42,6 +42,8 @@ const (
 	veryLightScryptN = 2
 	veryLightScryptP = 1
 	defaultPassword  = ""
+
+	ArbitraryNetworkId = "2018"
 )
 
 type NodeIncubator interface {
@@ -100,6 +102,7 @@ func NewDefaultBlockchain(network *DockerNetwork, numOfValidators int) (bc *bloc
 		Unlock(0),
 		Password("password.txt"),
 		Logging(false),
+		Verbosity(5),
 	)
 }
 
@@ -123,7 +126,10 @@ func NewDefaultBlockchainWithFaulty(network *DockerNetwork, numOfNormal int, num
 		SyncMode("full"),
 		Unlock(0),
 		Password("password.txt"),
-		Logging(false)}
+		Logging(false),
+		Verbosity(5),
+		NetworkID(ArbitraryNetworkId),
+	}
 	normalOpts := make([]Option, len(commonOpts), len(commonOpts)+2)
 	copy(normalOpts, commonOpts[:])
 	normalOpts = append(normalOpts, ImageRepository("quay.io/amis/geth"), ImageTag("istanbul_develop"))
@@ -191,13 +197,17 @@ func NewQuorumBlockchain(network *DockerNetwork, ctn ConstellationNetwork, optio
 func NewDefaultQuorumBlockchain(network *DockerNetwork, ctn ConstellationNetwork) (bc *blockchain) {
 	return NewQuorumBlockchain(network,
 		ctn,
-		ImageRepository("quay.io/amis/quorum"),
-		ImageTag("feature_istanbul"),
+		ImageRepository(service.QuorumDockerImage),
+		ImageTag(service.QuorumDockerImageTag),
 		DataDir("/data"),
 		WebSocket(),
 		WebSocketAddress("0.0.0.0"),
 		WebSocketAPI("admin,eth,net,web3,personal,miner,istanbul"),
 		WebSocketOrigin("*"),
+		RPCAddress("0.0.0.0"),
+		RPCPort(8980),
+		RPC(),
+		RPCAPI("admin,eth,miner,istanbul"),
 		NAT("any"),
 		NoDiscover(),
 		Etherbase("1a9afb711302c5f83b5902843d1c007a1a137632"),
@@ -206,6 +216,8 @@ func NewDefaultQuorumBlockchain(network *DockerNetwork, ctn ConstellationNetwork
 		Unlock(0),
 		Password("password.txt"),
 		Logging(false),
+		Verbosity(5),
+		NetworkID(ArbitraryNetworkId),
 	)
 }
 
@@ -231,10 +243,12 @@ func NewDefaultQuorumBlockchainWithFaulty(network *DockerNetwork, ctn Constellat
 		Password("password.txt"),
 		Logging(false),
 		IsQuorum(true),
+		Verbosity(5),
+		NetworkID(ArbitraryNetworkId),
 	}
 	normalOpts := make([]Option, len(commonOpts), len(commonOpts)+2)
 	copy(normalOpts, commonOpts[:])
-	normalOpts = append(normalOpts, ImageRepository("quay.io/amis/quorum"), ImageTag("feature_istanbul"))
+	normalOpts = append(normalOpts, ImageRepository(service.QuorumDockerImage), ImageTag(service.QuorumDockerImageTag))
 	faultyOpts := make([]Option, len(commonOpts), len(commonOpts)+3)
 	copy(faultyOpts, commonOpts[:])
 	faultyOpts = append(faultyOpts, ImageRepository("quay.io/amis/quorum_faulty"), ImageTag("latest"), FaultyMode(1))
@@ -398,6 +412,7 @@ func (bc *blockchain) CreateNodes(num int, options ...Option) (nodes []Ethereum,
 		}
 		opts = append(opts, HostDataDir(dataDir))
 		opts = append(opts, HostWebSocketPort(freeport.GetPort()))
+		opts = append(opts, HostRPCPort(freeport.GetPort()))
 		opts = append(opts, HostIP(ips[i]))
 		opts = append(opts, DockerNetworkName(bc.dockerNetwork.Name()))
 
@@ -502,6 +517,7 @@ func (bc *blockchain) setupValidators(ips []net.IP, keys []*ecdsa.PrivateKey, of
 		}
 		opts = append(opts, HostDataDir(dataDir))
 		opts = append(opts, HostWebSocketPort(freeport.GetPort()))
+		opts = append(opts, HostRPCPort(freeport.GetPort()))
 		opts = append(opts, Key(keys[i]))
 		opts = append(opts, HostIP(ips[i]))
 
@@ -588,8 +604,8 @@ func NewConstellationNetwork(network *DockerNetwork, numOfValidators int, option
 
 func NewDefaultConstellationNetwork(network *DockerNetwork, numOfValidators int) (ctn *constellationNetwork) {
 	return NewConstellationNetwork(network, numOfValidators,
-		CTImageRepository("quay.io/amis/constellation"),
-		CTImageTag("latest"),
+		CTImageRepository(service.ConstellationDockerImage),
+		CTImageTag(service.ConstellationDockerImageTag),
 		CTWorkDir("/ctdata"),
 		CTLogging(false),
 		CTKeyName("node"),

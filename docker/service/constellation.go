@@ -23,6 +23,11 @@ import (
 	"text/template"
 )
 
+var (
+	ConstellationDockerImage    = "quorumengineering/constellation"
+	ConstellationDockerImageTag = "latest"
+)
+
 type Constellation struct {
 	Identity   int
 	Name       string
@@ -79,9 +84,9 @@ func (c Constellation) String() string {
 	return result.String()
 }
 
-var constellationTemplate = `{{ .Name }}:
+var constellationTemplate = fmt.Sprintf(`{{ .Name }}:
     hostname: {{ .Name }}
-    image: quay.io/amis/constellation:latest
+    image: %s:%s
     ports:
       - '{{ .Port }}:{{ .Port }}'
     volumes:
@@ -107,4 +112,4 @@ var constellationTemplate = `{{ .Name }}:
     networks:
       app_net:
         ipv4_address: {{ .IP }}
-    restart: always`
+    restart: always`, ConstellationDockerImage, ConstellationDockerImageTag)

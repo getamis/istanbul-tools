@@ -21,9 +21,9 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/params"
-	"github.com/getamis/go-ethereum/common/math"
 )
 
 //go:generate gencodec -type QuorumGenesis -field-override genesisSpecMarshaling -out gen_quorum_genesis.go

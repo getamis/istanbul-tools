@@ -27,11 +27,11 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	istcommon "github.com/getamis/istanbul-tools/common"
-	"github.com/getamis/istanbul-tools/container"
-	"github.com/getamis/istanbul-tools/k8s"
-	"github.com/getamis/istanbul-tools/metrics"
-	"github.com/getamis/istanbul-tools/tests"
+	istcommon "github.com/Consensys/istanbul-tools/common"
+	"github.com/Consensys/istanbul-tools/container"
+	"github.com/Consensys/istanbul-tools/k8s"
+	"github.com/Consensys/istanbul-tools/metrics"
+	"github.com/Consensys/istanbul-tools/tests"
 )
 
 var _ = Describe("TPS-01: Large amount of transactions", func() {

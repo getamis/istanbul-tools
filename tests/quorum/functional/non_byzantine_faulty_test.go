@@ -23,8 +23,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/getamis/istanbul-tools/container"
-	"github.com/getamis/istanbul-tools/tests"
+	"github.com/Consensys/istanbul-tools/container"
+	"github.com/Consensys/istanbul-tools/tests"
 )
 
 var _ = Describe("QFS-04: Non-Byzantine Faulty", func() {

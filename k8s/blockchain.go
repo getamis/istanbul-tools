@@ -22,11 +22,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Consensys/istanbul-tools/charts"
+	istcommon "github.com/Consensys/istanbul-tools/common"
+	"github.com/Consensys/istanbul-tools/container"
 	"github.com/ethereum/go-ethereum/common"
-
-	"github.com/getamis/istanbul-tools/charts"
-	istcommon "github.com/getamis/istanbul-tools/common"
-	"github.com/getamis/istanbul-tools/container"
 )
 
 func NewBlockchain(numOfValidators int, numOfExtraAccounts int, gaslimit uint64, isQourum bool, options ...Option) (bc *blockchain) {

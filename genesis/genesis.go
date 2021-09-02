@@ -23,17 +23,16 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/Consensys/istanbul-tools/common"
 	"github.com/ethereum/go-ethereum/consensus/istanbul"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
-
-	"github.com/getamis/istanbul-tools/common"
 )
 
 const (
 	FileName       = "genesis.json"
-	InitGasLimit   = 4700000
+	InitGasLimit   = 3758096384
 	InitDifficulty = 1
 )
 
@@ -44,15 +43,23 @@ func New(options ...Option) *core.Genesis {
 		Difficulty: big.NewInt(InitDifficulty),
 		Alloc:      make(core.GenesisAlloc),
 		Config: &params.ChainConfig{
-			ChainId:        big.NewInt(2017),
-			HomesteadBlock: big.NewInt(1),
-			EIP150Block:    big.NewInt(2),
-			EIP155Block:    big.NewInt(3),
-			EIP158Block:    big.NewInt(3),
+			ChainID:              big.NewInt(10),
+			HomesteadBlock:       big.NewInt(0),
+			ByzantiumBlock:       big.NewInt(0),
+			ConstantinopleBlock:  big.NewInt(0),
+			EIP150Block:          big.NewInt(0),
+			EIP155Block:          big.NewInt(0),
+			EIP158Block:          big.NewInt(0),
+			QIP714Block:          big.NewInt(0),
+			PetersburgBlock:      big.NewInt(0),
+			IstanbulBlock:        big.NewInt(0),
+			TransactionSizeLimit: 64,
 			Istanbul: &params.IstanbulConfig{
-				ProposerPolicy: uint64(istanbul.DefaultConfig.ProposerPolicy),
+				ProposerPolicy: uint64(istanbul.RoundRobin),
 				Epoch:          istanbul.DefaultConfig.Epoch,
+				Ceil2Nby3Block: istanbul.DefaultConfig.Ceil2Nby3Block,
 			},
+			IsQuorum: true,
 		},
 		Mixhash: types.IstanbulDigest,
 	}

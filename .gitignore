@@ -24,7 +24,7 @@ build/_vendor/pkg
 
 # used by the Makefile
 /build/_workspace/
-/build/bin/
+/build
 /geth*.zip
 
 # travis
@@ -33,3 +33,5 @@ profile.cov
 
 # vscode
 .vscode/
+
+vendor/

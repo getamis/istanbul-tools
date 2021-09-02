@@ -20,22 +20,29 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/Consensys/istanbul-tools/cmd/istanbul/address"
+	"github.com/Consensys/istanbul-tools/cmd/istanbul/extra"
+	"github.com/Consensys/istanbul-tools/cmd/istanbul/reinit"
+	"github.com/Consensys/istanbul-tools/cmd/istanbul/setup"
+	"github.com/Consensys/istanbul-tools/cmd/utils"
 	"github.com/urfave/cli"
+)
 
-	"github.com/getamis/istanbul-tools/cmd/istanbul/extra"
-	"github.com/getamis/istanbul-tools/cmd/istanbul/setup"
-	"github.com/getamis/istanbul-tools/cmd/utils"
+var (
+	Version string // this is externalized via -X flag
 )
 
 func main() {
 	app := utils.NewApp()
 	app.Usage = "the istanbul-tools command line interface"
 
-	app.Version = "v1.0.0"
+	app.Version = Version
 	app.Copyright = "Copyright 2017 The AMIS Authors"
 	app.Commands = []cli.Command{
 		extra.ExtraCommand,
 		setup.SetupCommand,
+		reinit.ReinitCommand,
+		address.AddressCommand,
 	}
 
 	if err := app.Run(os.Args); err != nil {

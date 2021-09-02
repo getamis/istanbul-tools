@@ -26,14 +26,13 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/Consensys/istanbul-tools/common"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
-
-	"github.com/getamis/istanbul-tools/common"
 )
 
 //TODO: refactor this with ethereum options?

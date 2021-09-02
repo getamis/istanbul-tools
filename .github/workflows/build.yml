@@ -1,0 +1,181 @@
+name: Build
+on: [push, pull_request]
+env:
+  GO_VERSION: 1.15.5
+jobs:
+  build:
+    name: Build on ${{ matrix.vm }}
+    strategy:
+      fail-fast: false
+      matrix:
+        vm: ["ubuntu-latest", "macos-latest"]
+    runs-on: ${{ matrix.vm }}
+    steps:
+      - name: 'Setup Go ${{ env.GO_VERSION }}'
+        uses: actions/setup-go@v1
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: Prepare environment
+        id: prepare
+        run: |
+          echo "::set-output name=gopath::$(go env GOPATH)"
+          echo "::set-output name=key::$(go env GOOS)_$(go env GOARCH)"
+          echo "::set-output name=version::${GITHUB_REF##*/}"
+      - name: Check out project files
+        uses: actions/checkout@v2
+      - name: Cache vendor
+        uses: actions/cache@v1
+        with:
+          key: ${{ runner.os }}-vendor-${{ hashFiles('go.mod') }}-${{ hashFiles('go.sum') }}
+          path: ${{ steps.prepare.outputs.gopath }}/pkg
+      - name: Build
+        # For MacOS, We use gtar and run purge command to workaround issue
+        # https://github.com/actions/virtual-environments/issues/2619
+        id: build
+        run: |
+          make istanbul qbft
+          mkdir -p build/artifact
+          tar_file=build/artifact/istanbul-tools_${{ steps.meta.outputs.version }}_${{ steps.meta.outputs.os-arch }}.tar.gz
+
+          if [ "${{ matrix.vm }}" == "macos-latest" ]; then
+            sudo /usr/sbin/purge
+            gtar cfvz ${tar_file} -C build/bin istanbul qbft
+          else
+            tar cfvz ${tar_file} -C build/bin istanbul qbft
+          fi
+
+          echo "::set-output name=tar_file::${tar_file}"
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: istanbul-${{ matrix.vm }}
+          path: build/artifact
+  notify:
+    name: Notify Slack
+    needs:
+      - build
+    if: always() && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prepare Slack message
+        id: status
+        uses: actions/github-script@0.8.0
+        with:
+          script: |
+            ////////////////////////////////////
+            // retrieve workflow run data
+            ////////////////////////////////////
+            console.log("get workflow run")
+            const wf_run = await github.actions.getWorkflowRun({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                run_id: ${{ github.run_id }}
+            })
+            console.log(wf_run.data)
+            console.log("get jobs for workflow run:", wf_run.data.jobs_url)
+            const jobs_response = await github.request(wf_run.data.jobs_url)
+            ////////////////////////////////////
+            // build slack notification message
+            ////////////////////////////////////
+            // some utility functions
+            var date_diff_func = function(start, end) {
+                var duration = end - start
+                // format the duration
+                var delta = duration / 1000
+                var days = Math.floor(delta / 86400)
+                delta -= days * 86400
+                var hours = Math.floor(delta / 3600) % 24
+                delta -= hours * 3600
+                var minutes = Math.floor(delta / 60) % 60
+                delta -= minutes * 60
+                var seconds = Math.floor(delta % 60)
+                var format_func = function(v, text, check) {
+                    if (v <= 0 && check) {
+                        return ""
+                    } else {
+                        return v + text
+                    }
+                }
+                return format_func(days, "d", true) + format_func(hours, "h", true) + format_func(minutes, "m", true) + format_func(seconds, "s", false)
+            }
+            var status_icon_func = function(s) {
+                switch (s) {
+                case "w_success":
+                    return ":white_check_mark:"
+                case "w_failure":
+                    return ":no_entry:"
+                case "w_cancelled":
+                    return ":warning:"
+                case "success":
+                    return "\u2713"
+                case "failure":
+                    return "\u2717"
+                default:
+                    return "\u20e0"
+                }
+            }
+            const commit = "${{ github.sha }}".substr(0, 6)
+            var pr = ""
+            for (p of wf_run.data.pull_requests) {
+              pr += ",<"+ p.url + "|#" + p.number + ">"
+            }
+            if (pr != "") {
+              pr = "for " + pr.substr(1)
+            }
+            // build the message
+            var fields = []
+            var is_wf_success = true
+            var is_wf_failure = false
+            for (j of jobs_response.data.jobs) {
+                console.log(j.name, ":", j.status, j.conclusion, j.started_at, j.completed_at)
+                // ignore the current job running this script
+                if (j.status != "completed") {
+                    continue
+                }
+                if (j.conclusion != "success") {
+                  is_wf_success = false
+                }
+                if (j.conclusion == "failure") {
+                  is_wf_failure = true
+                }
+                fields.push({
+                    type: "mrkdwn",
+                    text: status_icon_func(j.conclusion) + " <" + j.html_url + "|" + j.name + ">\n  \u21b3 completed in " + date_diff_func(new Date(j.started_at), new Date(j.completed_at))
+                })
+            }
+            var workflow_status = "w_cancelled"
+            if (is_wf_success) {
+              workflow_status = "w_success"
+            } else if (is_wf_failure) {
+              workflow_status = "w_failure"
+            }
+            var slack_msg = {
+                blocks: [
+                    {
+                        type: "section",
+                        text: {
+                            type: "mrkdwn",
+                            text: "<https://github.com/${{ github.repository }}|*${{ github.repository }}*>\nfrom *${{ github.ref }}@" + commit + "*"
+                        }
+                    },
+                    {
+                        type: "section",
+                        text: {
+                            type: "mrkdwn",
+                            text: status_icon_func(workflow_status) + " *${{ github.workflow }}* " + pr + "\nWorkflow run <" + wf_run.data.html_url + "|#${{ github.run_number }}> completed in " + date_diff_func(new Date(wf_run.data.created_at), new Date(wf_run.data.updated_at))
+                        }
+                    },
+                    {
+                        type: "divider"
+                    },
+                    {
+                        type: "section",
+                        fields: fields
+                    }
+                ]
+            }
+            return slack_msg
+      - name: Send to Slack
+        if: success()
+        run: |
+          curl -X POST ${{ secrets.SLACK_WEBHOOK_URL }} -H "Content-type: application/json" --data '${{ steps.status.outputs.result }}'

@@ -19,6 +19,7 @@ package container
 import (
 	"testing"
 
+	"github.com/Consensys/istanbul-tools/docker/service"
 	"github.com/docker/docker/client"
 	"github.com/phayes/freeport"
 )
@@ -43,8 +44,8 @@ func TestConstellationContainer(t *testing.T) {
 	port := freeport.GetPort()
 
 	ct := NewConstellation(dockerClient,
-		CTImageRepository("quay.io/amis/constellation"),
-		CTImageTag("latest"),
+		CTImageRepository(service.ConstellationDockerImage),
+		CTImageTag(service.ConstellationDockerImageTag),
 		CTHost(ip, port),
 		CTDockerNetworkName(dockerNetwork.Name()),
 		CTWorkDir("/data"),
